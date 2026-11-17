@@ -1,0 +1,49 @@
+# SalesOS cloud autosave
+
+## Rollout status — 17 November 2026
+
+Supabase project **SalesOS** (`yzluyxqbohzkmctgvtwf`) exists in London (`eu-west-2`) in brandon12001's Org. The schema and row-security checks have been applied and verified. The application implementation and automated tests are included in this repository.
+
+**Cloud autosave is not enabled on the production website yet.** Vercel has no Supabase variables. This intentionally keeps the current browser-local app usable until email sign-in redirects are configured. Dashboard sign-in in the cloud browser was declined; no further authentication attempt was made.
+
+## Complete activation
+
+1. In the Supabase dashboard, open SalesOS → Authentication → URL Configuration.
+2. Set Site URL to `https://salesos-up-next7.vercel.app/` and save. Add that same exact URL under Redirect URLs. Use this canonical SalesOS URL consistently; other Vercel aliases have separate browser storage and require their own redirect allow-list entries if used.
+3. Add only the project's public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` to the Vercel **production** environment, then deploy the reviewed commit. The legacy VITE_SUPABASE_ANON_KEY is a compatibility fallback only. Never expose a service-role key or database password to Vite. Do not give arbitrary preview branches production database credentials.
+4. Open SalesOS, request the email sign-in link, and open it in the browser where you want to work. The built-in Supabase mail service may restrict recipients and rate; use an authorised project/team email for initial testing. Configure SMTP separately if the service reports a mail-delivery restriction.
+5. On the first sign-in, browser records are not uploaded automatically. If no cloud workspace exists, choose **Back up and use these records** to export JSON and migrate explicitly, or start empty while retaining the originals. If cloud records already exist, they load first; old browser-only records remain exportable in Settings.
+6. Verify a fictional record reaches **Saved to cloud**, then sign in in a separate browser/device and verify it loads. Check offline queueing/reconnect and a deliberate conflicting edit before migrating real data.
+
+The authorisation above does not supply an email inbox or change the Supabase project's redirect settings. Actual email-link delivery, a completed user sign-in and two authenticated browser/device sessions remain unverified until these steps are performed.
+
+## Behaviour and safety
+
+- The existing v3 State JSON, seven pipeline stages, eight independent readiness levels, statuses, task rules, FX, imports and XP remain unchanged. The new table stores the complete document; it is not a CRM rewrite or new integration.
+- Every committed action first writes a versioned per-account browser recovery cache/outbox, then queues an automatic cloud write after a short debounce. A local-storage error blocks the action rather than claiming it saved.
+- The server serialises per-account saves and compares the expected revision. An out-of-date writer receives a conflict instead of overwriting newer work. Identical retry payloads are idempotent if a response was lost.
+- Changes made while a request is in flight remain queued for a subsequent write. Network failures preserve the outbox; reconnect and periodic retry recheck the cloud revision. Clean sessions check lightweight revision receipts and pull updates while no editing form is active.
+- Conflicts pause editing. The recovery action downloads local work and preserves a recovery copy before loading the latest cloud version. Recovery refuses to load a cloud copy that would remove local opt-outs or a missing promised commitment; those cases require reconciliation while both copies remain intact. There is no automatic force-overwrite or speculative merge of tasks, opt-outs or histories.
+- A browser lock permits one active tab per account/origin so two tabs cannot overwrite the same offline outbox. Use current Chrome/Edge. Separate browsers/devices are protected by database revision checks.
+- Sign-out hides the account workspace and retains pending work under that account's cache key. Outgoing requests capture their account token, and disposed controllers ignore late responses. FX drafts are account-scoped and stay local until Save discovery is pressed.
+- Offline operation assumes the app is already loaded. Offline reopening of the website is not a PWA guarantee. Clearing browser storage before unsynced changes reach the cloud will still lose those local changes; a before-unload warning helps prevent accidental closure while dirty.
+- Snapshot-sized storage remains subject to browser quota. Large imports/migration copies can fill localStorage; the app fails the write rather than silently dropping the recovery copy. Cloud storage does not replace periodic JSON exports.
+- Manual authenticated snapshots remain available separately in Settings and do not bypass autosave's revision checks on restore.
+
+## Database
+
+`db/001_salesos_snapshot.sql` retains manual backups with explicit grants. `db/002_cloud_autosave.sql` creates the workspace table and save RPC. Both tables use RLS, explicit authenticated-role grants and auth.uid ownership policies. The RPC is SECURITY INVOKER with an empty search_path; it does not bypass RLS. Only the signed-in user ID is used for ownership. Anonymous roles cannot read or save workspaces.
+
+Schema changes were applied through Supabase's managed migration tool after inspecting the empty public schema. The CLI migration generator could not initialise in this environment, so the exact source is retained in db/ rather than pretending a local CLI migration was verified.
+
+## Verification performed
+
+- Existing engine/importer tests and strict TypeScript/Vite production build pass.
+- New autosave tests cover coalescing, edits during writes, offline restart/reconnect, lost responses, JSONB object-key order, two competing sessions, durable conflict recovery, explicit migration, preservation of extension fields, account cache isolation, corrupt cache handling, quota failures, unknown-cloud offline startup and sign-out races.
+- `db/verify_cloud_autosave.sql` passed against the hosted database with synthetic identities inside a rolled-back transaction: own-account saves, idempotent retry, stale-write rejection, cross-account read/update/insert/ownership reassignment rejection, anonymous read/save rejection and manual-snapshot isolation. No synthetic user or data rows survived.
+- Supabase security and performance advisors returned no findings after schema application.
+- A cloud-configured production build rendered the sign-in screen in the cloud browser, preserved the legacy browser-data backup option and blocked a blank-email submission without sending mail. No application-origin errors were observed. Actual authenticated browser tests remain pending.
+
+## Still to verify before claiming end-to-end cloud persistence
+
+Actual email sign-in delivery/callback, two authenticated browser/device sessions, browser lock behaviour with a signed-in account, UI migration/conflict recovery, offline recovery in an actual network interruption and real-sized approved imports. Unit/SQL tests cover the core logic but are not a substitute for these user-authenticated checks. The previous local-mode production smoke pass remains recorded in docs/LIVE_VERIFICATION.md.

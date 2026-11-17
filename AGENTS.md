@@ -22,7 +22,7 @@ The priority order is: **(1) move viable prospects towards becoming customers; (
 - `src/components/Prospects.tsx`, `Dashboards.tsx`, `Settings.tsx`: management screens.
 - `src/lib/importer.ts`: Lusha CSV parser and merge rules.
 - `src/lib/storage.ts`: browser `localStorage` + JSON v2/v3 migrations.
-- `src/lib/cloud.ts`: optional **manual** Supabase snapshot/restore, **NOT** live sync.
+- `src/lib/cloud.ts`: Supabase client and manual snapshots. `src/lib/autosave.ts`, `workspaceRemote.ts`, `workspaceStore.ts` and `src/hooks/useCloudWorkspace.ts`: opt-in account autosave/outbox with revision checks. See `docs/CLOUD_AUTOSAVE.md` for activation status and verification limits.
 - `public/legacy/core.js` and `src/lib/core.ts`: original tested v3 sales rules and adapter; **do not remove or rewrite wholesale until parity tests pass**.
 - `src/types.ts`: current state types.
 - `tests/`: existing engine and importer tests. Create more regression tests for scenario coverage.

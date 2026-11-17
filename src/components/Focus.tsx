@@ -1,10 +1,10 @@
-import {useEffect,useState} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {core} from '../lib/core';
 import {contactFor,dialFor,emailFor,linkedInFor,latestActivity} from '../lib/helpers';
 import type {State,Task,Lead} from '../types';
 import {Badge,Empty,Icon,day} from './UI';
 export type OpenTask=(task:Task,action?:string)=>void;
-export function Focus({state,onAction,onToggleMenu,onTab,copy,onFX}:{state:State;onAction:OpenTask;onToggleMenu:()=>void;onTab:(tab:string)=>void;copy:(s:string)=>void;onFX:(l:Lead)=>void}){
+export function Focus({syncIndicator,state,onAction,onToggleMenu,onTab,copy,onFX}:{syncIndicator?:ReactNode;state:State;onAction:OpenTask;onToggleMenu:()=>void;onTab:(tab:string)=>void;copy:(s:string)=>void;onFX:(l:Lead)=>void}){
  const [callBlock,setCallBlock]=useState(false);
  const [,refreshClock]=useState(0);
  useEffect(()=>{const timer=window.setInterval(()=>refreshClock(v=>v+1),15000);return()=>window.clearInterval(timer)},[]);const t=core.nextTask(state,{callBlock}) as Task|null;
@@ -13,7 +13,7 @@ export function Focus({state,onAction,onToggleMenu,onTab,copy,onFX}:{state:State
  useEffect(()=>{function shortcut(e:KeyboardEvent){if(e.metaKey||e.ctrlKey||e.altKey||e.repeat||document.querySelector('[role="dialog"]'))return;const el=e.target as HTMLElement;if(['INPUT','TEXTAREA','SELECT'].includes(el?.tagName)||el?.isContentEditable)return;const k=e.key.toLowerCase();if(k==='m')onToggleMenu();else if(!t)return;else if(k==='c'&&phone)copy(phone);else if(k==='n'&&['call','callback'].includes(t.type))onAction(t,'no_answer');else if(k==='g'&&['call','callback'].includes(t.type))onAction(t,'connected');else if(k==='w'&&['call','callback'].includes(t.type))onAction(t,'wrong_person');else if(k==='b'&&['call','callback'].includes(t.type))onAction(t,'bad_number');else if(k==='s')onAction(t,'snooze');}
  window.addEventListener('keydown',shortcut);return()=>window.removeEventListener('keydown',shortcut);},[t,phone,onToggleMenu,onAction,copy]);
  return <div className="execution-shell">
-  <div className="focus-toolbar"><button className="icon-btn" aria-label="Show navigation" title="Menu (M)" onClick={onToggleMenu}><Icon name="menu"/></button><div className="focus-brand"><span className="brand-mark">ϟ</span><b>Sales<span>OS</span></b><small>FOCUS</small></div><span className="toolbar-spacer"/><label className="mini-toggle"><input type="checkbox" checked={callBlock} onChange={e=>setCallBlock(e.target.checked)}/> Call block</label><button className="btn quiet small" onClick={()=>onTab('prospects')}>Prospects</button></div>
+  <div className="focus-toolbar"><button className="icon-btn" aria-label="Show navigation" title="Menu (M)" onClick={onToggleMenu}><Icon name="menu"/></button><div className="focus-brand"><span className="brand-mark">ϟ</span><b>Sales<span>OS</span></b><small>FOCUS</small></div><span className="toolbar-spacer"/>{syncIndicator}<label className="mini-toggle"><input type="checkbox" checked={callBlock} onChange={e=>setCallBlock(e.target.checked)}/> Call block</label><button className="btn quiet small" onClick={()=>onTab('prospects')}>Prospects</button></div>
   <div className="focus-main">
    {!t?<div className="focus-card"><Empty title="You're clear for now" detail="There are no tasks due right now. Check upcoming tasks or add more qualified prospects."/><div className="button-row center"><button className="btn primary" onClick={()=>onTab('tasks')}>View all tasks</button><button className="btn secondary" onClick={()=>onTab('prospects')}>Add prospects</button></div></div>:
    <article className="focus-card">

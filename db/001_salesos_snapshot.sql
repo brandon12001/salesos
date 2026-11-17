@@ -13,3 +13,6 @@ create policy "insert own SalesOS snapshot" on public.salesos_snapshots
 create policy "update own SalesOS snapshot" on public.salesos_snapshots
  for update to authenticated using ((select auth.uid())=user_id) with check ((select auth.uid())=user_id);
 -- Do not use service_role keys in frontend apps.
+
+revoke all on public.salesos_snapshots from public, anon, authenticated;
+grant select, insert, update on public.salesos_snapshots to authenticated;

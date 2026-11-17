@@ -9,10 +9,11 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import"
+    "test": "npm run test:engine && npm run test:import && npm run test:autosave",
+    "test:autosave": "node tests/test_autosave.cjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0",
+    "@supabase/supabase-js": "2.119.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

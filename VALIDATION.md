@@ -53,3 +53,7 @@ Source remains in /workspace/salesos. A source-only ZIP is retained in /workspac
 ## Production follow-up
 
 Live testing found and fixed skip/snooze history incorrectly inflating completed-task totals and Lead Supply pace (commit b9e54d2). Regression tests, npm test, npm run build and GitHub CI passed. The automatically deployed fix was retested in the protected production browser. Existing data and history formats were preserved. Full evidence and limits: docs/LIVE_VERIFICATION.md.
+
+## Cloud autosave implementation
+
+An opt-in account autosave layer and hosted Supabase schema have been added. Existing engine/importer tests, new autosave regression tests and production build pass. Hosted SQL tests verified RLS isolation and atomic revision checks with rolled-back synthetic users/data. Security and performance advisors returned no findings. Production activation and user-authenticated browser checks remain pending. See docs/CLOUD_AUTOSAVE.md for exact coverage and limits.

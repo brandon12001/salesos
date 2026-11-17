@@ -16,6 +16,10 @@ Cloud developer commands (not laptop setup instructions): `npm ci`, `npm test`, 
 
 See CLOUD_DEPLOY.md for browser-only private GitHub → Vercel deployment.
 
+## Cloud autosave rollout
+
+Supabase autosave, account sign-in, offline outbox and conflict protection are implemented and tested at the controller/database level. **Production activation is pending the Supabase email redirect configuration.** See [docs/CLOUD_AUTOSAVE.md](docs/CLOUD_AUTOSAVE.md) for the exact activation steps and verification limits.
+
 ## Persistence and compatibility
 
 Browser localStorage remains the default under salesos.personal.v3, with v2/v3 JSON backup support. Optional Supabase provides manual snapshots, not live sync. Seven pipeline stages, eight independent readiness levels, statuses, FX discovery, CSV imports, scheduled follow-ups and XP remain in the existing application. No Salesforce, Teams or Outlook integrations.

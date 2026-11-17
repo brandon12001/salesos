@@ -17,3 +17,7 @@ The validated source has been pushed to main at https://github.com/brandon12001/
 Project ID: `prj_Pc5UqACsQJB0EqW3uc22OEHmbvbK`. Initial successful deployment: `dpl_GuUufxkBaopuMfFDoXwWrbZFhYui`. Vercel cloned the intended main commit, ran npm ci and the TypeScript/Vite production build successfully. GitHub validation passed before publication. Future pushes to main trigger Vercel builds. The two earlier failed ZIP-upload projects were left untouched.
 
 The protected production page received a desktop smoke/functional pass using a user-approved temporary testing link, without disabling protection. See docs/LIVE_VERIFICATION.md for observed workflows, the skip/snooze counting regression fixed in production, and remaining acceptance limits. Sign in with your authorised Vercel account to open the site.
+
+## Supabase autosave activation
+
+The database and autosave code are prepared; production remains browser-local until email redirects and the two public production variables are configured. See docs/CLOUD_AUTOSAVE.md before activation. Do not set production credentials on arbitrary preview branches. End-to-end email sign-in and two authenticated browsers still require verification.
