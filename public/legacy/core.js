@@ -48,6 +48,19 @@
   function addDays(s,n){let d=dateFrom(s);d.setDate(d.getDate()+n);return today(d)}
   function businessAdd(s,n){let d=dateFrom(s),left=Math.max(0,Math.round(n));if(!left){while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);return today(d)}while(left>0){d.setDate(d.getDate()+1);if(d.getDay()!==0&&d.getDay()!==6)left--}return today(d)}
   function daysBetween(later,earlier){return Math.round((dateFrom(later)-dateFrom(earlier))/86400000)}
+  // Calendar months rather than an approximate 90-day period. Clamp month ends:
+  // 30 November + three months is 28/29 February, not 2 March.
+  function addCalendarMonths(value,months){
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||'')))return '';
+    const [year,month,day]=value.split('-').map(Number);
+    const original=new Date(Date.UTC(year,month-1,day));
+    if(original.getUTCFullYear()!==year||original.getUTCMonth()!==month-1||original.getUTCDate()!==day)return '';
+    const target=new Date(Date.UTC(year,month-1+months,1));
+    const last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();
+    target.setUTCDate(Math.min(day,last));
+    return target.toISOString().slice(0,10);
+  }
+  function validPastDate(value){return Boolean(value&&addCalendarMonths(value,0)===value&&value<=today())}
   function phoneDial(raw){let v=String(raw||'').trim().replace(/[^\d+]/g,'');if(v.startsWith('00'))v='+'+v.slice(2);if(v.startsWith('0'))v='+44'+v.slice(1);if(/^44\d/.test(v))v='+'+v;return v}
   const companyKey = v => String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
   const contactKey = c => String(c?.name||'').trim().toLowerCase();
@@ -69,7 +82,7 @@
   }
   const defaultFX=()=>({provider:'',products:[],currentPricing:'',hedgePct:'',hedgeTenor:'',paymentTiming:'',budgetRate:'',notes:'',flows:[],updatedAt:''});
   function buildLead(data={}){
-    const l={id:data.id||uid(),company:String(data.company||'').trim(),sector:String(data.sector||'').trim(),stage:STAGES.includes(data.stage)?data.stage:'Prospecting',status:STATUSES.includes(data.status)?data.status:'Active',statusReason:data.statusReason||'',leadPool:data.leadPool==='reserve'?'reserve':'active',opportunityScore:Number.isFinite(data.opportunityScore)&&data.opportunityScore>=0&&data.opportunityScore<=100?data.opportunityScore:null,researchDate:data.researchDate||'',researchRationale:data.researchRationale||'',researchSources:data.researchSources||'',researchConfidence:data.researchConfidence||'',companyNumber:data.companyNumber||'',companyDomain:data.companyDomain||'',crmClearance:['cleared','hold'].includes(data.crmClearance)?data.crmClearance:'unknown',crmCheckedAt:data.crmCheckedAt||'',crmNote:data.crmNote||'',callObjective:data.callObjective||'',researchHypothesis:data.researchHypothesis||'',reservedAt:data.reservedAt||'',activatedAt:data.activatedAt||'',notes:String(data.notes||''),fit:clamp(data.fit??3,1,5),contacts:[],primaryContactId:null,readiness:data.readiness>=1&&data.readiness<=8?Math.round(data.readiness):null,readinessEvidence:data.readinessEvidence||'',readinessUpdatedAt:data.readinessUpdatedAt||'',lastMeaningfulAt:data.lastMeaningfulAt||'',barrier:data.barrier||'',nextMilestone:data.nextMilestone||'',lastProgressEvidence:data.lastProgressEvidence||'',lastProgressAt:data.lastProgressAt||'',fx:{...defaultFX(),...(data.fx||{})},sequenceState:data.sequenceState||'none',sequenceIndex:num(data.sequenceIndex,-1),reachedStages:Array.isArray(data.reachedStages)?[...new Set(data.reachedStages)]:['Prospecting'],awardedMilestones:Array.isArray(data.awardedMilestones)?data.awardedMilestones:[],createdAt:data.createdAt||new Date().toISOString(),estimatedRevenue:num(data.estimatedRevenue,0)};
+    const l={id:data.id||uid(),company:String(data.company||'').trim(),sector:String(data.sector||'').trim(),stage:STAGES.includes(data.stage)?data.stage:'Prospecting',status:STATUSES.includes(data.status)?data.status:'Active',statusReason:data.statusReason||'',leadPool:data.leadPool==='reserve'?'reserve':'active',opportunityScore:Number.isFinite(data.opportunityScore)&&data.opportunityScore>=0&&data.opportunityScore<=100?data.opportunityScore:null,researchDate:data.researchDate||'',researchRationale:data.researchRationale||'',researchSources:data.researchSources||'',researchConfidence:data.researchConfidence||'',companyNumber:data.companyNumber||'',companyDomain:data.companyDomain||'',crmClearance:['cleared','hold'].includes(data.crmClearance)?data.crmClearance:'unknown',crmCheckedAt:data.crmCheckedAt||'',crmNote:data.crmNote||'',crmLastActivityAt:data.crmLastActivityAt||'',crmReclaimStatus:['requested','declined','approved'].includes(data.crmReclaimStatus)?data.crmReclaimStatus:'waiting',crmReclaimRequestedAt:data.crmReclaimRequestedAt||'',crmReclaimDecisionAt:data.crmReclaimDecisionAt||'',crmReclaimNote:data.crmReclaimNote||'',callObjective:data.callObjective||'',researchHypothesis:data.researchHypothesis||'',reservedAt:data.reservedAt||'',activatedAt:data.activatedAt||'',notes:String(data.notes||''),fit:clamp(data.fit??3,1,5),contacts:[],primaryContactId:null,readiness:data.readiness>=1&&data.readiness<=8?Math.round(data.readiness):null,readinessEvidence:data.readinessEvidence||'',readinessUpdatedAt:data.readinessUpdatedAt||'',lastMeaningfulAt:data.lastMeaningfulAt||'',barrier:data.barrier||'',nextMilestone:data.nextMilestone||'',lastProgressEvidence:data.lastProgressEvidence||'',lastProgressAt:data.lastProgressAt||'',fx:{...defaultFX(),...(data.fx||{})},sequenceState:data.sequenceState||'none',sequenceIndex:num(data.sequenceIndex,-1),reachedStages:Array.isArray(data.reachedStages)?[...new Set(data.reachedStages)]:['Prospecting'],awardedMilestones:Array.isArray(data.awardedMilestones)?data.awardedMilestones:[],createdAt:data.createdAt||new Date().toISOString(),estimatedRevenue:num(data.estimatedRevenue,0)};
     if(!Array.isArray(l.fx.flows))l.fx.flows=[];
     l.contacts=Array.isArray(data.contacts)?data.contacts.map(buildContact):[];
     if(!l.contacts.length && (data.contact||data.mobile||data.phone||data.email||data.linkedin)) l.contacts.push(buildContact({name:data.contact,title:data.title,mobile:data.mobile,phone:data.phone,email:data.email,linkedin:data.linkedin,linkedinConnected:data.linkedinConnected}));
@@ -421,13 +434,85 @@
     const start=String(l.reservedAt||l.createdAt||'').slice(0,10)||today();
     return businessAdd(start,l.opportunityScore>=80?5:15);
   }
-  function reviewReserveCRM(s,id,clearance,note=''){
+  // CRM duplicates are banked, not discarded. A review date is only a prompt to
+  // recheck Salesforce and request reassignment; it never grants ownership.
+  function reclaimReviewDate(l){return addCalendarMonths(l?.crmLastActivityAt||'',3)}
+  function dupeQueue(s){
+    const rows=s.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance==='hold');
+    return rows.sort((a,b)=>{
+      const rank=l=>l.crmReclaimStatus==='requested'?0:l.crmReclaimStatus==='declined'?4:
+        !reclaimReviewDate(l)?3:reclaimReviewDate(l)<=today()?1:2;
+      return rank(a)-rank(b)||(reclaimReviewDate(a)||'9999-12-31').localeCompare(reclaimReviewDate(b)||'9999-12-31')
+        ||(Number.isFinite(b.opportunityScore)?b.opportunityScore:-1)-(Number.isFinite(a.opportunityScore)?a.opportunityScore:-1)
+        ||a.company.localeCompare(b.company);
+    });
+  }
+  function dupeState(l){
+    if(!l||l.leadPool!=='reserve'||l.crmClearance!=='hold')return 'not-held';
+    if(l.crmReclaimStatus==='requested')return 'requested';
+    if(l.crmReclaimStatus==='declined')return 'declined';
+    const due=reclaimReviewDate(l);
+    if(!due)return 'missing-activity';
+    return due<=today()?'review-due':'waiting';
+  }
+  function reviewReserveCRM(s,id,clearance,note='',options={}){
     const l=getLead(s,id);
     if(!l||l.leadPool!=='reserve')return {error:'Company is not in the reserve.'};
     if(!['cleared','hold','unknown'].includes(clearance))return {error:'Invalid Salesforce clearance status.'};
     if(!String(note).trim())return {error:'Record what you checked in Salesforce and the ownership result.'};
+    // A duplicate is released only by an explicitly logged approval of a
+    // submitted reclaim request, never by a generic "cleared" CRM update.
+    if(l.crmClearance==='hold'&&clearance==='cleared')return {error:'This company is in the Duplicate Queue. Record a submitted reclaim request and an approval first.'};
+    const activity=options.lastActivityAt||'';
+    if(activity&&!validPastDate(activity))return {error:'Last qualifying Salesforce activity must be a valid, non-future date.'};
+    if(clearance==='hold'&&activity){
+      if(l.crmLastActivityAt&&activity<l.crmLastActivityAt)return {error:'Do not replace a newer Salesforce activity date with an older one.'};
+      if(l.crmLastActivityAt!==activity&&l.crmReclaimStatus==='requested'){
+        l.crmReclaimStatus='waiting';l.crmReclaimRequestedAt='';l.crmReclaimDecisionAt='';
+        log(s,l,'CRM','Prior reclaim request requires review','Newer Salesforce activity recorded; old request no longer indicates ownership clearance.',0);
+      }
+      if(l.crmLastActivityAt!==activity&&l.crmReclaimStatus==='declined'){
+        l.crmReclaimStatus='waiting';l.crmReclaimDecisionAt='';
+      }
+      l.crmLastActivityAt=activity;
+    }
+    if(clearance==='unknown'){
+      if(l.crmClearance==='hold')return {error:'Keep held duplicates in the queue until an explicit ownership decision.'};
+      l.crmLastActivityAt='';l.crmReclaimStatus='waiting';
+    }
+    if(clearance==='hold'&&l.crmClearance!=='hold'){
+      l.crmReclaimStatus='waiting';l.crmReclaimRequestedAt='';l.crmReclaimDecisionAt='';
+    }
     l.crmClearance=clearance;l.crmCheckedAt=today();l.crmNote=String(note).trim();
-    log(s,l,'CRM','Salesforce clearance reviewed',clearance+': '+l.crmNote,0);
+    log(s,l,'CRM','Salesforce clearance reviewed',clearance+': '+l.crmNote+(activity?' · Last qualifying activity: '+activity:''),0);
+    return {ok:true};
+  }
+  function logReclaimRequest(s,id,note=''){
+    const l=getLead(s,id);
+    if(!l||l.leadPool!=='reserve'||l.crmClearance!=='hold')return {error:'Not a held reserve company.'};
+    if(l.crmReclaimStatus==='requested')return {error:'A reclaim request is already awaiting a decision.'};
+    if(l.crmReclaimStatus==='declined')return {error:'The prior reclaim was declined. Record an updated Salesforce review before another request.'};
+    const due=reclaimReviewDate(l);
+    if(!due)return {error:'Record the date of the last qualifying Salesforce activity first.'};
+    if(due>today())return {error:'The three-calendar-month review date has not arrived.'};
+    if(l.crmCheckedAt!==today())return {error:'Recheck Salesforce today and confirm no newer qualifying activity before logging a reclaim request.'};
+    if(!String(note).trim())return {error:'Record the request reference or how you submitted it.'};
+    l.crmReclaimStatus='requested';l.crmReclaimRequestedAt=new Date().toISOString();l.crmReclaimNote=String(note).trim();
+    log(s,l,'CRM','Reclaim request submitted','Manual Salesforce/manager request logged: '+l.crmReclaimNote,0);
+    return {ok:true};
+  }
+  function recordReclaimDecision(s,id,decision,note=''){
+    const l=getLead(s,id);
+    if(!l||l.leadPool!=='reserve'||l.crmClearance!=='hold'||l.crmReclaimStatus!=='requested')return {error:'No pending reclaim request for this company.'};
+    if(!['approved','declined'].includes(decision))return {error:'Record either approval or refusal.'};
+    if(!String(note).trim())return {error:'Record who confirmed the decision and the reference or reason.'};
+    l.crmReclaimStatus=decision;l.crmReclaimDecisionAt=new Date().toISOString();l.crmReclaimNote=String(note).trim();
+    if(decision==='approved'){
+      l.crmClearance='cleared';l.crmCheckedAt=today();l.crmNote='Reassignment approved: '+l.crmReclaimNote;
+    }else{
+      l.crmClearance='hold';l.crmNote='Reassignment declined: '+l.crmReclaimNote;
+    }
+    log(s,l,'CRM','Reclaim request '+decision,l.crmReclaimNote,0);
     return {ok:true};
   }
   function activateReserve(s,ids,options={}){
@@ -469,5 +554,5 @@
   }
   function normalize(v){if(v?.version===2)return migrateV2(v);if(!v||v.version!==3||!Array.isArray(v.leads))return null;let s=newState();s={...s,...v,version:3,settings:{...DEFAULT_SETTINGS,...v.settings},sequence:Array.isArray(v.sequence)&&v.sequence.length?v.sequence:copy(STEPS),leads:v.leads.map(buildLead),tasks:Array.isArray(v.tasks)?v.tasks:[],activities:Array.isArray(v.activities)?v.activities:[],readinessHistory:Array.isArray(v.readinessHistory)?v.readinessHistory:[],milestoneHistory:Array.isArray(v.milestoneHistory)?v.milestoneHistory:[],suppression:Array.isArray(v.suppression)?v.suppression:[]};return s}
   function checkInvariants(s){const errors=[];for(const l of s.leads){if(!STAGES.includes(l.stage))errors.push('Invalid pipeline stage');if(!STATUSES.includes(l.status))errors.push('Invalid outcome status');if(l.readiness!==null&&(!Number.isInteger(l.readiness)||l.readiness<1||l.readiness>8))errors.push('Invalid Buyer Readiness');if(l.leadPool==='reserve'&&s.tasks.some(t=>t.leadId===l.id&&t.status==='pending'))errors.push('Reserved prospect has pending sales tasks');if(l.status==='Take Me Off the List'&&pending(s).some(t=>t.leadId===l.id))errors.push('Suppressed lead has actionable tasks')}return errors}
-  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,reserveEligibility,reserveRank,reserveReviewDue,reviewReserveCRM,activateReserve,autoReplenishReserve,updateFX,migrateV2,normalize,checkInvariants};
+  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,reserveEligibility,reserveRank,reserveReviewDue,reclaimReviewDate,dupeQueue,dupeState,reviewReserveCRM,logReclaimRequest,recordReclaimDecision,activateReserve,autoReplenishReserve,updateFX,migrateV2,normalize,checkInvariants};
 });
