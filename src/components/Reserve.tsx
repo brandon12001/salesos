@@ -11,9 +11,11 @@ const settingsFrom=(s:State):ReserveSettings=>({
   reserveMinScore:s.settings.reserveMinScore??60,
   reserveActiveCap:s.settings.reserveActiveCap??150
 });
-export function LeadReserve({state,onActivate,onSettings,onImport}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void}){
+export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string)=>boolean}){
   const ranked=useMemo(()=>core.reserveRank(state) as Lead[],[state]);
   const [settings,setSettings]=useState<ReserveSettings>(()=>settingsFrom(state));
+  const [review,setReview]=useState<Lead|null>(null),[reviewStatus,setReviewStatus]=useState<'cleared'|'hold'>('cleared'),[reviewNote,setReviewNote]=useState(''),[acknowledged,setAcknowledged]=useState(false);
+  const openReview=(lead:Lead)=>{setReview(lead);setReviewStatus(lead.crmClearance==='hold'?'hold':'cleared');setReviewNote('');setAcknowledged(false)};
   useEffect(()=>{setSettings(settingsFrom(state))},[state.settings]);
   const threshold=state.settings.reserveMinScore??60;
   const eligible=ranked.filter(l=>!core.reserveEligibility(state,l,threshold));
@@ -37,7 +39,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport}:{state:State;
     </div>
     <section className="panel stack">
       <div className="section-between"><h2>Activate the best available prospects</h2><Badge tone="blue">{active} currently active</Badge></div>
-      <p className="hint">Scores determine cold-lead activation order. Existing conversations, meetings and promised callbacks remain prioritised in Focus Mode. Opted-out or uncontactable leads are excluded.</p>
+      <p className="hint">Scores determine cold-lead activation order after an explicit Salesforce ownership check. Existing conversations, meetings and promised callbacks remain prioritised in Focus Mode. Opted-out or uncontactable leads are excluded.</p>
       <div className="button-row"><button className="btn primary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,5).map(l=>l.id))}>Activate top 5</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,10).map(l=>l.id))}>Activate top 10</button><button className="btn quiet" onClick={onImport}>Upload refreshed research</button></div>
       <small>{supply.ready+supply.upcoming} tasks due in the configured {supply.days}-working-day supply window. No lead activates merely because it was imported unless you explicitly enable auto-replenishment below.</small>
     </section>
@@ -56,7 +58,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport}:{state:State;
     <section className="panel stack">
       <div className="section-between"><h2>Ranked research queue</h2><Badge>{ranked.length} companies</Badge></div>
       {ranked.length?<><div className="table-wrap"><table className="data-table">
-        <thead><tr><th>Company & evidence</th><th>Score</th><th>Research</th><th>Reserve review</th><th>Activation</th></tr></thead>
+        <thead><tr><th>Company & evidence</th><th>Score</th><th>Research</th><th>Reserve review</th><th>Salesforce / activation</th></tr></thead>
         <tbody>{ranked.slice(0,250).map(l=>{
           const reason=core.reserveEligibility(state,l,0) as string;
           const reviewDue=core.reserveReviewDue(l) as string;
@@ -67,12 +69,13 @@ export function LeadReserve({state,onActivate,onSettings,onImport}:{state:State;
             <td><Badge tone={l.opportunityScore===null?'muted':l.opportunityScore>=80?'green':l.opportunityScore>=60?'blue':'amber'}>{l.opportunityScore===null?'Unscored':l.opportunityScore+'/100'}</Badge></td>
             <td>{l.researchDate?day(l.researchDate):'Not researched'}<small>{l.researchConfidence||'Confidence not stated'}</small>{old&&<Badge tone="amber">Refresh research</Badge>}</td>
             <td>{day(reviewDue)} {due&&<Badge tone="amber">Review due</Badge>}</td>
-            <td>{reason?<small>{reason}</small>:<button className="btn secondary small" onClick={()=>onActivate([l.id])}>Activate</button>}</td>
+            <td><small>{l.crmClearance==='cleared'?'CRM cleared '+(l.crmCheckedAt||''):l.crmClearance==='hold'?'CRM ownership hold':'CRM check not recorded'}</small><div className="button-row">{!reason&&<button className="btn secondary small" onClick={()=>onActivate([l.id])}>Activate</button>}<button className="btn quiet small" onClick={()=>openReview(l)}>Record CRM check</button></div>{reason&&<small>{reason}</small>}</td>
           </tr>;
         })}</tbody>
       </table></div>{ranked.length>250&&<p className="hint">Showing the top 250 ranked records of {ranked.length}. Use a refreshed CSV to update older research in bulk.</p>}</>:
       <Empty title="No reserve leads yet" detail="Upload a CSV scored in ChatGPT. New companies will wait here rather than creating outreach tasks."/>}
-      <p className="hint">Priority review: 80+ within five working days; other reserve leads within 15 working days. Thirty-day-old research is flagged for reassessment, not silently rescored.</p>
+      <p className="hint">Priority review: 80+ within five working days; other reserve leads within 15 working days. Thirty-day-old research is flagged for reassessment, not silently rescored. Salesforce ownership checks must be manually verified and refreshed after 30 days.</p>
     </section>
+    {review&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setReview(null)}}><div className="dialog compact" role="dialog" aria-modal="true" aria-label="Record Salesforce ownership check"><div className="dialog-top"><div><span className="eyebrow">MANUAL CRM VERIFICATION</span><h2>Record Salesforce check</h2><small>{review.company}</small></div><button className="icon-btn" aria-label="Close" onClick={()=>setReview(null)}><Icon name="x"/></button></div><div className="dialog-content"><p className="hint">SalesOS cannot read Salesforce. Check ownership and contact/activity rules in Salesforce before marking this prospect available.</p><label className="field">Ownership result<select value={reviewStatus} onChange={e=>setReviewStatus(e.target.value as 'cleared'|'hold')}><option value="cleared">Cleared for outreach under current CRM rules</option><option value="hold">Hold / assigned / not available</option></select></label><label className="field">What did you verify?<textarea rows={3} value={reviewNote} onChange={e=>setReviewNote(e.target.value)} placeholder="Owner and recent activity checked; outcome and rationale"/></label><label className="check-row"><input type="checkbox" checked={acknowledged} onChange={e=>setAcknowledged(e.target.checked)}/> I checked Salesforce and am recording the result accurately</label></div><div className="dialog-footer"><button className="btn quiet" onClick={()=>setReview(null)}>Cancel</button><button className="btn primary" disabled={!acknowledged||!reviewNote.trim()} onClick={()=>{if(onReviewCRM(review.id,reviewStatus,reviewNote))setReview(null)}}>Save CRM check</button></div></div></div>}
   </div>;
 }
