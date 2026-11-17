@@ -21,7 +21,7 @@ function linkedinProfile(value:string):string{
   }catch{return ''}
 }
 const companyDomains=['companydomain','companywebsite','website','domain'];
-const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains,companyNumber:['companynumber','companieshousenumber','registrationnumber','companyregistrationnumber','crn'],score:['opportunityscore','fxopportunityscore','leadscore','priorityscore'],researchDate:['researchdate','scoredon','scoredate','lastresearched'],rationale:['researchrationale','scorereason','scoringrationale','researchreason','scorejustification'],sources:['researchsources','researchsource','sources','researchurls','sourcelinks'],confidence:['researchconfidence','scoreconfidence'],crmClearance:['crmclearance','salesforceclearance','salesforcestatus'],crmCheckedAt:['crmcheckeddate','salesforcecheckeddate','crmcheckedat'],crmNote:['crmnote','salesforcenote','crmownershipnote']};
+const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains,companyNumber:['companynumber','companieshousenumber','registrationnumber','companyregistrationnumber','crn'],score:['opportunityscore','fxopportunityscore','leadscore','priorityscore'],researchDate:['researchdate','scoredon','scoredate','lastresearched'],rationale:['researchrationale','scorereason','scoringrationale','researchreason','scorejustification'],sources:['researchsources','researchsource','sources','researchurls','sourcelinks'],confidence:['researchconfidence','scoreconfidence'],crmClearance:['crmclearance','salesforceclearance','salesforcestatus'],crmCheckedAt:['crmcheckeddate','salesforcecheckeddate','crmcheckedat'],crmNote:['crmnote','salesforcenote','crmownershipnote'],callObjective:['callobjective','originalcallobjective'],researchHypothesis:['researchhypothesis','originalresearchhypothesis']};
 function researchDateValid(value:string):boolean{
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
   const date=new Date(value+'T12:00:00Z');
@@ -52,6 +52,7 @@ export function importLusha(state:State,text:string):ImportStats{
     const domain=pick(row,'domain').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0].toLowerCase();
     const companyNumber=pick(row,'companyNumber').replace(/\s/g,'').toUpperCase();
     const researched=researchRow(row,line,pick);
+    const callObjective=pick(row,'callObjective'),researchHypothesis=pick(row,'researchHypothesis');
     const clearanceRaw=pick(row,'crmClearance').toLowerCase();
     const crmClearance=clearanceRaw==='cleared'||clearanceRaw==='clear'?'cleared':clearanceRaw==='hold'||clearanceRaw==='assigned'?'hold':'unknown';
     if(clearanceRaw&&!['cleared','clear','hold','assigned','unknown'].includes(clearanceRaw))throw new Error('CSV row '+line+': CRM Clearance must be Cleared, Hold, or Unknown.');
@@ -79,6 +80,8 @@ export function importLusha(state:State,text:string):ImportStats{
     if(existing){
       if(companyNumber&&!existing.companyNumber)existing.companyNumber=companyNumber;
       if(domain&&!existing.companyDomain)existing.companyDomain=domain;
+      if(callObjective&&!existing.callObjective)existing.callObjective=callObjective;
+      if(researchHypothesis&&!existing.researchHypothesis)existing.researchHypothesis=researchHypothesis;
       if(crmClearance!=='unknown'&&(!existing.crmCheckedAt||crmCheckedAt>=existing.crmCheckedAt)){
         // An old CSV cannot release an existing ownership hold.
         if(!(existing.crmClearance==='hold'&&crmClearance==='cleared'&&crmCheckedAt<=existing.crmCheckedAt)){
@@ -116,7 +119,7 @@ export function importLusha(state:State,text:string):ImportStats{
       continue;
     }
     // Level 1 is a starting cold-prospect assumption, not demonstrated knowledge of the buyer.
-    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,companyNumber,companyDomain:domain,crmClearance,crmCheckedAt:crmClearance==='unknown'?'':crmCheckedAt,crmNote:crmClearance==='unknown'?'':crmNote,leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:researched?.score??null,researchDate:researched?.date||'',researchRationale:researched?.rationale||'',researchSources:researched?.sources||'',researchConfidence:researched?.confidence||'',readiness:1,readinessEvidence:'Default assumption from CSV import',nextMilestone:core.NEXT_MILESTONES[0],notes:'Source: researched CSV / Lusha'});
+    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,companyNumber,companyDomain:domain,crmClearance,crmCheckedAt:crmClearance==='unknown'?'':crmCheckedAt,crmNote:crmClearance==='unknown'?'':crmNote,callObjective,researchHypothesis,leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:researched?.score??null,researchDate:researched?.date||'',researchRationale:researched?.rationale||'',researchSources:researched?.sources||'',researchConfidence:researched?.confidence||'',readiness:1,readinessEvidence:'Default assumption from CSV import',nextMilestone:core.NEXT_MILESTONES[0],notes:'Source: researched CSV / Lusha'});
     if(lead&&!(lead as {duplicate?:Lead}).duplicate){report.created++;if(researched)report.scored++;else report.unscored++;if(crmClearance==='cleared')report.crmCleared++;if(crmClearance==='hold')report.crmHeld++}else report.duplicates++;
   }
   report.warnings.push('New companies enter the lead reserve with no outreach tasks. Existing Buyer Readiness, deal history and opt-outs are preserved. Imported numbers are unverified.');
