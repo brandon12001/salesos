@@ -98,6 +98,28 @@ try{
   assert.throws(()=>importLusha(structuredClone(researchedState),
     header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','65',date,'Overseas customers','https://research.example','High','Unknown','',''].join(',')+'\n'+
     ['Another Co Ltd','00004444','Another Person','07700900116','95',date,'Different inconsistent score','https://research.example','High','Unknown','',''].join(',')+'\n'),/conflicting research scores/i);
+
+  const heldCSV=[header+',CRM Last Activity Date',
+    ['CSV Banked Recruitment Ltd','00110099','Alex Example','07700900888','88',date,'International offices','https://research.example','Medium','Hold',date,'Owned by another rep',prior].join(','),''].join(String.fromCharCode(10));
+  const holdState=core.newState();
+  const bankResult=importLusha(holdState,heldCSV);
+  assert.equal(bankResult.crmHeld,1);
+  const banked=holdState.leads[0];
+  assert.equal(banked.crmClearance,'hold');
+  assert.equal(banked.crmLastActivityAt,prior);
+  assert.equal(core.dupeQueue(holdState).length,1);
+  const fakeRelease=[header+',CRM Last Activity Date',
+    ['CSV Banked Recruitment Ltd','00110099','Alex Example','07700900888','88',date,'International offices','https://research.example','Medium','Cleared',date,'CSV says available',''].join(','),''].join(String.fromCharCode(10));
+  importLusha(holdState,fakeRelease);
+  assert.equal(banked.crmClearance,'hold','importing a cleared CSV can never bypass the reclaim workflow');
+  assert.throws(()=>importLusha(structuredClone(holdState),
+    [header+',CRM Last Activity Date',['Invalid Activity Date Ltd','00110100','Alex','07700900100','78',date,'Intl','https://research.example','Medium','Hold',date,'Assigned','2027-01-01'].join(','),''].join(String.fromCharCode(10))),/CRM Last Activity Date/);
+  const later=core.today();
+  const updatedActivity=core.addCalendarMonths(later,-1);
+  importLusha(holdState,[header+',CRM Last Activity Date',
+    ['CSV Banked Recruitment Ltd','00110099','Alex Example','07700900888','88',date,'International offices','https://research.example','Medium','Hold',later,'Newer activity recorded',updatedActivity].join(','),''].join(String.fromCharCode(10)));
+  assert.equal(banked.crmLastActivityAt,updatedActivity);
+  assert.equal(banked.crmClearance,'hold');
   assert.deepEqual(Array.from(core.checkInvariants(researchedState)),[]);
   assert.equal(core.checkInvariants(profileState).length,0);
   assert.equal(core.checkInvariants(state).length,0);
