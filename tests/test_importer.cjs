@@ -40,6 +40,60 @@ try{
   const anotherProfile='Company Name,Full Name,LinkedIn URL\nProfile Example Ltd,Jamie Morgan,https://linkedin.com/in/jamie-morgan-unique\n';
   importLusha(profileState,anotherProfile);
   assert.equal(profileState.leads[0].contacts.length,2,'distinct LinkedIn identity stays separate');
+  // Researched CSV: preserve the score as a company attribute, with proof/date,
+  // keep new companies inactive, and preserve leading zeros in company numbers.
+  const date=core.today(),prior=core.addDays(date,-1);
+  const header='Company Name,Company Number,Full Name,Mobile Phone,Opportunity Score,Research Date,Research Rationale,Research Sources,Research Confidence,CRM Clearance,CRM Checked Date,CRM Note';
+  const scored=header+'\n'+
+    ['Researched Talent Ltd','00001234','Alex Example','07700900111','91',prior,'Cross-border contracting evidenced','https://research.example','Medium','Cleared',date,'Checked CRM owner and activity'].join(',')+'\n'+
+    ['Researched Talent Ltd','00001234','Jules Example','07700900112','91',prior,'Cross-border contracting evidenced','https://research.example','Medium','Cleared',date,'Checked CRM owner and activity'].join(',')+'\n'+
+    ['Unresearched Machinery Ltd','00005678','Morgan Example','07700900113','','','','','','Unknown','',''].join(',')+'\n';
+  const researchedState=core.newState();
+  const scoredReport=importLusha(researchedState,scored);
+  assert.equal(scoredReport.created,2);
+  assert.equal(scoredReport.scored,1);
+  assert.equal(scoredReport.unscored,1);
+  assert.equal(scoredReport.crmCleared,1);
+  assert.equal(core.pending(researchedState).length,0);
+  const talent=researchedState.leads.find(l=>l.company==='Researched Talent Ltd');
+  assert.equal(talent.companyNumber,'00001234');
+  assert.equal(talent.contacts.length,2);
+  assert.equal(talent.opportunityScore,91);
+  assert.equal(talent.researchDate,prior);
+  assert.equal(talent.leadPool,'reserve');
+  assert.equal(talent.crmClearance,'cleared');
+  assert.equal(core.reserveEligibility(researchedState,talent),'');
+  const machinery=researchedState.leads.find(l=>l.company==='Unresearched Machinery Ltd');
+  assert.equal(machinery.opportunityScore,null);
+  assert.match(core.reserveEligibility(researchedState,machinery),/score/i);
+  core.setReadiness(researchedState,talent,4,'Buyer mentioned actual currency costs');
+  talent.notes='Original discovery notes';
+  const researchUpdate=header+'\n'+['Renamed Talent Holdings Ltd','00001234','Alex Example','07700900111','97',date,'More direct FX evidence discovered','https://new-research.example','High','Unknown','',''].join(',')+'\n';
+  const refreshed=importLusha(researchedState,researchUpdate);
+  assert.equal(refreshed.created,0,'same company number must identify the existing legal entity');
+  assert.equal(researchedState.leads.length,2);
+  assert.equal(talent.company,'Researched Talent Ltd','do not overwrite original company name from alias');
+  assert.equal(talent.opportunityScore,97);
+  assert.equal(talent.researchDate,date);
+  assert.equal(talent.readiness,4);
+  assert.equal(talent.notes,'Original discovery notes');
+  assert.equal(talent.crmClearance,'cleared','omitted clearance must not downgrade verified status');
+  importLusha(researchedState,scored);
+  assert.equal(talent.opportunityScore,97,'older research must not overwrite newer research');
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Researched Talent Ltd','99999999','New Person','07700900114','85',date,'Foreign operations','https://research.example','High','Unknown','',''].join(',')+'\n'),/conflicting company registration/i);
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','110',date,'Overseas customers','https://research.example','High','Unknown','',''].join(',')+'\n'),/between 0 and 100/);
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','65',date,'','https://research.example','High','Unknown','',''].join(',')+'\n'),/Research Rationale/);
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','65','2030-01-01','Overseas customers','https://research.example','High','Unknown','',''].join(',')+'\n'),/Research Date/);
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','65',date,'Overseas customers','https://research.example','High','Cleared','',''].join(',')+'\n'),/CRM Checked Date/);
+  assert.throws(()=>importLusha(structuredClone(researchedState),
+    header+'\n'+['Another Co Ltd','00004444','New Person','07700900115','65',date,'Overseas customers','https://research.example','High','Unknown','',''].join(',')+'\n'+
+    ['Another Co Ltd','00004444','Another Person','07700900116','95',date,'Different inconsistent score','https://research.example','High','Unknown','',''].join(',')+'\n'),/conflicting research scores/i);
+  assert.deepEqual(Array.from(core.checkInvariants(researchedState)),[]);
   assert.equal(core.checkInvariants(profileState).length,0);
   assert.equal(core.checkInvariants(state).length,0);
   console.log('IMPORT PASS: Lusha CSV, company/contact merges, initial Unaware, preserved readiness and opt-outs');
