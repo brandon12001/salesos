@@ -241,16 +241,17 @@
     const l=getLead(s,t?.leadId);if(!l||!t||t.status!=='pending')return {error:'Task no longer pending.'};
     let c=getContact(l,opts.contactId||t.contactId)||preferredContact(l,'call')||l.contacts[0]||null;
     const outcome=String(opts.outcome||'no_answer');
+    const readinessOutcome=['connected','callback','meeting_booked'].includes(outcome);
     if(outcome==='callback'&&!opts.callbackDate)return {error:'Choose the promised callback date.'};
     if(['negative_nurture','disqualified','closed_lost','optout'].includes(outcome)&&!String(opts.reason||'').trim())return {error:'Please record the reason.'};
-    if(opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness&&!String(opts.evidence||'').trim())return {error:'Readiness changes need supporting evidence.'};
+    if(readinessOutcome&&opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness&&!String(opts.evidence||'').trim())return {error:'Readiness changes need supporting evidence.'};
     const names={no_answer:'No answer',gatekeeper:'Gatekeeper',connected:'Meaningful conversation',callback:'Callback requested',meeting_booked:'Meeting booked',wrong_person:'Wrong person / not responsible',bad_number:'Bad or invalid number',left_company:'Contact left company',negative_nurture:'Negative nurture',disqualified:'Disqualified',closed_lost:'Closed lost',optout:'Take Me Off the List'};
     const connected=['connected','callback','meeting_booked','negative_nurture','closed_lost','disqualified'].includes(outcome);
     const xp=outcome==='meeting_booked'?20:connected?15:outcome==='no_answer'||outcome==='gatekeeper'?2:0;
     markCompleted(s,t,'Call',names[outcome]||outcome,opts.notes||'',xp,{durationMins:clamp(opts.minutes??0,0,240)});
     if(connected){l.lastMeaningfulAt=new Date().toISOString();if(c)c.lastMeaningfulAt=l.lastMeaningfulAt}
     if(connected&&opts.decisionMakerConfirmed&&c){c.roleStatus='decision_maker';const milestoneXP=reward(s,l,'decision-maker-engaged',40,'Decision-maker engagement confirmed during a call');if(milestoneXP)log(s,l,'Milestone','Decision-maker engaged',opts.notes||'Confirmed decision-maker',milestoneXP)}
-    if(opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness){setReadiness(s,l,Number(opts.readiness),opts.evidence,{barrier:opts.barrier,nextMilestone:opts.nextMilestone})}
+    if(readinessOutcome&&opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness){setReadiness(s,l,Number(opts.readiness),opts.evidence,{barrier:opts.barrier,nextMilestone:opts.nextMilestone})}
     else if(connected){if(opts.barrier!==undefined)l.barrier=String(opts.barrier||'');if(opts.nextMilestone)l.nextMilestone=String(opts.nextMilestone)}
     if(outcome==='no_answer'||outcome==='gatekeeper'){
       if(t.origin==='sequence')nextSequence(s,l,t);
@@ -361,7 +362,8 @@
   }
   function isEligibleTask(s,t){if(t.status!=='pending')return false;if(!t.leadId)return true;
     const l=getLead(s,t.leadId);if(!l||l.leadPool==='reserve'||isSuppressed(s,l))return false;
-    if(l.status==='Negative Nurture')return t.type==='review'||t.isCommitment;if(!active(l))return false;
+    if(l.status==='Negative Nurture'){if(t.type!=='review'&&!t.isCommitment)return false}
+    else if(!active(l))return false;
     let c=t.contactId?getContact(l,t.contactId):null;
     if(c&&(isSuppressed(s,l,c)||c.active===false||c.roleStatus==='left_company'||(c.roleStatus==='not_responsible'&&['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type))))return false;
     if(['call','callback'].includes(t.type)&&!(c?anyPhone(c):preferredContact(l,'call')))return false;
@@ -383,8 +385,13 @@
     return Math.round(age*1.3+meaningful*.25+money+fit+readiness+quality+barrierBonus+(t.isCommitment?30:0));
   }
   function pending(s){return s.tasks.filter(t=>t.status==='pending'&&isEligibleTask(s,t))}
-  function due(s,now=new Date()){return pending(s).filter(t=>isDue(t,now)).sort((a,b)=>taskTier(b)-taskTier(a)||taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||''))}
-  function nextTask(s,options={}){const d=due(s);if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
+  function due(s,now=new Date()){return pending(s).filter(t=>isDue(t,now)).sort((a,b)=>{
+    const tier=taskTier(b)-taskTier(a);if(tier)return tier;
+    // Among hard commitments, honour the oldest due schedule before sales fit.
+    if(taskTier(a)===5){const schedule=a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59');if(schedule)return schedule}
+    return taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||'');
+  })}
+  function nextTask(s,options={}){const d=due(s);if(d[0]&&taskTier(d[0])===5)return d[0];if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
   function xpStats(s){let total=s.activities.reduce((sum,a)=>sum+num(a.xp),0);return {total,level:Math.floor(total/1000)+1,progress:total%1000}}
   // Rescheduling is audit history, not completed work. Preserve old backup formats.
   const isCompletionActivity=a=>a.taskId&&!['Snoozed','Skipped to next working day'].includes(a.outcome);

@@ -19,7 +19,7 @@ begin
  begin
   perform public.salesos_save_workspace(doc||'{"test":"stale overwrite"}',1);
   raise exception 'Stale write was accepted';
- exception when serialization_failure then null;
+ exception when serialization_failure or sqlstate 'PT409' then null;
  end;
  if (select payload->>'test' from public.salesos_workspaces where user_id=auth.uid())<>'second' then raise exception 'Stale data replaced newer data'; end if;
  insert into public.salesos_snapshots(user_id,payload) values(auth.uid(),doc);

@@ -1,5 +1,12 @@
 # SalesOS — current Codex handoff (17 November 2026)
 
+## Reliability phase — current instructions
+
+The user has frozen their ten real prospects for testing and prohibited new production merges/deployments without approval. Reliability work is isolated on `reliability/daily-execution`, using fictional records, localhost Auth/Postgres/REST/mail containers and separate browser contexts. Production received only read-only metadata/advisor checks; revision 3 and its document fingerprint matched before and after the audit. Do not reuse the earlier production-intake authorisation for testing or deployment.
+
+See [the reliability audit](PRODUCTION_RELIABILITY_2026-11-17.md) for fixes, test evidence, approval-dependent client/SQL rollout and manual acceptance. The user chose to verify hosted sign-in separately. A local full-stack pass is not proof of physical-device or hosted Auth configuration. The pending SQL conflict migration has NOT been applied to production.
+
+
 ## Current release and first batch — supersedes all status below
 
 - PR #2 was authorised for release in the user conversation and merged as `73923dc8e307f9863103a0226c347b750d9088d9`. Vercel production deployment `dpl_8YijqDP1bgdRM1qCMzHV5GFEwXGR` reached READY. Canonical app: https://salesos-up-next7.vercel.app/ . Deployment protection remains enabled. Do not treat this PR as draft or unmerged.

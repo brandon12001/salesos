@@ -71,3 +71,44 @@ const restoredDeferred=C.normalize(JSON.parse(JSON.stringify(deferred)));
 assert.equal(C.activityToday(restoredDeferred).tasks,1,'Existing backups with deferral history use corrected counts');
 assert.equal(C.leadSupply(restoredDeferred).pace,1);
 console.log('METRICS PASS: skip/snooze excluded from completions and task pace, including restored history');
+
+// Hard schedules outrank commercial scores, including while call block is on.
+const scheduled=C.newState();
+const earlierLead=C.createLead(scheduled,{company:'Fictional Earlier Promise',contact:'Early',mobile:'07700900011',fit:1});
+const laterLead=C.createLead(scheduled,{company:'Fictional Later Promise',contact:'Late',mobile:'07700900012',fit:5,readiness:8});
+const earlierPromise=C.scheduleCallback(scheduled,earlierLead,C.addDays(C.today(),-2),'09:00','Earlier promise');
+const laterPromise=C.scheduleCallback(scheduled,laterLead,C.addDays(C.today(),-1),'09:00','Later promise');
+assert.equal(C.nextTask(scheduled).id,earlierPromise.id,'an overdue promise must outrank a higher scoring later callback');
+earlierPromise.status='completed';laterPromise.status='completed';
+const legacyMeeting=C.addTask(scheduled,earlierLead,'meeting','Legacy scheduled meeting',C.addDays(C.today(),-1),{dueTime:'09:00'});
+assert.equal(C.nextTask(scheduled,{callBlock:true}).id,legacyMeeting.id,'call block must not hide a due meeting even in older backups');
+
+// Nurture commitments still obey contact opt-outs, invalid phones and inactivity.
+const nurtureSafety=C.newState();
+const nurtureLead=C.createLead(nurtureSafety,{company:'Fictional Nurture Promise',contact:'Nurture CFO',mobile:'07700900013'});
+const nurturePromise=C.scheduleCallback(nurtureSafety,nurtureLead,C.today(),'','Promised review');
+C.changeStatus(nurtureSafety,nurtureLead,'Negative Nurture','Later timing');
+assert.equal(C.isEligibleTask(nurtureSafety,nurturePromise),true);
+nurtureLead.contacts[0].optedOut=true;
+assert.equal(C.isEligibleTask(nurtureSafety,nurturePromise),false,'contact opt-out must suppress a nurture callback');
+nurtureLead.contacts[0].optedOut=false;nurtureLead.contacts[0].active=false;
+assert.equal(C.isEligibleTask(nurtureSafety,nurturePromise),false,'inactive nurture contact cannot be called');
+nurtureLead.contacts[0].active=true;nurtureLead.contacts[0].methods[0].status='invalid';
+assert.equal(C.isEligibleTask(nurtureSafety,nurturePromise),false,'nurture callback needs a usable number');
+console.log('RELIABILITY PASS: hard schedules, call-block meetings and nurture-contact safety');
+
+const repeatOutcome=C.newState();
+const repeatedLead=C.createLead(repeatOutcome,{company:'Fictional Double Outcome',contact:'CFO',mobile:'07700900014',email:'test@fictional.example'});
+const repeatedCall=C.nextTask(repeatOutcome);
+assert.ok(C.logCall(repeatOutcome,repeatedCall,{outcome:'no_answer'}).ok);
+const afterFirstOutcome=JSON.stringify(repeatOutcome);
+assert.ok(C.logCall(repeatOutcome,repeatedCall,{outcome:'no_answer'}).error);
+assert.equal(JSON.stringify(repeatOutcome),afterFirstOutcome,'replayed outcome must not duplicate activity, tasks or XP');
+
+// Switching a conversation dialog to a non-conversation outcome must not apply
+// hidden readiness fields left over from the earlier selection.
+for(const outcome of ['no_answer','gatekeeper','wrong_person','bad_number','left_company']){
+ const staleDialog=C.newState();const staleLead=C.createLead(staleDialog,{company:'Fictional Hidden Readiness '+outcome,contact:'CFO',mobile:'07700900015',readiness:1});
+ C.logCall(staleDialog,C.nextTask(staleDialog),{outcome,readiness:5,evidence:'Stale hidden conversation evidence'});
+ assert.equal(staleLead.readiness,1,outcome+' is not buyer progression');assert.equal(staleDialog.readinessHistory.length,0);
+}
