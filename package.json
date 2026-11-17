@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import && npm run test:autosave",
+    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave",
+    "test:reserve": "node tests/test_reserve.cjs",
     "test:autosave": "node tests/test_autosave.cjs"
   },
   "dependencies": {

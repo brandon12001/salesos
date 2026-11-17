@@ -1,4 +1,7 @@
-# Engineering handoff — initial action plan and known state
+# Engineering handoff — historical initial plan
+
+> **CURRENT STATUS (17 November 2026):** The original first-build failures, unconfigured cloud settings and unverified sign-in described below are historical, not current. Read [the current Codex handoff](CODEX_STATUS_2026-11-17.md) before planning or changing code. GitHub CI and Vercel preview build pass on draft PR #2; a real Supabase account sign-in and creation of an empty cloud workspace succeeded, but persisted prospect/cross-browser tests remain incomplete. The scored Lead Reserve and Duplicate Queue remain **unmerged**.
+
 
 ## What the user is asking Codex to do
 

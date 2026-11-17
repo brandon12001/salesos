@@ -1,12 +1,12 @@
 # SalesOS — instructions for Codex
 
-**Read this file first, then `docs/PRODUCT_SPEC.md`, `docs/ENGINE_RULES.md`, `docs/ENGINEERING_HANDOFF.md` and `docs/ACCEPTANCE_TESTS.md` before changing functionality.** This is the source repository for a one-person, browser-only FX sales execution app, not a generic CRM starter project.
+**Read this file first, then `docs/CODEX_STATUS_2026-11-17.md`, `docs/PRODUCT_SPEC.md`, `docs/ENGINE_RULES.md`, `docs/ENGINEERING_HANDOFF.md` and `docs/ACCEPTANCE_TESTS.md` before changing functionality.** This is the source repository for a one-person, browser-only FX sales execution app, not a generic CRM starter project.
 
 ## Non-negotiable product vision
 
 The priority order is: **(1) move viable prospects towards becoming customers; (2) increase meaningful sales activity and consistency; (3) improve organisation, eliminate missed follow-ups.** Every task should answer: who, why now, what is known, what to achieve, and what counts as meaningful progress. The default experience is one actionable task at a time in distraction-free Focus Mode, not a busy CRM dashboard.
 
-## First engineering task — get a verified cloud build
+## Historical first engineering task — already addressed in CI; see current handoff
 
 1. Inspect the existing source and run `npm install`, `npm run build`, and `npm test` inside your own **cloud** development environment. Fix any build/runtime failures. Do not ask the user to install software, open a terminal on their work laptop, or run a local server.
 2. Two Vercel Drop deployments failed with TypeScript `TS18047` in `src/components/Settings.tsx` (`cloud` possibly `null`). The prior fixes were incomplete. This handoff has changed the remaining `cloud.auth.signOut()` callback to `cloud?.auth.signOut()` as a likely correction, **but there has not been a verified production build yet**. Don't assume this is the only error. Treat a passing real `npm run build` as the initial checkpoint.
@@ -39,6 +39,10 @@ The priority order is: **(1) move viable prospects towards becoming customers; (
 - **Preserve separate statuses:** Active, Negative Nurture, Disqualified, Closed Lost, Take Me Off the List. These are not readiness levels or pipeline stages. Opt-out suppresses outreach at the proper contact/company scope, including after re-import.
 - **Lusha CSV imports:** Every genuinely NEW imported prospect starts at **readiness Level 1 Unaware** as a practical default assumption. Existing confirmed readiness, history, contacts, statuses and opt-outs MUST NOT reset on duplicates.
 - Protect existing promised callbacks and commitments when sequences, stages and readiness change; avoid duplicate generated tasks and duplicate milestone XP.
+
+## Current lead intake decision — research outside SalesOS
+
+The user has explicitly chosen to score prospects in ChatGPT and upload an enriched contact CSV, rather than paying for in-app AI/company research. New CSV companies enter a ranked **lead reserve** with no automatic outreach tasks by default. A distinct Opportunity Score (0–100, dated and evidenced) ranks reserve activation and is **not** Buyer Readiness, FX revenue, pipeline stage or guaranteed suitability. Users can activate scored prospects in batches; optional auto-replenishment is OFF by default and must respect limits, commitments, opt-outs and CRM clearance. Salesforce integration remains forbidden, so a recent **manually recorded Salesforce ownership/activity check** is required before any reserve activation. Keep existing prospect history, stages, readiness and suppression on reimport. See `docs/SCORED_RESERVE.md` and `tests/test_reserve.cjs`. Salesforce-owned duplicates stay banked in a dedicated **Dupe Queue**. Three calendar months after the last *known qualifying* Salesforce activity is a prompt to review and request reassignment, never automatic ownership. Unknown activity dates must remain unknown, and a held company can only be released after a logged request and approved decision.
 
 ## Product management rule
 
