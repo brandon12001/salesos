@@ -63,7 +63,7 @@ try{
   assert.equal(talent.leadPool,'reserve');
   assert.equal(talent.crmClearance,'cleared');
   const briefState=core.newState();
-  const brief=importLusha(briefState,'Company Name,Full Name,Mobile Phone,Call Objective,Research Hypothesis\\nFictional Signal Ltd,Alex,07700900100,Confirm provider and annual FX flows,International activity could create cross-border payments\\n'.replaceAll('\\n','\\n'));
+  const brief=importLusha(briefState,['Company Name,Full Name,Mobile Phone,Call Objective,Research Hypothesis','Fictional Signal Ltd,Alex,07700900100,Confirm provider and annual FX flows,International activity could create cross-border payments',''].join(String.fromCharCode(10)));
   assert.equal(brief.created,1);
   assert.equal(briefState.leads[0].callObjective,'Confirm provider and annual FX flows');
   assert.equal(briefState.leads[0].researchHypothesis,'International activity could create cross-border payments');
