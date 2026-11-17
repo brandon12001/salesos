@@ -4,9 +4,9 @@
 
 Supabase project **SalesOS** (`yzluyxqbohzkmctgvtwf`) exists in London (`eu-west-2`) in brandon12001's Org. The schema and row-security checks have been applied and verified. The application implementation and automated tests are included in this repository.
 
-**Cloud autosave is not enabled on the production website yet.** Vercel has no Supabase variables. This intentionally keeps the current browser-local app usable until email sign-in redirects are configured. Dashboard sign-in in the cloud browser was declined; no further authentication attempt was made.
+**Update after initial rollout:** The user confirmed configuring Authentication URLs, and live Supabase queries on 17 November 2026 showed one successfully signed-in user and a cloud workspace saved at 11:33:39 UTC (revision 1, zero leads/tasks at that check). Public Vercel Supabase configuration is present, and production is deployed. Thus the earlier statements that Supabase was unconfigured or that sign-in had never succeeded are historical. **Full end-to-end persistence is still NOT verified**: create/reload a fictional prospect, second-browser/device recovery, conflicts, and offline recovery remain unchecked. See [current Codex handoff](CODEX_STATUS_2026-11-17.md).
 
-## Complete activation
+## Initial activation checklist (configuration/sign-in now performed; remaining verification below)
 
 1. In the Supabase dashboard, open SalesOS → Authentication → URL Configuration.
 2. Set Site URL to `https://salesos-up-next7.vercel.app/` and save. Add that same exact URL under Redirect URLs. Use this canonical SalesOS URL consistently; other Vercel aliases have separate browser storage and require their own redirect allow-list entries if used.
@@ -42,8 +42,8 @@ Schema changes were applied through Supabase's managed migration tool after insp
 - New autosave tests cover coalescing, edits during writes, offline restart/reconnect, lost responses, JSONB object-key order, two competing sessions, durable conflict recovery, explicit migration, preservation of extension fields, account cache isolation, corrupt cache handling, quota failures, unknown-cloud offline startup and sign-out races.
 - `db/verify_cloud_autosave.sql` passed against the hosted database with synthetic identities inside a rolled-back transaction: own-account saves, idempotent retry, stale-write rejection, cross-account read/update/insert/ownership reassignment rejection, anonymous read/save rejection and manual-snapshot isolation. No synthetic user or data rows survived.
 - Supabase security and performance advisors returned no findings after schema application.
-- A cloud-configured production build rendered the sign-in screen in the cloud browser, preserved the legacy browser-data backup option and blocked a blank-email submission without sending mail. No application-origin errors were observed. Actual authenticated browser tests remain pending.
+- A cloud-configured production build rendered the sign-in screen in the cloud browser, preserved the legacy browser-data backup option and blocked a blank-email submission without sending mail. No application-origin errors were observed. An authenticated sign-in and empty-workspace creation succeeded on 17 November 2026; tests with actual persisted records and multi-browser recovery remain pending.
 
 ## Still to verify before claiming end-to-end cloud persistence
 
-Actual email sign-in delivery/callback, two authenticated browser/device sessions, browser lock behaviour with a signed-in account, UI migration/conflict recovery, offline recovery in an actual network interruption and real-sized approved imports. Unit/SQL tests cover the core logic but are not a substitute for these user-authenticated checks. The previous local-mode production smoke pass remains recorded in docs/LIVE_VERIFICATION.md.
+Email sign-in delivery/callback and initial account-workspace creation were observed. **Still unverified:** saving/reloading an actual fictional prospect, two authenticated browser/device sessions, browser lock behaviour with a signed-in account, UI migration/conflict recovery, offline recovery in an actual network interruption and real-sized approved imports. Unit/SQL tests cover the core logic but are not a substitute for these user-authenticated checks. The previous local-mode production smoke pass remains recorded in docs/LIVE_VERIFICATION.md.
