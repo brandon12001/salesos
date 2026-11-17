@@ -19,7 +19,7 @@
     {type:'linkedin_message',title:'LinkedIn follow-up if connected',delay:3},
     {type:'call',title:'Final call in this sequence',delay:3}
   ];
-  const DEFAULT_SETTINGS = {callGoal:200, taskGoal:65,meetingGoal:3,supplyDays:5,dailyCapacity:65,reviewAfterSequence:14,stalledAfterDays:14,defaultMarginBps:40,annualTarget:150000};
+  const DEFAULT_SETTINGS = {callGoal:200, taskGoal:65,meetingGoal:3,supplyDays:5,dailyCapacity:65,reviewAfterSequence:14,stalledAfterDays:14,defaultMarginBps:40,annualTarget:150000,reserveAutoActivate:0,reserveSupplyFloor:20,reserveActivationBatch:5,reserveMinScore:60,reserveActiveCap:150};
   const NEXT_MILESTONES = [
     'Establish that the prospect recognises us',
     'Establish relevance and genuine interest',
@@ -69,7 +69,7 @@
   }
   const defaultFX=()=>({provider:'',products:[],currentPricing:'',hedgePct:'',hedgeTenor:'',paymentTiming:'',budgetRate:'',notes:'',flows:[],updatedAt:''});
   function buildLead(data={}){
-    const l={id:data.id||uid(),company:String(data.company||'').trim(),sector:String(data.sector||'').trim(),stage:STAGES.includes(data.stage)?data.stage:'Prospecting',status:STATUSES.includes(data.status)?data.status:'Active',statusReason:data.statusReason||'',notes:String(data.notes||''),fit:clamp(data.fit??3,1,5),contacts:[],primaryContactId:null,readiness:data.readiness>=1&&data.readiness<=8?Math.round(data.readiness):null,readinessEvidence:data.readinessEvidence||'',readinessUpdatedAt:data.readinessUpdatedAt||'',lastMeaningfulAt:data.lastMeaningfulAt||'',barrier:data.barrier||'',nextMilestone:data.nextMilestone||'',lastProgressEvidence:data.lastProgressEvidence||'',lastProgressAt:data.lastProgressAt||'',fx:{...defaultFX(),...(data.fx||{})},sequenceState:data.sequenceState||'none',sequenceIndex:num(data.sequenceIndex,-1),reachedStages:Array.isArray(data.reachedStages)?[...new Set(data.reachedStages)]:['Prospecting'],awardedMilestones:Array.isArray(data.awardedMilestones)?data.awardedMilestones:[],createdAt:data.createdAt||new Date().toISOString(),estimatedRevenue:num(data.estimatedRevenue,0)};
+    const l={id:data.id||uid(),company:String(data.company||'').trim(),sector:String(data.sector||'').trim(),stage:STAGES.includes(data.stage)?data.stage:'Prospecting',status:STATUSES.includes(data.status)?data.status:'Active',statusReason:data.statusReason||'',leadPool:data.leadPool==='reserve'?'reserve':'active',opportunityScore:Number.isFinite(data.opportunityScore)&&data.opportunityScore>=0&&data.opportunityScore<=100?data.opportunityScore:null,researchDate:data.researchDate||'',researchRationale:data.researchRationale||'',researchSources:data.researchSources||'',researchConfidence:data.researchConfidence||'',companyNumber:data.companyNumber||'',companyDomain:data.companyDomain||'',reservedAt:data.reservedAt||'',activatedAt:data.activatedAt||'',notes:String(data.notes||''),fit:clamp(data.fit??3,1,5),contacts:[],primaryContactId:null,readiness:data.readiness>=1&&data.readiness<=8?Math.round(data.readiness):null,readinessEvidence:data.readinessEvidence||'',readinessUpdatedAt:data.readinessUpdatedAt||'',lastMeaningfulAt:data.lastMeaningfulAt||'',barrier:data.barrier||'',nextMilestone:data.nextMilestone||'',lastProgressEvidence:data.lastProgressEvidence||'',lastProgressAt:data.lastProgressAt||'',fx:{...defaultFX(),...(data.fx||{})},sequenceState:data.sequenceState||'none',sequenceIndex:num(data.sequenceIndex,-1),reachedStages:Array.isArray(data.reachedStages)?[...new Set(data.reachedStages)]:['Prospecting'],awardedMilestones:Array.isArray(data.awardedMilestones)?data.awardedMilestones:[],createdAt:data.createdAt||new Date().toISOString(),estimatedRevenue:num(data.estimatedRevenue,0)};
     if(!Array.isArray(l.fx.flows))l.fx.flows=[];
     l.contacts=Array.isArray(data.contacts)?data.contacts.map(buildContact):[];
     if(!l.contacts.length && (data.contact||data.mobile||data.phone||data.email||data.linkedin)) l.contacts.push(buildContact({name:data.contact,title:data.title,mobile:data.mobile,phone:data.phone,email:data.email,linkedin:data.linkedin,linkedinConnected:data.linkedinConnected}));
@@ -86,9 +86,10 @@
   function log(s,l,type,outcome,notes='',xp=0,extra={}){let a={id:uid(),leadId:l?.id||null,at:new Date().toISOString(),type,outcome,notes:String(notes||''),xp:num(xp),...extra};s.activities.push(a);return a}
   function reward(s,l,key,xp,why){if(!l||l.awardedMilestones.includes(key))return 0;l.awardedMilestones.push(key);s.milestoneHistory.push({id:uid(),leadId:l.id,key,at:new Date().toISOString(),xp,evidence:why||''});return xp}
   function cancelTasks(s,l,predicate,reason='Superseded'){let n=0;for(let t of s.tasks){if(t.leadId===l.id&&t.status==='pending'&&predicate(t)){t.status='cancelled';t.cancelledAt=new Date().toISOString();t.cancelReason=reason;n++}}return n}
-  function active(l){return l&&l.status==='Active'&&l.stage!=='First Trade'}
+  function active(l){return l&&l.status==='Active'&&l.stage!=='First Trade'&&l.leadPool!=='reserve'}
   function addTask(s,l,type,title,dueAt=today(),opt={}){
-    if(l&&(!active(l)&&!(l.status==='Negative Nurture'&&(type==='review'||(type==='callback'&&opt.isCommitment)))))return null;
+    if(l&&l.leadPool==='reserve')return null;
+     if(l&&(!active(l)&&!(l.status==='Negative Nurture'&&(type==='review'||(type==='callback'&&opt.isCommitment)))))return null;
     if(l&&isSuppressed(s,l,opt.contactId?getContact(l,opt.contactId):null))return null;
     const key=opt.dedupeKey||'';
     if(key){let existing=s.tasks.find(t=>t.status==='pending'&&t.leadId===(l?.id||null)&&t.dedupeKey===key);if(existing)return existing}
@@ -342,11 +343,11 @@
   }
   const STAGE_PROB={'Prospecting':0.05,'Discovery Complete':0.12,'Meeting Booked':0.22,'Successful Meeting':0.4,'Onboarding':0.7,'Account Open':0.85,'First Trade':1};
   function pipelineValue(s){let data={discovered:0,qualified:0,revenue:0,weighted:0,unconverted:0,assumedMargin:0,byStage:{},rows:[]};
-    for(let l of s.leads){if(l.status!=='Active'||l.stage==='First Trade')continue;let p=potentialForLead(l,s.settings);data.discovered+=p.discovered;data.qualified+=p.qualified;data.revenue+=p.revenue;data.unconverted+=p.unconverted;data.assumedMargin+=p.assumedMargin;data.weighted+=p.revenue*(STAGE_PROB[l.stage]||0);data.byStage[l.stage]=(data.byStage[l.stage]||0)+p.revenue;data.rows.push({...p,id:l.id,company:l.company,stage:l.stage,readiness:l.readiness,probability:STAGE_PROB[l.stage]||0})}
+    for(let l of s.leads){if(l.status!=='Active'||l.stage==='First Trade'||l.leadPool==='reserve')continue;let p=potentialForLead(l,s.settings);data.discovered+=p.discovered;data.qualified+=p.qualified;data.revenue+=p.revenue;data.unconverted+=p.unconverted;data.assumedMargin+=p.assumedMargin;data.weighted+=p.revenue*(STAGE_PROB[l.stage]||0);data.byStage[l.stage]=(data.byStage[l.stage]||0)+p.revenue;data.rows.push({...p,id:l.id,company:l.company,stage:l.stage,readiness:l.readiness,probability:STAGE_PROB[l.stage]||0})}
     data.rows.sort((a,b)=>b.revenue-a.revenue);return data;
   }
   function isEligibleTask(s,t){if(t.status!=='pending')return false;if(!t.leadId)return true;
-    const l=getLead(s,t.leadId);if(!l||isSuppressed(s,l))return false;
+    const l=getLead(s,t.leadId);if(!l||l.leadPool==='reserve'||isSuppressed(s,l))return false;
     if(l.status==='Negative Nurture')return t.type==='review'||t.isCommitment;if(!active(l))return false;
     let c=t.contactId?getContact(l,t.contactId):null;
     if(c&&(isSuppressed(s,l,c)||c.active===false||c.roleStatus==='left_company'||(c.roleStatus==='not_responsible'&&['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type))))return false;
@@ -364,8 +365,9 @@
     const money=clamp(Math.log10(Math.max(1,p.revenue)+1)*4,0,22);
     const fit=clamp(l.fit,1,5)*3;
     const readiness=l.readiness?l.readiness*1.25:0;
+     const quality=Number.isFinite(l.opportunityScore)?l.opportunityScore/15:0;
     const barrierBonus=(t.type==='deal'&&l.barrier)?8:0;
-    return Math.round(age*1.3+meaningful*.25+money+fit+readiness+barrierBonus+(t.isCommitment?30:0));
+    return Math.round(age*1.3+meaningful*.25+money+fit+readiness+quality+barrierBonus+(t.isCommitment?30:0));
   }
   function pending(s){return s.tasks.filter(t=>t.status==='pending'&&isEligibleTask(s,t))}
   function due(s,now=new Date()){return pending(s).filter(t=>isDue(t,now)).sort((a,b)=>taskTier(b)-taskTier(a)||taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||''))}
@@ -374,7 +376,7 @@
   // Rescheduling is audit history, not completed work. Preserve old backup formats.
   const isCompletionActivity=a=>a.taskId&&!['Snoozed','Skipped to next working day'].includes(a.outcome);
   function activityToday(s){const activities=s.activities.filter(a=>a.at.startsWith(today()));return {calls:activities.filter(a=>a.type==='Call').length,tasks:activities.filter(isCompletionActivity).length,meetings:activities.filter(a=>a.type==='Pipeline'&&a.newStage==='Meeting Booked').length,minutes:activities.filter(a=>a.type==='Call').reduce((x,a)=>x+num(a.durationMins),0),xp:activities.reduce((x,a)=>x+num(a.xp),0)}}
-  function insights(s){const ls=s.leads.filter(x=>x.status==='Active'&&x.stage!=='First Trade');const assessed=ls.filter(x=>x.readiness!==null);const counts=Array(8).fill(0);assessed.forEach(x=>counts[x.readiness-1]++);
+  function insights(s){const ls=s.leads.filter(x=>x.status==='Active'&&x.stage!=='First Trade'&&x.leadPool!=='reserve');const assessed=ls.filter(x=>x.readiness!==null);const counts=Array(8).fill(0);assessed.forEach(x=>counts[x.readiness-1]++);
     const cutoff=clamp(s.settings.stalledAfterDays,3,90);
     const stalled=ls.filter(l=>l.readiness&&l.readiness<8&&daysBetween(today(),(l.lastProgressAt||l.readinessUpdatedAt||l.createdAt).slice(0,10))>=cutoff);
     const noNext=ls.filter(l=>l.stage!=='First Trade'&&!s.tasks.some(t=>t.leadId===l.id&&t.status==='pending'&&isEligibleTask(s,t)));
@@ -393,6 +395,50 @@
     const capacity=pace*days,coverage=capacity?((ready+upcoming)/capacity):0;
     return {ready,upcoming,pace,capacity,coverage,days,end,label:coverage<0.7?'Low supply':coverage>1.5?'Heavy backlog':'Watch supply',gap:Math.max(0,capacity-ready-upcoming)};
   }
+  // The reserve is a supply of researched prospects, not part of the acquisition
+  // pipeline or Buyer Readiness. Unknown scores cannot be activated automatically.
+  function reserveEligibility(s,l,minScore=0){
+    if(!l||l.leadPool!=='reserve')return 'Already active';
+    if(l.status!=='Active'||l.stage==='First Trade'||isSuppressed(s,l))return 'Not contactable due to status or suppression';
+    if(!Number.isFinite(l.opportunityScore))return 'Research score needed';
+    if(l.opportunityScore<minScore)return 'Below minimum score';
+    const c=l.contacts.some(c=>canContact(c)&&!isSuppressed(s,l,c)&&(anyPhone(c)||bestMethod(c,'email')));
+    return c?'':'Valid telephone or email contact needed';
+  }
+  function reserveRank(s){
+    return s.leads.filter(l=>l.leadPool==='reserve').sort((a,b)=>
+      (Number.isFinite(b.opportunityScore)?b.opportunityScore:-1)-(Number.isFinite(a.opportunityScore)?a.opportunityScore:-1)
+      ||String(a.reservedAt||a.createdAt||'').localeCompare(String(b.reservedAt||b.createdAt||''))
+      ||a.company.localeCompare(b.company));
+  }
+  function reserveReviewDue(l){
+    const start=String(l.reservedAt||l.createdAt||'').slice(0,10)||today();
+    return businessAdd(start,l.opportunityScore>=80?5:15);
+  }
+  function activateReserve(s,ids,options={}){
+    const result={activated:0,skipped:0,names:[]};
+    for(const id of ids){
+      const l=getLead(s,id);
+      if(reserveEligibility(s,l,num(options.minScore,0))){result.skipped++;continue}
+      l.leadPool='active';l.activatedAt=new Date().toISOString();
+      startSequence(s,l);log(s,l,'Reserve','Activated from researched reserve',l.researchRationale||'',0);
+      result.activated++;result.names.push(l.company);
+    }
+    return result;
+  }
+  function autoReplenishReserve(s){
+    if(!s.settings.reserveAutoActivate)return {activated:0,skipped:0,names:[]};
+    const floor=clamp(s.settings.reserveSupplyFloor,1,200);
+    const horizon=businessAdd(today(),clamp(s.settings.supplyDays,2,20)-1);
+    const supplied=pending(s).filter(t=>t.dueAt<=horizon).length;
+    const cap=clamp(s.settings.reserveActiveCap,1,2000);
+    const activeCount=s.leads.filter(l=>l.leadPool!=='reserve'&&l.status==='Active'&&l.stage!=='First Trade').length;
+    const slots=Math.min(clamp(s.settings.reserveActivationBatch,1,25),floor-supplied,cap-activeCount);
+    if(slots<=0)return {activated:0,skipped:0,names:[]};
+    const minimum=clamp(s.settings.reserveMinScore,0,100);
+    const ids=reserveRank(s).filter(l=>!reserveEligibility(s,l,minimum)).slice(0,slots).map(l=>l.id);
+    return activateReserve(s,ids,{minScore:minimum});
+  }
   function updateFX(s,l,data){if(!l||!data)return;let fx={...defaultFX(),...l.fx,...data};fx.products=Array.isArray(fx.products)?fx.products:[];fx.flows=Array.isArray(fx.flows)?fx.flows.filter(f=>num(f.amount)>0&&f.currency).map(f=>({...f,id:f.id||uid(),currency:String(f.currency).toUpperCase(),confidence:f.confidence==='confirmed'?'confirmed':'estimate'})):[];fx.updatedAt=new Date().toISOString();l.fx=fx;log(s,l,'Discovery','FX qualification updated',`${fx.flows.length} currency flow(s) saved`,0)}
   function migrateV2(old){const s=newState();s.meta={createdAt:new Date().toISOString(),source:'migrated-v2',demo:!!old?.meta?.demo,migratedAt:new Date().toISOString()};
     if(!old||!Array.isArray(old.leads))return s;
@@ -407,6 +453,6 @@
     return s;
   }
   function normalize(v){if(v?.version===2)return migrateV2(v);if(!v||v.version!==3||!Array.isArray(v.leads))return null;let s=newState();s={...s,...v,version:3,settings:{...DEFAULT_SETTINGS,...v.settings},sequence:Array.isArray(v.sequence)&&v.sequence.length?v.sequence:copy(STEPS),leads:v.leads.map(buildLead),tasks:Array.isArray(v.tasks)?v.tasks:[],activities:Array.isArray(v.activities)?v.activities:[],readinessHistory:Array.isArray(v.readinessHistory)?v.readinessHistory:[],milestoneHistory:Array.isArray(v.milestoneHistory)?v.milestoneHistory:[],suppression:Array.isArray(v.suppression)?v.suppression:[]};return s}
-  function checkInvariants(s){const errors=[];for(const l of s.leads){if(!STAGES.includes(l.stage))errors.push('Invalid pipeline stage');if(!STATUSES.includes(l.status))errors.push('Invalid outcome status');if(l.readiness!==null&&(!Number.isInteger(l.readiness)||l.readiness<1||l.readiness>8))errors.push('Invalid Buyer Readiness');if(l.status==='Take Me Off the List'&&pending(s).some(t=>t.leadId===l.id))errors.push('Suppressed lead has actionable tasks')}return errors}
-  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,updateFX,migrateV2,normalize,checkInvariants};
+  function checkInvariants(s){const errors=[];for(const l of s.leads){if(!STAGES.includes(l.stage))errors.push('Invalid pipeline stage');if(!STATUSES.includes(l.status))errors.push('Invalid outcome status');if(l.readiness!==null&&(!Number.isInteger(l.readiness)||l.readiness<1||l.readiness>8))errors.push('Invalid Buyer Readiness');if(l.leadPool==='reserve'&&s.tasks.some(t=>t.leadId===l.id&&t.status==='pending'))errors.push('Reserved prospect has pending sales tasks');if(l.status==='Take Me Off the List'&&pending(s).some(t=>t.leadId===l.id))errors.push('Suppressed lead has actionable tasks')}return errors}
+  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,reserveEligibility,reserveRank,reserveReviewDue,activateReserve,autoReplenishReserve,updateFX,migrateV2,normalize,checkInvariants};
 });
