@@ -24,6 +24,8 @@ Start with a Lusha contacts export and append these company-level columns. Get a
 | Research Rationale | Required for any score; factual basis, not assumptions stated as certainty |
 | Research Sources | Source links or source identifiers, comma-quote as needed |
 | Research Confidence | Optional research confidence note |
+| Original Call Objective | Optional initial discovery objective; shown in Focus Mode on newly activated sequence tasks |
+| Original Research Hypothesis | Optional unverified FX hypothesis; preserved separately from confirmed discovery |
 | CRM Clearance | Cleared, Hold or Unknown; **Unknown by default** |
 | CRM Checked Date | Required for a Cleared or Hold CSV declaration |
 | CRM Note | Required for a Cleared or Hold CSV declaration; user-confirmed Salesforce ownership/activity check |
