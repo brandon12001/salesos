@@ -1,0 +1,13 @@
+export type Readiness = 1|2|3|4|5|6|7|8|null;
+export type MethodKind='mobile'|'phone'|'email'|'linkedin';
+export type Method = {id:string;kind:MethodKind;value:string;status:string;updatedAt?:string};
+export type Contact = {id:string;name:string;title:string;roleStatus:string;active:boolean;optedOut:boolean;linkedinConnected:boolean;methods:Method[];notes:string;lastMeaningfulAt?:string};
+export type Flow = {id:string;pair:string;direction:string;amount:number;currency:string;period:string;confidence:string;gbpAnnualEquivalent?:string|number;addressablePct?:string|number;marginBps?:string|number};
+export type FX = {provider:string;products:string[];currentPricing:string;hedgePct:string;hedgeTenor:string;paymentTiming:string;budgetRate:string;notes:string;flows:Flow[];updatedAt?:string};
+export type Lead = {id:string;company:string;sector:string;stage:string;status:string;statusReason?:string;notes:string;fit:number;contacts:Contact[];primaryContactId:string|null;readiness:Readiness;readinessEvidence:string;readinessUpdatedAt:string;lastMeaningfulAt:string;barrier:string;nextMilestone:string;lastProgressEvidence:string;lastProgressAt:string;fx:FX;sequenceState:string;sequenceIndex:number;reachedStages:string[];awardedMilestones:string[];createdAt:string;estimatedRevenue:number;nurtureUntil?:string};
+export type TaskType='call'|'callback'|'email'|'linkedin_connect'|'linkedin_message'|'deal'|'meeting'|'research'|'review'|'leadgen'|'manual';
+export type Task={id:string;leadId:string|null;contactId:string|null;methodId:string|null;type:TaskType;title:string;description:string;dueAt:string;dueTime:string;status:string;origin:string;stepIndex:number|null;objective:string;successCriteria:string;isCommitment:boolean;dedupeKey:string;createdAt:string;completedAt?:string};
+export type Activity={id:string;leadId:string|null;taskId?:string;at:string;type:string;outcome:string;notes:string;xp:number;newStage?:string;oldStage?:string;durationMins?:number};
+export type State={version:number;leads:Lead[];tasks:Task[];activities:Activity[];readinessHistory:Array<{id:string;leadId:string;at:string;from:number|null;to:number;evidence:string}>;milestoneHistory:unknown[];suppression:unknown[];sequence:Array<{type:TaskType;title:string;delay:number}>;settings:Record<string,number>;meta:Record<string,unknown>;supplySnoozeUntil?:string};
+export type CoreType={KEY:string;OLD_KEY:string;STAGES:string[];READINESS:string[];STATUSES:string[];NEXT_MILESTONES:string[];STEPS:State['sequence'];[key:string]:any};
+declare global {interface Window {SalesCore:CoreType}}

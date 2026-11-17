@@ -1,0 +1,816 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b1220"><title>SalesOS v3.1 — Focus Redesign</title><style>:root{color-scheme:dark;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#0b1220;color:#e7eef9;font-size:14px;line-height:1.5}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:#0b1220}button,input,textarea,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}a{color:#94bfff;text-decoration:none}a:hover{text-decoration:underline}p,h1,h2,h3{margin:0}h1{font-size:30px;line-height:1.2;letter-spacing:-.7px}h2{font-size:19px;line-height:1.35;letter-spacing:-.2px}h3{font-size:15px;line-height:1.35}p{line-height:1.55}.muted{color:#94a5bc}.small{font-size:12px}.tiny{font-size:11px}.center{text-align:center}.full{width:100%}.stack{display:flex;flex-direction:column;gap:9px}.shell{display:flex;min-height:100vh}.sidebar{width:235px;flex:0 0 235px;background:#0e1727;border-right:1px solid #233147;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:26px 13px 18px}.brand{display:flex;gap:12px;align-items:center;padding:1px 13px 29px}.brand-logo{width:37px;height:37px;border-radius:12px;background:#214a89;display:grid;place-items:center;font-size:27px;color:#cfe0ff}.brand strong{font-size:22px;font-weight:800;letter-spacing:-1px}.brand strong span,.mobile-brand span{color:#75a9ff}.brand small{display:block;font-size:9px;letter-spacing:1.4px;color:#74869f;font-weight:700}.nav{display:flex;flex-direction:column;gap:5px}.nav-item{width:100%;border:0;background:transparent;color:#9daec6;padding:11px 12px;border-radius:11px;font-weight:600;display:flex;align-items:center;gap:12px;text-align:left}.nav-item:hover{background:#1a2a40;color:#f6f9ff}.nav-item.active{background:#1b3761;color:#d9e9ff;box-shadow:inset 3px 0 #64a1ff}.nav-icon{font-size:19px;line-height:1;width:22px;text-align:center}.nav-item em{margin-left:auto;font-style:normal;border-radius:30px;font-size:10px;background:#674824;color:#f7d79a;padding:2px 7px}.side-bottom{margin-top:auto;padding:16px 11px 2px;border-top:1px solid #233147}.side-bottom small{display:block;color:#93a4ba;margin-top:8px}.level-row{display:flex;justify-content:space-between;font-size:10px;letter-spacing:.8px;color:#b9c9e1;font-weight:800}.progress-line{height:7px;background:#2c3b50;border-radius:99px;overflow:hidden;margin:10px 0 5px}.progress-line i{display:block;width:0;height:100%;background:linear-gradient(90deg,#3269d3,#75b1ff);border-radius:99px}.privacy{font-size:10px;line-height:1.55;letter-spacing:.8px;color:#d5b679;margin-top:20px;font-weight:700}.privacy span{color:#758ba6;letter-spacing:0;font-weight:400}.main{max-width:1660px;min-width:0;width:100%;padding:37px 43px 30px;margin:auto;align-self:stretch}.main footer{font-size:11px;color:#687b94;padding-top:30px;text-align:center}.mobile-brand{display:none}.page-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:25px}.page-head p{color:#97a9bf;margin-top:7px}.eyebrow{display:inline-block;color:#79abf1;font-size:10px;letter-spacing:1.45px;font-weight:800;margin-bottom:8px}.head-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}.btn{padding:10px 15px;border:1px solid transparent;border-radius:9px;font-size:12px;font-weight:750;line-height:1.3;transition:filter .15s,background .15s;text-align:center;white-space:normal}.btn:hover{filter:brightness(1.12)}.btn.primary{background:#3478ea;color:white;border-color:#4c89ed}.btn.secondary{background:#254467;color:#e4f0ff;border-color:#365c86}.btn.ghost{background:#1b283c;border-color:#30415a;color:#c8d7eb}.btn.outline{background:transparent;border-color:#3b5680;color:#aacaff}.btn.text{background:none;color:#9ebde7;padding:7px 6px;border:0}.btn.tiny{padding:6px 10px;border-radius:7px;background:#1b304c;border-color:#345476;color:#c9dcf8;font-size:11px}.btn.danger{background:#4a2430;border-color:#9d4a56;color:#ffdce3}.btn.icon-btn{background:#25334a;color:#d6e4f6;padding:7px 11px;font-size:15px}.btn.full{display:block;width:100%}.button-row,.badge-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.tag{display:inline-flex;align-items:center;padding:4px 9px;border:1px solid #344660;background:#203047;color:#bdd0e9;border-radius:99px;font-size:10px;font-weight:750;letter-spacing:.12px;white-space:nowrap}.tag.blue{background:#172f55;color:#a9ccff;border-color:#325b91}.tag.violet{background:#31274f;color:#d4c1ff;border-color:#58477a}.tag.amber{background:#423321;color:#f1d09a;border-color:#7d6135}.tag.red{background:#4c222f;color:#ffc0cb;border-color:#853a4b}.tag.muted{color:#9ca9ba;background:#1b2636;border-color:#344053}.card,.stat{background:#131f31;border:1px solid #26374e;border-radius:14px;box-shadow:0 8px 25px rgba(0,0,0,.07)}.card{padding:22px;margin-bottom:17px}.card h2{margin-bottom:14px}.card p{color:#a6b4c9}.card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px}.card-head h2,.card-head h3{margin:0}.metric-grid{display:grid;gap:13px;margin:0 0 18px}.metric-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}.metric-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.stat{padding:17px 18px;min-width:0}.stat-label{color:#a3b4c9;font-size:11px;font-weight:650;margin-bottom:4px}.stat-value{font-size:25px;line-height:1.25;letter-spacing:-.8px;font-weight:800;color:#f5f9ff;overflow-wrap:anywhere}.stat-value small{font-weight:500;font-size:13px;color:#6f87a5}.stat-note{font-size:10px;color:#7286a0;margin-top:6px}.two-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px}.two-cols.compact{gap:12px}.two-cols.compact .field{min-width:0}.two-cols .card{margin-bottom:0}.hero-number{font-size:31px;font-weight:850;letter-spacing:-1px;margin:10px 0}.detail-row{padding:11px 0;border-bottom:1px solid #27364a;display:flex;justify-content:space-between;align-items:center;gap:13px;font-size:12px}.detail-row:last-child{border:0}.detail-row span{color:#9babc0;min-width:0}.detail-row b{color:#edf4ff;text-align:right}.detail-row small{display:block;color:#74869d;margin-top:3px}.goal-list{display:grid;gap:15px}.goal-list>div{display:flex;align-items:center;gap:12px}.goal-list b{color:#84b5ff;font-size:13px}.goal-list span{color:#b7c7da}.focus-layout{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(280px,1fr);gap:18px}.focus-card{padding:27px}.focus-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.focus-card>h2{font-size:29px;letter-spacing:-.8px;line-height:1.2;margin-bottom:19px}.identity{display:flex;align-items:center;gap:12px;margin:0 0 17px}.identity .avatar{height:44px;width:44px;background:#203e65;border:1px solid #365e8b;border-radius:13px;display:grid;place-items:center;font-weight:850;color:#91bffe}.identity strong{display:block;font-size:15px}.identity span{display:block;font-size:12px;color:#9db0c7;margin-top:2px}.focus-card .badge-row{margin-bottom:20px}.mission{padding:17px 19px;border:1px solid #274b7d;border-radius:12px;background:linear-gradient(130deg,rgba(26,65,118,.4),rgba(20,42,74,.2));margin:16px 0}.mission-heading{font-size:10px;color:#82b4f4;font-weight:850;letter-spacing:1px;margin-bottom:7px}.mission strong{font-size:17px;color:#eaf4ff}.mission p{font-size:12px;margin-top:6px;color:#a9c2e0}.focus-context{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:23px 0}.focus-context>div{border-bottom:1px solid #2a394e;padding-bottom:14px}.focus-context small,.profile-intro small{font-size:10px;font-weight:850;letter-spacing:1px;color:#738ba9}.focus-context p,.profile-intro p{font-size:12px;color:#d2deed;margin-top:6px}.action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.action-grid .primary:first-child{grid-column:1/-1;min-height:47px;font-size:14px}.subactions{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}.focus-side .card{margin-bottom:16px}.mini-card{padding:21px}.mini-card h3{font-size:15px;margin-bottom:9px}.mini-card p{margin-top:9px}.section-label{font-size:10px;color:#91b6e4;letter-spacing:1.2px;font-weight:800;text-transform:uppercase}.readiness-big{font-size:42px;font-weight:850;margin-top:8px;line-height:1.1}.readiness-big small{font-size:14px;color:#7e91aa;font-weight:500}.mini-card .btn{margin-top:16px}.supply{display:flex;gap:30px;justify-content:space-between;align-items:center}.supply>div:first-child{max-width:70%}.supply h3{font-size:18px;margin:0 0 5px}.supply p{font-size:12px}.supply b{font-size:20px}.supply .progress-line{width:190px}.empty{text-align:center;padding:60px 25px}.empty-icon{font-size:39px;color:#9ec5ff}.empty h2{margin:12px 0}.empty p{max-width:450px;margin:0 auto 17px}.bar-list{display:flex;flex-direction:column;gap:13px}.bar-row{display:grid;grid-template-columns:minmax(105px,1.45fr) minmax(0,2fr) 30px;gap:9px;align-items:center;font-size:11px}.bar-row>span{color:#acbdd3}.bar-row>b{text-align:right;font-size:11px}.bar-track{border-radius:99px;background:#2a394e;overflow:hidden;height:8px}.bar-track i{display:block;height:100%;background:linear-gradient(90deg,#4a7edf,#8dbeff);border-radius:99px}.bar-row.value-row{grid-template-columns:minmax(95px,1.45fr) minmax(0,2fr) 90px}.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}.filter-bar input{flex:2 1 240px;min-width:170px}.filter-bar select{flex:1 1 150px;min-width:140px}input,textarea,select{background:#0f1a2a;color:#e5f1ff;border:1px solid #314259;border-radius:9px;outline:none;padding:11px 12px;min-width:0;max-width:100%}input:focus,select:focus,textarea:focus{border-color:#5598fc;box-shadow:0 0 0 2px rgba(69,130,228,.19)}textarea{resize:vertical;min-height:80px}input[type="checkbox"]{width:16px;height:16px;accent-color:#448bff;min-width:16px}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:12px}th{font-size:10px;color:#8e9fb5;letter-spacing:.8px;text-transform:uppercase;text-align:left;border-bottom:1px solid #31435a;padding:13px 12px;white-space:nowrap}td{border-bottom:1px solid #26364c;padding:15px 12px;vertical-align:middle;color:#bfcee1}td strong{color:#f0f5ff;display:block}td small{display:block;color:#7f93ad;margin-top:4px}td .tag{white-space:normal}td .truncate{display:block;max-width:240px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.table-footer{text-align:right;font-size:11px;color:#7990aa;padding:12px 0 0}.pipeline-grid{display:grid;grid-template-columns:repeat(7,minmax(170px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px;margin-bottom:20px}.stage-column{background:#121e30;border:1px solid #2a3a51;border-radius:13px;padding:12px;min-height:240px}.stage-title{min-height:45px;display:flex;align-items:flex-start;justify-content:space-between;gap:6px;font-size:12px;font-weight:800}.stage-card{width:100%;background:#1d2d43;border:1px solid #34485e;border-radius:9px;padding:12px 11px;color:#e8f3ff;text-align:left;display:block;margin:0 0 9px}.stage-card:hover{border-color:#6e9fe8}.stage-card strong,.stage-card span,.stage-card small{display:block}.stage-card strong{font-size:12px}.stage-card span{color:#acbcde;font-size:10px;margin-top:8px}.stage-card small{color:#7c95ad;font-size:10px;margin-top:7px}.outcome-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px}.outcome-grid .card{margin:0}.outcome-grid .hero-number{margin:12px 0}.outcome-grid p{font-size:11px}.queue-row{padding:17px 0;border-bottom:1px solid #283b50;display:flex;align-items:center;gap:16px}.queue-row:last-child{border:none}.queue-row>div:nth-child(2){flex:1}.queue-row strong{font-size:13px}.queue-row p{font-size:12px;color:#8d9fb7;margin:5px 0 0}.queue-icon{background:#1a3654;color:#8dbcf7;border-radius:10px;height:39px;min-width:39px;display:grid;place-items:center;font-size:23px}.info-card{padding:13px 16px;background:#152b43;border:1px solid #2d4d72;border-radius:11px;color:#bed7f6;font-size:12px;margin:12px 0}.info-card p{margin-top:6px}.warning{margin-top:16px;background:#342b23;border:1px solid #624936;border-radius:10px;padding:12px;color:#edcda6;font-size:12px}.insight{border-bottom:1px solid #27364b;padding:16px 0;display:flex;gap:13px}.insight:last-child{border-bottom:0}.insight-icon{background:#25344e;border-radius:10px;color:#9abdff;align-self:flex-start;display:grid;place-items:center;height:31px;min-width:31px}.insight strong{font-size:12px}.insight p{font-size:12px;color:#97acc7;margin:7px 0}.seq-row{display:grid;grid-template-columns:27px 155px minmax(150px,1fr) 140px 27px;gap:9px;align-items:end;margin:11px 0;border-bottom:1px solid #28384f;padding-bottom:11px}.seq-number{color:#90b5e7;font-weight:850;align-self:center}.seq-row label{font-size:10px;color:#9ab0c9}.seq-row label span{display:block;margin-bottom:3px}.seq-row input,.seq-row select{width:100%}.modal-overlay{position:fixed;z-index:100;background:rgba(4,9,17,.84);inset:0;display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}.modal{background:#131e2f;border:1px solid #3a4c65;box-shadow:0 35px 100px rgba(0,0,0,.6);border-radius:16px;width:min(760px,100%);max-height:min(92vh,1000px);display:flex;flex-direction:column}.modal-head{padding:21px 24px;border-bottom:1px solid #2b3a51;display:flex;justify-content:space-between;align-items:center;gap:15px;flex:none}.modal-head .eyebrow{margin-bottom:3px}.modal-head h2{font-size:23px;margin:0}.modal-body{padding:22px 24px;overflow:auto;min-height:0}.modal-foot{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:9px;padding:14px 24px;border-top:1px solid #2b3a51;flex:none}.field{display:flex;flex-direction:column;gap:6px;min-width:0;margin-bottom:13px}.field>span{font-size:11px;color:#acbdd2;font-weight:750}.field input,.field textarea,.field select{width:100%}.check{display:flex;align-items:center;gap:9px;font-size:12px;color:#c5d6ea}.checkbox-row{display:flex;align-items:center;flex-wrap:wrap;gap:17px;margin-bottom:15px}.modal-section{border-top:1px solid #2c3a4f;margin-top:21px;padding-top:20px}.modal-section h3{margin-bottom:13px}.modal-section .card-head h3{margin:0}.profile-intro{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}.profile-intro>div{padding:12px;background:#17273b;border-radius:10px}.profile-intro>div:last-child{grid-column:1/-1}.contact-card{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border:1px solid #314258;background:#17273b;border-radius:10px;margin-bottom:11px;padding:13px}.contact-method{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:7px;font-size:11px;color:#a5bcd8}.contact-method span{overflow-wrap:anywhere}.history-item{padding:11px 0;border-bottom:1px solid #2b3c4f;font-size:12px}.history-item b{display:block;font-size:12px}.history-item>span{display:block;color:#7890ab;margin-top:3px;font-size:10px}.history-item p{color:#a9bed5;margin-top:7px}.flow-row{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:12px;border:1px solid #304360;border-radius:10px;margin-bottom:8px}.flow-row p{margin:4px 0}.flow-row small{color:#8ca3bd}.flow-row strong{color:#ebf4ff}.toast{position:fixed;z-index:200;bottom:20px;right:20px;max-width:min(460px,calc(100vw - 40px));background:#224b43;color:#d4ffec;border:1px solid #33715e;border-radius:12px;padding:14px 17px;box-shadow:0 15px 45px rgba(0,0,0,.3);font-size:12px;font-weight:700}.toast.error{background:#4c2732;border-color:#9e465a;color:#ffe2e9}.call-more.simple-call .engaged-only{display:none!important}.call-more.simple-call .field{display:none}.call-more.simple-call>.two-cols{display:none}.call-more.simple-call> .field:nth-of-type(1){display:none}.engaged-only[hidden]{display:none}.modal .button-row{margin-bottom:12px}
+@media(max-width:1400px){.main{padding:29px 28px}.sidebar{width:210px;flex-basis:210px}.pipeline-grid{grid-template-columns:repeat(7,190px)}.focus-layout{grid-template-columns:minmax(0,1.5fr) minmax(240px,1fr)}.focus-context{grid-template-columns:1fr 1fr}}
+@media(max-width:1080px){.sidebar{width:76px;flex-basis:76px;padding:20px 9px}.brand{padding:0 10px 23px}.brand>div:last-child,.nav-item:not(.active) em,.side-bottom{display:none}.brand-logo{flex:none}.nav-item{font-size:0;justify-content:center;padding:11px 6px}.nav-icon{font-size:21px}.nav-item em{font-size:10px}.focus-layout{grid-template-columns:1fr}.focus-side{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.focus-side .card{margin:0}.outcome-grid{grid-template-columns:repeat(2,1fr)}.metric-grid.four{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:720px){.shell{display:block}.sidebar{position:fixed;z-index:80;width:235px;transform:translateX(-110%);transition:transform .2s;box-shadow:20px 0 30px rgba(0,0,0,.4)}.sidebar.mobile-open{transform:translateX(0)}.sidebar.mobile-open .brand>div:last-child,.sidebar.mobile-open .side-bottom{display:block}.sidebar.mobile-open .nav-item{font-size:13px;justify-content:flex-start;padding:11px 12px}.main{padding:18px 13px 24px}.mobile-brand{display:flex;justify-content:space-between;align-items:center;color:#d9eaff;font-weight:850;font-size:18px;margin:0 0 18px}.mobile-brand button{background:#1e3551;border:1px solid #355579;color:#dbeaff;padding:8px 13px;border-radius:9px;font-size:12px}.page-head{display:block}.page-head h1{font-size:25px}.head-actions{justify-content:flex-start;margin-top:16px}.two-cols,.metric-grid.four,.metric-grid.three,.focus-side,.profile-intro,.focus-context{grid-template-columns:1fr}.metric-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:12px}.stat-value{font-size:22px}.card{padding:16px}.focus-card{padding:18px}.focus-card>h2{font-size:24px}.action-grid{grid-template-columns:1fr}.action-grid .primary:first-child{grid-column:auto}.focus-top{align-items:flex-start}.filter-bar{flex-direction:column}.filter-bar input,.filter-bar select{width:100%;flex:auto}.outcome-grid{grid-template-columns:repeat(2,1fr)}.outcome-grid .card{padding:12px}.modal-overlay{padding:0;align-items:stretch}.modal{border-radius:0;max-height:100vh;width:100%;height:100vh}.modal-body{padding:17px;flex:1}.modal-head,.modal-foot{padding:15px 17px}.two-cols.compact{grid-template-columns:1fr}.seq-row{grid-template-columns:20px minmax(0,1fr) 35px;gap:8px}.seq-row .seq-title{grid-column:2/3}.seq-row label{grid-column:2/3}.seq-row .btn{grid-column:3;grid-row:1}.supply{display:block}.supply>div:first-child{max-width:100%}.supply .progress-line{width:100%}.bar-row.value-row{grid-template-columns:105px minmax(0,1fr) 77px}.contact-card{display:block}.contact-card>.btn{margin-top:8px}}
+
+
+/* === SalesOS v3.1: task-first Focus Mode ==================================== */
+.sidebar-brandline{display:flex;align-items:flex-start;justify-content:space-between;gap:0}
+.sidebar-brandline .brand{padding-left:13px;padding-right:0;min-width:0}
+.sidebar-dismiss{margin-top:7px;flex:none;background:transparent;border:0;color:#91a5bf;border-radius:9px;padding:5px 8px;font-size:13px}
+.sidebar-dismiss:hover{background:#223451;color:white}
+.shell.nav-collapsed .sidebar,.shell.nav-collapsed .sidebar-backdrop{display:none}
+.shell-execution{background:#0a1220;min-height:100vh}
+.shell-execution .main{max-width:none;padding:0;margin:0;min-width:0;min-height:100vh}
+.execution-view{min-height:100vh;padding:0 clamp(16px,3vw,44px) 24px;display:flex;flex-direction:column;background:radial-gradient(ellipse 660px 420px at 50% 30%,rgba(30,59,101,.105),transparent 100%)}
+.execution-toolbar{height:75px;min-height:75px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1c2a3d;gap:12px}
+.exec-brand-group,.exec-brand{display:flex;align-items:center;gap:14px}
+.utility-menu{display:grid;place-items:center;background:#152236;border:1px solid #2a3b55;border-radius:10px;color:#c1d0e6;height:35px;width:39px;font-size:17px;flex:none}
+.utility-menu:hover{background:#213a59;color:white}
+.exec-brand{gap:9px;font-size:14px;color:#f2f7ff}
+.exec-brand-mark{display:grid;place-items:center;width:27px;height:27px;border-radius:8px;background:#2f69c5;color:white;font-size:20px;font-weight:800}
+.exec-brand strong{font-size:18px;letter-spacing:-.65px}
+.exec-brand strong span,.management-toolbar strong span{color:#7dafff}
+.exec-slash{color:#4f6077;font-weight:300;margin:0 1px}
+.exec-focus-label{color:#93aac7;font-size:13px;font-weight:600}
+.exec-toolbar-actions{display:flex;gap:9px;align-items:center}
+.exec-toolbar-btn{background:transparent;border:1px solid #2a3950;border-radius:9px;color:#a9bed9;font-size:12px;font-weight:650;padding:9px 12px}
+.exec-toolbar-btn:hover,.exec-toolbar-btn.active{background:#203450;color:#eaf4ff;border-color:#3c6b9d}
+.execution-main{width:min(100%,880px);margin:0 auto;display:flex;flex-direction:column;flex:1;padding:28px 0 0}
+.execution-queue-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 14px;font-size:11px;color:#9eb1c9}
+.execution-queue-head>div{display:flex;align-items:center;gap:8px}
+.exec-queue-pulse{height:7px;width:7px;border-radius:100%;background:#58bca5;box-shadow:0 0 0 4px rgba(56,184,156,.10)}
+.exec-middle-dot{color:#506681}
+.exec-queue-helper{font-size:10px;letter-spacing:1.2px;color:#637d9e;font-weight:750}
+.execution-task-card{background:#141f31;border:1px solid #2a3a52;border-radius:18px;padding:29px 34px 16px;box-shadow:0 14px 54px rgba(0,0,0,.18)}
+.exec-card-top,.exec-card-tags{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.exec-card-top{justify-content:space-between;min-height:24px}
+.exec-kind{font-size:10px;font-weight:800;letter-spacing:1.3px;color:#83b5ff;display:flex;align-items:center;gap:8px}
+.exec-kind-dot{width:7px;height:7px;border-radius:50%;background:#5f9ff5}
+.exec-card-tags .tag{font-weight:600;font-size:10px;padding:3px 8px}
+.exec-card-tags .tag.blue{background:#1d3556;color:#b4cefa}
+.exec-task-title{font-size:32px;letter-spacing:-1px;line-height:1.16;font-weight:780;color:#f3f7ff;margin:20px 0 15px;overflow-wrap:anywhere}
+.exec-task-sub{font-size:14px;color:#9cb0c9;margin:5px 0 20px}
+.exec-person-line{display:flex;align-items:center;gap:11px;margin-bottom:20px}
+.exec-person-avatar{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:11px;background:#203756;border:1px solid #2c4b70;color:#afcfff;font-size:13px;font-weight:800}
+.exec-person-line>div:nth-child(2){min-width:0;flex:1}
+.exec-person-line strong,.exec-person-line span{display:block;overflow-wrap:anywhere}
+.exec-person-line strong{font-size:13px;font-weight:650;color:#dae7f8}
+.exec-person-line span{font-size:12px;color:#889eb8;margin-top:2px}
+.exec-open-company{margin-left:auto;flex:none;border:1px solid #344a66;background:#1b2a41;border-radius:9px;height:34px;width:34px;color:#a7c6ee;font-size:18px}
+.exec-open-company:hover{background:#284464}
+.exec-primary-zone{margin-bottom:21px}
+.exec-call-actions{display:grid;gap:8px;grid-template-columns:1fr}
+.exec-call-actions:has(.exec-copy-btn:nth-child(2)){grid-template-columns:repeat(2,minmax(0,1fr))}
+.exec-copy-btn{min-height:54px;display:flex;align-items:center;justify-content:center;gap:10px;padding:10px 13px;border-radius:10px;background:#3479e8;color:#fff;border:1px solid #4d8eea;font-size:13px;font-weight:700;min-width:0;flex-wrap:wrap}
+.exec-copy-btn strong{font-weight:650;letter-spacing:.1px}
+.exec-copy-btn span{font-size:19px}
+.exec-copy-btn:hover{background:#4288f7}
+.exec-copy-btn.alternate{background:#1d3658;color:#c7deff;border-color:#35567b}
+.exec-copy-btn.alternate:hover{background:#284b76}
+.exec-contact-warning{border:1px solid #6d5438;border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#29251f;font-size:12px;color:#ddc5a4}
+.exec-contact-warning span{flex:1}
+.exec-purpose-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-bottom:22px}
+.exec-purpose{background:#101c2c;border:1px solid #283c58;border-radius:11px;padding:15px 16px;min-width:0}
+.exec-purpose:first-child{background:linear-gradient(120deg,#172c49,#13243b);border-color:#31517a}
+.exec-purpose small,.exec-mission-strip small{display:block;color:#80aeea;font-size:10px;font-weight:800;letter-spacing:1.1px;margin-bottom:7px}
+.exec-purpose strong{display:block;font-size:13px;line-height:1.45;color:#f2f6ff;font-weight:700}
+.exec-purpose p{margin-top:5px;color:#8eabc9;font-size:12px;line-height:1.45}
+.exec-result-section{margin-top:2px}
+.exec-result-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px}
+.exec-result-heading strong{font-size:13px;color:#d8e7f9}
+.exec-result-heading span{font-size:11px;color:#7188a4}
+.exec-result-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.exec-outcome-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 8px;min-height:44px;border-radius:9px;border:1px solid #344760;background:#1d2c40;color:#c5d6e9;font-size:11px;font-weight:720;white-space:nowrap}
+.exec-outcome-btn>span{font-size:16px;color:#91b1d7}
+.exec-outcome-btn:hover{background:#293e59;color:white}
+.exec-outcome-btn.exec-noanswer{background:#1d2c40;border-color:#355270;color:#d8eaff}
+.exec-outcome-btn.exec-connected{background:#1d4261;border-color:#356a8e;color:#d2eefd}
+.exec-outcome-btn kbd{border:1px solid #465872;background:#15243a;border-radius:4px;padding:1px 4px;color:#90a9c9;font-size:10px;font-weight:500;margin-left:auto}
+.exec-details{border-top:1px solid #28384d;margin-top:20px}
+.exec-details summary{padding:15px 2px;display:flex;align-items:center;gap:9px;color:#8ca5c4;font-size:12px;font-weight:650;cursor:pointer;list-style:none}
+.exec-details summary::-webkit-details-marker{display:none}
+.exec-details summary:hover{color:#c5dcfa}
+.exec-summary-icon{display:inline-grid;place-items:center;background:#23354d;border:1px solid #334a68;border-radius:6px;width:19px;height:19px;color:#adcbec}
+.exec-details[open] .exec-summary-icon{transform:rotate(45deg)}
+.exec-detail-hint{color:#617996;font-size:10px;font-weight:500;margin-left:auto}
+.exec-detail-content{padding:5px 0 15px}
+.exec-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:17px 20px}
+.exec-detail-unit{min-width:0;border-left:2px solid #2a3f5b;padding-left:10px}
+.exec-detail-unit small{font-size:10px;color:#8db5e7;letter-spacing:.8px;font-weight:750}
+.exec-detail-unit p{font-size:12px;margin-top:5px;color:#c0d0e3}
+.exec-detail-cta{margin-top:10px}
+.exec-detail-cta .btn{font-size:11px;padding:7px 9px}
+.exec-note-date{font-size:10px;color:#8fa0b8;padding-top:12px}
+.exec-secondary-actions{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:0;border-top:1px solid #243249;padding-top:8px}
+.exec-secondary-actions .btn.text{padding:7px 0;color:#86a0bf;font-size:11px;font-weight:600}
+.exec-noncall-actions{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.exec-noncall-actions .btn.primary{min-height:50px;font-size:13px;padding-inline:21px}
+.exec-manual-hint{color:#839cb9;margin-top:12px;font-size:11px}
+.exec-mission-strip{padding:16px;border:1px solid #304b6f;background:#162941;border-radius:12px;margin:22px 0}
+.exec-mission-strip strong{display:block;font-size:15px;color:#f1f7ff}
+.exec-empty{text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:390px;background:#131f31;border:1px solid #293a50;border-radius:17px;padding:35px}
+.exec-empty-icon{font-size:29px;color:#6dc9a4;background:#183b3b;border:1px solid #285d51;display:grid;place-items:center;width:62px;height:62px;border-radius:50%;margin-bottom:20px}
+.exec-empty h1{font-size:30px;margin-bottom:12px}
+.exec-empty p{max-width:400px;color:#9db2ca;font-size:13px}
+.exec-empty-actions{display:flex;gap:10px;justify-content:center;margin-top:22px}
+.execution-status{position:sticky;bottom:12px;z-index:4;display:flex;align-items:center;justify-content:space-around;gap:12px;margin:20px auto 0;width:min(100%,775px);min-height:60px;background:rgba(18,32,50,.96);border:1px solid #2c3e59;border-radius:13px;padding:10px 20px;box-shadow:0 10px 35px rgba(0,0,0,.22);backdrop-filter:blur(16px)}
+.exec-status-item{display:flex;flex-direction:column;gap:0;min-width:66px}
+.exec-status-item span{font-size:10px;color:#7e95b3;font-weight:600}
+.exec-status-item strong{font-size:16px;color:#eef5ff;line-height:1.3}
+.exec-status-item em{font-style:normal;color:#7892b2;font-size:11px;font-weight:500}
+.exec-status-level{width:110px;margin-left:12px}
+.exec-level-label{font-weight:800;color:#90b8f0;font-size:10px;letter-spacing:.8px}
+.exec-level-track{height:5px;background:#2d405b;border-radius:20px;overflow:hidden;margin-top:8px}
+.exec-level-track i{display:block;background:#548deb;height:100%;border-radius:20px}
+.execution-hint{text-align:center;font-size:10px;color:#607992;margin-top:13px;padding-bottom:4px}
+.management-toolbar{display:none;gap:11px;align-items:center;margin-bottom:17px}
+.management-toolbar strong{font-size:16px;letter-spacing:-.6px}
+.management-toolbar>span{font-size:10px;color:#7996b5;letter-spacing:1px;margin-left:auto;font-weight:750}
+.nav-collapsed .management-toolbar{display:flex}
+@media(max-width:1150px){.execution-main{width:min(100%,880px)}.exec-task-title{font-size:29px}}
+@media(max-width:880px){.execution-task-card{padding:23px 22px 13px}.exec-result-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.exec-outcome-btn{justify-content:flex-start;padding:11px 13px}.exec-outcome-btn kbd{margin-left:auto}.exec-purpose-grid{grid-template-columns:1fr}.exec-purpose{padding:12px 15px}.execution-main{padding-top:22px}}
+@media(max-width:720px){
+ .shell-execution .sidebar{position:fixed;display:flex;width:235px;top:0;left:0;height:100vh;z-index:80;transform:none;padding:20px 10px}
+ .shell.nav-collapsed .sidebar{display:none}
+ .sidebar-brandline .brand>div:last-child,.sidebar .side-bottom{display:block}
+ .sidebar .nav-item{font-size:13px;justify-content:flex-start;padding:11px 12px}
+ .sidebar-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:75}
+ .execution-view{padding:0 13px 22px}
+ .execution-toolbar{height:62px;min-height:62px}
+ .exec-toolbar-btn{padding:8px 9px;font-size:11px}
+ .exec-toolbar-btn.exec-add span{display:none}
+ .exec-brand{gap:6px}
+ .exec-brand strong{font-size:16px}
+ .exec-focus-label{font-size:12px}
+ .exec-queue-helper{display:none}
+ .execution-main{padding-top:18px}
+ .execution-task-card{padding:20px 16px 11px;border-radius:14px}
+ .exec-card-top{align-items:flex-start}
+ .exec-card-tags{justify-content:flex-end}
+ .exec-card-tags .tag{font-size:9px}
+ .exec-task-title{font-size:27px;margin:16px 0 13px}
+ .exec-person-line{margin-bottom:16px}
+ .exec-person-line strong{font-size:12px}
+ .exec-person-line span{font-size:11px}
+ .exec-call-actions:has(.exec-copy-btn:nth-child(2)){grid-template-columns:1fr}
+ .exec-result-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .exec-outcome-btn{font-size:11px;padding:11px 9px}
+ .exec-outcome-btn kbd{display:none}
+ .exec-detail-grid{grid-template-columns:1fr}
+ .exec-result-heading span{display:none}
+ .execution-status{width:100%;padding:9px 10px;gap:9px;bottom:8px;margin-top:16px;justify-content:space-between}
+ .exec-status-item{min-width:0}
+ .exec-status-item strong{font-size:15px}
+ .exec-status-item span{font-size:9px}
+ .exec-status-item em{font-size:9px}
+ .exec-status-level{width:50px;margin-left:1px}
+ .execution-hint{display:none}
+ .management-toolbar{display:flex}
+ .shell.nav-collapsed .sidebar{display:none}
+}
+@media(max-width:420px){.exec-brand-mark{display:none}.exec-kind{font-size:9px}.exec-card-tags .tag:nth-child(2){display:none}.exec-copy-btn{min-height:53px}}
+
+@media(max-width:720px){.shell:not(.nav-collapsed) .sidebar{transform:translateX(0)}}
+</style></head><body><div id="app"></div><script>/* SalesOS v3 — deterministic, offline-first sales engine. No external dependencies. */
+(function (root, make) {
+  const api = make();
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.SalesCore = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  const KEY = 'salesos.personal.v3';
+  const OLD_KEY = 'salesos.personal.v2';
+  const STAGES = ['Prospecting','Discovery Complete','Meeting Booked','Successful Meeting','Onboarding','Account Open','First Trade'];
+  const READINESS = ['Unaware','Aware','Interested','Problem Recognised','Motivated to Change','Considering Us','Ready to Commit','Switched'];
+  const STATUSES = ['Active','Negative Nurture','Disqualified','Closed Lost','Take Me Off the List'];
+  const STEPS = [
+    {type:'call',title:'First discovery call',delay:0},
+    {type:'email',title:'Send relevant introductory email',delay:1},
+    {type:'linkedin_connect',title:'Send personalised LinkedIn connection',delay:2},
+    {type:'call',title:'Second call — try a different time',delay:2},
+    {type:'email',title:'Send a different FX angle',delay:2},
+    {type:'linkedin_message',title:'LinkedIn follow-up if connected',delay:3},
+    {type:'call',title:'Final call in this sequence',delay:3}
+  ];
+  const DEFAULT_SETTINGS = {callGoal:200, taskGoal:65,meetingGoal:3,supplyDays:5,dailyCapacity:65,reviewAfterSequence:14,stalledAfterDays:14,defaultMarginBps:40,annualTarget:150000};
+  const NEXT_MILESTONES = [
+    'Establish that the prospect recognises us',
+    'Establish relevance and genuine interest',
+    'Identify a meaningful FX problem or improvement',
+    'Establish the business impact and urgency',
+    'Agree to evaluate an appropriate solution',
+    'Resolve decision barriers and obtain commitment',
+    'Complete onboarding and secure the first transaction',
+    'Acquisition complete — manage the customer relationship'
+  ];
+  const OBJECTIVES = {call:'Contact the relevant decision-maker',callback:'Honour the agreed callback and progress the conversation',email:'Deliver a relevant message and earn engagement',linkedin_connect:'Establish a professional connection',linkedin_message:'Re-engage with a relevant discussion',deal:'Remove the barrier to the next milestone',meeting:'Prepare for the meeting and agree a clear next step',research:'Make this company contactable by the right person',review:'Decide whether this opportunity deserves renewed attention',leadgen:'Replenish the supply of qualified companies',manual:'Complete the agreed action'};
+  const STAGE_TASK = {
+    'Discovery Complete':['Book a meeting based on discovery',1],
+    'Meeting Booked':['Prepare for and attend the meeting',0],
+    'Successful Meeting':['Complete agreed commercial next steps',1],
+    'Onboarding':['Resolve outstanding onboarding requirements',2],
+    'Account Open':['Confirm the next FX payment and secure first trade',1]
+  };
+  const stageIndex = s => STAGES.indexOf(s);
+  const uid = () => (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'id_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,10));
+  const copy = v => JSON.parse(JSON.stringify(v));
+  const num = (v, fallback=0) => v === '' || v === null || v === undefined ? fallback : Number.isFinite(Number(v)) ? Number(v) : fallback;
+  const clamp = (v, low, high) => Math.min(high,Math.max(low,num(v)));
+  function today(d=new Date()){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+  function dateFrom(s){let d=new Date(`${s||today()}T12:00:00`);return Number.isNaN(d.getTime())?new Date(`${today()}T12:00:00`):d}
+  function addDays(s,n){let d=dateFrom(s);d.setDate(d.getDate()+n);return today(d)}
+  function businessAdd(s,n){let d=dateFrom(s),left=Math.max(0,Math.round(n));if(!left){while([0,6].includes(d.getDay()))d.setDate(d.getDate()+1);return today(d)}while(left>0){d.setDate(d.getDate()+1);if(d.getDay()!==0&&d.getDay()!==6)left--}return today(d)}
+  function daysBetween(later,earlier){return Math.round((dateFrom(later)-dateFrom(earlier))/86400000)}
+  function phoneDial(raw){let v=String(raw||'').trim().replace(/[^\d+]/g,'');if(v.startsWith('00'))v='+'+v.slice(2);if(v.startsWith('0'))v='+44'+v.slice(1);if(/^44\d/.test(v))v='+'+v;return v}
+  const companyKey = v => String(v||'').trim().toLowerCase().replace(/\s+/g,' ');
+  const contactKey = c => String(c?.name||'').trim().toLowerCase();
+  function newState(){return {version:3,leads:[],tasks:[],activities:[],readinessHistory:[],milestoneHistory:[],suppression:[],sequence:copy(STEPS),settings:{...DEFAULT_SETTINGS},meta:{createdAt:new Date().toISOString(),source:'v3',demo:false},supplySnoozeUntil:''}}
+  const getLead=(s,id)=>s.leads.find(x=>x.id===id);
+  const getTask=(s,id)=>s.tasks.find(x=>x.id===id);
+  const getContact=(l,id)=>l?.contacts?.find(c=>c.id===id) || null;
+  const methods=(c,kind)=>c?.methods?.filter(m=>!kind||m.kind===kind)||[];
+  const usable=(m)=>m&&m.value&&m.status!=='invalid'&&m.status!=='blocked';
+  const bestMethod=(c,kind)=>methods(c,kind).find(usable)||null;
+  const anyPhone=c=>bestMethod(c,'mobile')||bestMethod(c,'phone');
+  const canContact=c=>c&&c.active!==false&&c.roleStatus!=='left_company'&&c.roleStatus!=='not_responsible'&&!c.optedOut;
+  function preferredContact(l,kind){const cs=(l?.contacts||[]).filter(canContact);const ranked=[...cs].sort((a,b)=>(b.id===l.primaryContactId?1:0)-(a.id===l.primaryContactId?1:0)+(b.roleStatus==='decision_maker'?0.5:0)-(a.roleStatus==='decision_maker'?0.5:0));return ranked.find(c=>kind==='call'?!!anyPhone(c):kind==='email'?!!bestMethod(c,'email'):kind==='linkedin_connect'||kind==='linkedin_message'?!!bestMethod(c,'linkedin'):true)||null}
+  function method(kind,value,status='unverified'){return {id:uid(),kind,value:String(value||'').trim(),status,updatedAt:new Date().toISOString()}}
+  function buildContact(data={}){let out={id:data.id||uid(),name:String(data.name||data.contact||'').trim(),title:String(data.title||'').trim(),roleStatus:data.roleStatus||'unknown',active:data.active!==false,optedOut:!!data.optedOut,linkedinConnected:!!data.linkedinConnected,methods:[],notes:String(data.notes||'').trim()};
+    if(Array.isArray(data.methods)){out.methods=data.methods.filter(x=>x&&x.value&&['mobile','phone','email','linkedin'].includes(x.kind)).map(x=>({...x,id:x.id||uid(),status:x.status||'unverified'}))}
+    else for(let kind of ['mobile','phone','email','linkedin']) if(data[kind])out.methods.push(method(kind,data[kind]));
+    return out;
+  }
+  const defaultFX=()=>({provider:'',products:[],currentPricing:'',hedgePct:'',hedgeTenor:'',paymentTiming:'',budgetRate:'',notes:'',flows:[],updatedAt:''});
+  function buildLead(data={}){
+    const l={id:data.id||uid(),company:String(data.company||'').trim(),sector:String(data.sector||'').trim(),stage:STAGES.includes(data.stage)?data.stage:'Prospecting',status:STATUSES.includes(data.status)?data.status:'Active',statusReason:data.statusReason||'',notes:String(data.notes||''),fit:clamp(data.fit??3,1,5),contacts:[],primaryContactId:null,readiness:data.readiness>=1&&data.readiness<=8?Math.round(data.readiness):null,readinessEvidence:data.readinessEvidence||'',readinessUpdatedAt:data.readinessUpdatedAt||'',lastMeaningfulAt:data.lastMeaningfulAt||'',barrier:data.barrier||'',nextMilestone:data.nextMilestone||'',lastProgressEvidence:data.lastProgressEvidence||'',lastProgressAt:data.lastProgressAt||'',fx:{...defaultFX(),...(data.fx||{})},sequenceState:data.sequenceState||'none',sequenceIndex:num(data.sequenceIndex,-1),reachedStages:Array.isArray(data.reachedStages)?[...new Set(data.reachedStages)]:['Prospecting'],awardedMilestones:Array.isArray(data.awardedMilestones)?data.awardedMilestones:[],createdAt:data.createdAt||new Date().toISOString(),estimatedRevenue:num(data.estimatedRevenue,0)};
+    if(!Array.isArray(l.fx.flows))l.fx.flows=[];
+    l.contacts=Array.isArray(data.contacts)?data.contacts.map(buildContact):[];
+    if(!l.contacts.length && (data.contact||data.mobile||data.phone||data.email||data.linkedin)) l.contacts.push(buildContact({name:data.contact,title:data.title,mobile:data.mobile,phone:data.phone,email:data.email,linkedin:data.linkedin,linkedinConnected:data.linkedinConnected}));
+    l.primaryContactId=data.primaryContactId&&l.contacts.some(c=>c.id===data.primaryContactId)?data.primaryContactId:l.contacts[0]?.id||null;
+    if(l.readiness&&!l.nextMilestone)l.nextMilestone=NEXT_MILESTONES[l.readiness-1];
+    return l;
+  }
+  function isSuppressed(s,l,c=null){if(l.status==='Take Me Off the List')return true;if(c?.optedOut)return true;return s.suppression.some(x=>{
+    if(x.scope==='company')return x.company===companyKey(l.company);
+    if(x.scope!=='contact')return false;
+    if(c){let email=bestMethod(c,'email')?.value?.toLowerCase()||'';let phone=methods(c).filter(m=>['mobile','phone'].includes(m.kind)).map(m=>phoneDial(m.value));return Boolean((x.email&&x.email===email)||(x.phone&&phone.includes(x.phone))||(x.company===companyKey(l.company)&&x.contact===contactKey(c)))}
+    return false;
+  })}
+  function log(s,l,type,outcome,notes='',xp=0,extra={}){let a={id:uid(),leadId:l?.id||null,at:new Date().toISOString(),type,outcome,notes:String(notes||''),xp:num(xp),...extra};s.activities.push(a);return a}
+  function reward(s,l,key,xp,why){if(!l||l.awardedMilestones.includes(key))return 0;l.awardedMilestones.push(key);s.milestoneHistory.push({id:uid(),leadId:l.id,key,at:new Date().toISOString(),xp,evidence:why||''});return xp}
+  function cancelTasks(s,l,predicate,reason='Superseded'){let n=0;for(let t of s.tasks){if(t.leadId===l.id&&t.status==='pending'&&predicate(t)){t.status='cancelled';t.cancelledAt=new Date().toISOString();t.cancelReason=reason;n++}}return n}
+  function active(l){return l&&l.status==='Active'&&l.stage!=='First Trade'}
+  function addTask(s,l,type,title,dueAt=today(),opt={}){
+    if(l&&(!active(l)&&!(l.status==='Negative Nurture'&&(type==='review'||(type==='callback'&&opt.isCommitment)))))return null;
+    if(l&&isSuppressed(s,l,opt.contactId?getContact(l,opt.contactId):null))return null;
+    const key=opt.dedupeKey||'';
+    if(key){let existing=s.tasks.find(t=>t.status==='pending'&&t.leadId===(l?.id||null)&&t.dedupeKey===key);if(existing)return existing}
+    const t={id:uid(),leadId:l?.id||null,contactId:opt.contactId||null,methodId:opt.methodId||null,type,title,description:opt.description||'',dueAt:dueAt||today(),dueTime:opt.dueTime||'',status:'pending',origin:opt.origin||'manual',stepIndex:opt.stepIndex??null,objective:opt.objective||OBJECTIVES[type]||'',successCriteria:opt.successCriteria||'',isCommitment:!!opt.isCommitment,dedupeKey:key,createdAt:new Date().toISOString()};
+    s.tasks.push(t);return t;
+  }
+  function addRepair(s,l,problem='Find correct contact information',due=today(),contactId=null){return addTask(s,l,'research','Resolve contact details · '+l.company,due,{origin:'repair',contactId,description:problem,objective:'Find a verified usable channel to the FX decision-maker',successCriteria:'A relevant active contact with a usable phone or permitted email',dedupeKey:`repair:${l.id}`})}
+  function createSequenceStep(s,l,i,due=today()){
+    if(!active(l))return null;
+    for(let j=i;j<s.sequence.length;j++){
+      let step=s.sequence[j]; if(!step||!step.type)continue;
+      let c=preferredContact(l,step.type==='call'?'call':step.type);
+      if(step.type==='linkedin_message' && (!c||!c.linkedinConnected)){due=businessAdd(due,num(step.delay,2));continue}
+      if(step.type==='linkedin_connect' && (!c||c.linkedinConnected)){due=businessAdd(due,num(step.delay,2));continue}
+      if(!c){l.sequenceState='blocked';l.sequenceIndex=j;return addRepair(s,l,`No usable contact method for planned ${step.type.replace('_',' ')} step. Find an alternative or choose to skip this channel.`,due)}
+      let m=step.type==='call'?anyPhone(c):bestMethod(c,step.type==='email'?'email':'linkedin');
+      if(!m){l.sequenceState='blocked';l.sequenceIndex=j;return addRepair(s,l,`Find an appropriate contact method for ${step.type}.`,due,c.id)}
+      l.sequenceState='active';l.sequenceIndex=j;
+      return addTask(s,l,step.type,step.title||'Sequence step',due,{origin:'sequence',stepIndex:j,contactId:c.id,methodId:m.id,description:'Standard outreach sequence; adapt if buyer engagement changes.',dedupeKey:`sequence:${l.id}:${j}`});
+    }
+    l.sequenceState='complete';l.sequenceIndex=s.sequence.length;
+    return addTask(s,l,'review','Review completed outreach sequence',businessAdd(due,s.settings.reviewAfterSequence),{origin:'sequence_review',description:'No meaningful engagement. Decide whether a further approach is justified.',dedupeKey:`sequence_review:${l.id}`});
+  }
+  function startSequence(s,l,due=today()){
+    if(!active(l))return null;
+    cancelTasks(s,l,t=>t.origin==='sequence'||t.origin==='sequence_review'||t.origin==='repair','New sequence started');
+    l.sequenceState='active';l.sequenceIndex=-1;
+    return createSequenceStep(s,l,0,due);
+  }
+  function nextSequence(s,l,finished){
+    const i=(finished.stepIndex??l.sequenceIndex??-1)+1;
+    const delay=i<s.sequence.length?num(s.sequence[i].delay):s.settings.reviewAfterSequence;
+    return createSequenceStep(s,l,i,businessAdd(today(),delay));
+  }
+  function stageTask(s,l,due='',time=''){
+    if(!active(l)||!STAGE_TASK[l.stage])return null;
+    let [name,days]=STAGE_TASK[l.stage];
+    return addTask(s,l,'deal',name,due||businessAdd(today(),days),{origin:'stage',dueTime:time,isCommitment:!!due,description:`Pipeline stage: ${l.stage}. ${l.barrier?'Barrier: '+l.barrier:''}`,objective:l.nextMilestone||OBJECTIVES.deal,successCriteria:'A documented commercial commitment or verified stage milestone',dedupeKey:`stage:${l.id}:${l.stage}`});
+  }
+  function advanceStage(s,l,newStage,evidence='',due='',time=''){
+    if(!STAGES.includes(newStage)||!l||l.status!=='Active'||isSuppressed(s,l))return {changed:false,xp:0};
+    const previous=l.stage;
+    if(previous===newStage)return {changed:false,xp:0};
+    l.stage=newStage;l.status='Active';l.reachedStages=[...new Set([...l.reachedStages,newStage])];l.sequenceState='paused';
+    cancelTasks(s,l,t=>['sequence','stage','sequence_review','repair','insight'].includes(t.origin),'Pipeline stage changed');
+    const xpMap={'Discovery Complete':50,'Meeting Booked':100,'Successful Meeting':150,'Onboarding':200,'Account Open':250,'First Trade':500};
+    const xp=stageIndex(newStage)>stageIndex(previous)?reward(s,l,`stage:${newStage}`,xpMap[newStage]||0,evidence):0;
+    l.lastProgressAt=new Date().toISOString();l.lastProgressEvidence=evidence||`Confirmed stage: ${newStage}`;
+    log(s,l,'Pipeline',`${previous} → ${newStage}`,evidence,xp,{oldStage:previous,newStage});
+    if(newStage!=='First Trade')stageTask(s,l,due,time);
+    return {changed:true,xp};
+  }
+  function setReadiness(s,l,newLevel,evidence,options={}){
+    let lev=Number(newLevel);if(!Number.isInteger(lev)||lev<1||lev>8)return {changed:false,error:'Choose a valid readiness level.'};
+    if(!String(evidence||'').trim())return {changed:false,error:'Evidence is required for a readiness change.'};
+    if(l.readiness===lev)return {changed:false,error:'Readiness is unchanged.'};
+    let old=l.readiness;
+    l.readiness=lev;l.readinessEvidence=String(evidence).trim();l.readinessUpdatedAt=new Date().toISOString();
+    if(options.barrier!==undefined)l.barrier=String(options.barrier||'').trim();
+    l.nextMilestone=String(options.nextMilestone||'').trim()||NEXT_MILESTONES[lev-1];
+    if(old===null||lev>old){l.lastProgressAt=l.readinessUpdatedAt;l.lastProgressEvidence=evidence}
+    const ev={id:uid(),leadId:l.id,at:l.readinessUpdatedAt,from:old,to:lev,evidence:String(evidence).trim(),barrier:l.barrier,nextMilestone:l.nextMilestone};
+    s.readinessHistory.push(ev);
+    const readinessXP=(old===null||lev>old)?reward(s,l,`readiness:${lev}`,({2:10,3:30,4:50,5:65,6:90,7:110,8:0})[lev]||0,evidence):0;
+    log(s,l,'Buyer Readiness',`${old?old+' · '+READINESS[old-1]:'Unassessed'} → ${lev} · ${READINESS[lev-1]}`,evidence,readinessXP);
+    return {changed:true,event:ev};
+  }
+  function addSuppression(s,l,c=null,scope='contact',notes=''){
+    let emails=methods(c,'email');let phones=[...methods(c,'mobile'),...methods(c,'phone')];
+    let item={id:uid(),scope,company:companyKey(l.company),contact:contactKey(c),email:emails[0]?.value?.toLowerCase()||'',phone:phones[0]?phoneDial(phones[0].value):'',at:new Date().toISOString(),notes};
+    if(!s.suppression.some(x=>x.scope===item.scope&&x.company===item.company&&(scope==='company'||(x.contact===item.contact&&x.contact))))s.suppression.push(item);
+    if(scope==='contact'&&c)c.optedOut=true;
+    if(scope==='company'){for(const other of s.leads.filter(x=>companyKey(x.company)===companyKey(l.company))){other.status='Take Me Off the List';other.statusReason=notes||'Company opt-out';cancelTasks(s,other,()=>true,'Company-wide opt-out')}}
+    else {cancelTasks(s,l,t=>!c||t.contactId===c.id,'Contact opt-out');if(!l.contacts.some(x=>canContact(x)&&!isSuppressed(s,l,x))){l.status='Take Me Off the List';l.statusReason=notes||'Contact opt-out';cancelTasks(s,l,()=>true,'No permitted active contacts')}}
+    log(s,l,'Status','Take Me Off the List',notes,0,{scope,contactId:c?.id||null});return item;
+  }
+  function changeStatus(s,l,status,reason='',opts={}){
+    if(!STATUSES.includes(status))return false;
+    if(status==='Take Me Off the List'){addSuppression(s,l,opts.contact||null,opts.scope||'contact',reason);return true}
+    if(status==='Active'){if(isSuppressed(s,l))return false;l.status='Active';l.statusReason='';stageTask(s,l);if(l.stage==='Prospecting')startSequence(s,l);log(s,l,'Status','Reactivated',reason,0);return true}
+    l.status=status;l.statusReason=reason;
+    cancelTasks(s,l,t=>status==='Negative Nurture'?!t.isCommitment:true,'Status changed to '+status);
+    l.sequenceState='paused';
+    if(status==='Negative Nurture'){let due=opts.due||businessAdd(today(),60);l.nurtureUntil=due;addTask(s,l,'review','Review negative nurture prospect',due,{origin:'nurture',description:reason||'Previously not receptive. Review before any further contact.',dedupeKey:`nurture:${l.id}`})}
+    log(s,l,'Status',status,reason,0);return true;
+  }
+  function createLead(s,data={},opts={}){
+    let l=buildLead(data);if(!l.company)return null;
+    let duplicate=s.leads.find(x=>companyKey(x.company)===companyKey(l.company));
+    if(duplicate&&!opts.allowDuplicate)return {duplicate};
+    s.leads.push(l);
+    if(s.suppression.some(x=>x.scope==='company'&&x.company===companyKey(l.company))){l.status='Take Me Off the List';l.statusReason='Company is suppressed'}
+    else {for(let c of l.contacts){if(isSuppressed(s,l,c))c.optedOut=true}if(l.contacts.length&&l.contacts.every(c=>c.optedOut)){l.status='Take Me Off the List';l.statusReason='Existing individual opt-out'}}
+    if(l.status==='Active'){
+      if(l.stage==='Prospecting')startSequence(s,l);
+      else if(l.stage!=='First Trade')stageTask(s,l);
+    }else if(l.status==='Negative Nurture')addTask(s,l,'review','Review negative nurture prospect',businessAdd(today(),60),{origin:'nurture',dedupeKey:`nurture:${l.id}`});
+    log(s,l,'Company','Prospect created',l.notes,0);
+    return l;
+  }
+  function addContact(s,l,data){
+    if(!l||!data)return null;
+    let c=buildContact(data);
+    if(!c.name&&!c.methods.length)return null;
+    let duplicate=l.contacts.find(x=>c.name&&contactKey(x)===contactKey(c));
+    if(duplicate)return {duplicate};
+    l.contacts.push(c);if(!l.primaryContactId)l.primaryContactId=c.id;
+    if(isSuppressed(s,l,c))c.optedOut=true;
+    log(s,l,'Contact','Contact added',c.name+' '+c.title,0,{contactId:c.id});
+    return c;
+  }
+  function addMethod(s,l,c,kind,value,status='unverified'){
+    if(!['mobile','phone','email','linkedin'].includes(kind)||!String(value||'').trim())return null;
+    let norm=kind==='mobile'||kind==='phone'?phoneDial(value):String(value).trim().toLowerCase();
+    if(c.methods.some(m=>m.kind===kind&&(kind==='mobile'||kind==='phone'?phoneDial(m.value):m.value.toLowerCase())===norm))return {duplicate:true};
+    const m=method(kind,value,status);c.methods.push(m);log(s,l,'Contact','New contact method',`${kind}: ${value}`,0,{contactId:c.id,methodId:m.id});return m;
+  }
+  function invalidateMethod(s,l,c,methodId,reason='Bad number'){
+    const m=c?.methods.find(x=>x.id===methodId);if(!m)return false;
+    m.status='invalid';m.updatedAt=new Date().toISOString();
+    cancelTasks(s,l,t=>t.status==='pending'&&t.methodId===m.id,'Invalid contact method');
+    log(s,l,'Contact','Invalid '+m.kind,reason,0,{contactId:c.id,methodId:m.id});
+    return true;
+  }
+  function markCompleted(s,t,kind,outcome,notes='',xp=0,extra={}){
+    if(!t||t.status!=='pending')return false;
+    t.status='completed';t.completedAt=new Date().toISOString();
+    log(s,getLead(s,t.leadId),kind,outcome,notes,xp,{taskId:t.id,contactId:t.contactId,...extra});return true;
+  }
+  function scheduleCallback(s,l,date,time='',reason='',contactId=null){
+    if(!date)return null;
+    const c=getContact(l,contactId)||preferredContact(l,'call')||preferredContact(l,'email');
+    return addTask(s,l,'callback','Promised follow-up · '+l.company,date,{origin:'commitment',dueTime:time,contactId:c?.id||null,description:reason,objective:'Complete the agreed follow-up and establish the next milestone',successCriteria:'Follow-up action delivered as agreed',isCommitment:true,dedupeKey:`commitment:${l.id}:${date}:${time}:${c?.id||'none'}`});
+  }
+  function logCall(s,t,opts={}){
+    const l=getLead(s,t?.leadId);if(!l||!t||t.status!=='pending')return {error:'Task no longer pending.'};
+    let c=getContact(l,opts.contactId||t.contactId)||preferredContact(l,'call')||l.contacts[0]||null;
+    const outcome=String(opts.outcome||'no_answer');
+    if(outcome==='callback'&&!opts.callbackDate)return {error:'Choose the promised callback date.'};
+    if(['negative_nurture','disqualified','closed_lost','optout'].includes(outcome)&&!String(opts.reason||'').trim())return {error:'Please record the reason.'};
+    if(opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness&&!String(opts.evidence||'').trim())return {error:'Readiness changes need supporting evidence.'};
+    const names={no_answer:'No answer',gatekeeper:'Gatekeeper',connected:'Meaningful conversation',callback:'Callback requested',meeting_booked:'Meeting booked',wrong_person:'Wrong person / not responsible',bad_number:'Bad or invalid number',left_company:'Contact left company',negative_nurture:'Negative nurture',disqualified:'Disqualified',closed_lost:'Closed lost',optout:'Take Me Off the List'};
+    const connected=['connected','callback','meeting_booked','negative_nurture','closed_lost','disqualified'].includes(outcome);
+    const xp=outcome==='meeting_booked'?20:connected?15:outcome==='no_answer'||outcome==='gatekeeper'?2:0;
+    markCompleted(s,t,'Call',names[outcome]||outcome,opts.notes||'',xp,{durationMins:clamp(opts.minutes??0,0,240)});
+    if(connected){l.lastMeaningfulAt=new Date().toISOString();if(c)c.lastMeaningfulAt=l.lastMeaningfulAt}
+    if(connected&&opts.decisionMakerConfirmed&&c){c.roleStatus='decision_maker';const milestoneXP=reward(s,l,'decision-maker-engaged',40,'Decision-maker engagement confirmed during a call');if(milestoneXP)log(s,l,'Milestone','Decision-maker engaged',opts.notes||'Confirmed decision-maker',milestoneXP)}
+    if(opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness){setReadiness(s,l,Number(opts.readiness),opts.evidence,{barrier:opts.barrier,nextMilestone:opts.nextMilestone})}
+    else if(connected){if(opts.barrier!==undefined)l.barrier=String(opts.barrier||'');if(opts.nextMilestone)l.nextMilestone=String(opts.nextMilestone)}
+    if(outcome==='no_answer'||outcome==='gatekeeper'){
+      if(t.origin==='sequence')nextSequence(s,l,t);
+      else if(active(l))addTask(s,l,'call','Retry contact — vary call time',businessAdd(today(),2),{origin:'followup',contactId:c?.id||null,objective:'Establish contact',dedupeKey:`retry:${l.id}:${t.id}`});
+    }else if(outcome==='wrong_person'||outcome==='left_company'){
+      if(c){c.roleStatus=outcome==='left_company'?'left_company':'not_responsible';if(outcome==='left_company')c.active=false}
+      cancelTasks(s,l,x=>x.origin==='sequence'&&x.contactId===c?.id,'Contact not relevant');
+      l.sequenceState='blocked';addRepair(s,l,opts.referredName?`Referred to ${opts.referredName}. Find their details and confirm FX responsibility.`:'Identify the person responsible for corporate FX and find a usable number.',today(),c?.id);
+    }else if(outcome==='bad_number'){
+      if(c){const m=c.methods.find(x=>x.id===(opts.methodId||t.methodId))||anyPhone(c);if(m)invalidateMethod(s,l,c,m.id,'Failed call: bad or incorrect number')}
+      l.sequenceState='blocked';const alternative=preferredContact(l,'call');
+      if(alternative){let m=anyPhone(alternative);addTask(s,l,'call','Try alternative verified contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
+      else addRepair(s,l,'Find a new valid number, email-only route, or a different finance decision-maker.',today(),c?.id);
+    }else if(outcome==='callback'){
+      l.sequenceState='paused';cancelTasks(s,l,x=>x.origin==='sequence'||x.origin==='followup','Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
+    }else if(outcome==='meeting_booked'){
+      l.sequenceState='paused';
+      if(stageIndex(l.stage)<stageIndex('Meeting Booked'))advanceStage(s,l,'Meeting Booked',opts.notes||'Meeting booked',opts.callbackDate||'',opts.callbackTime||'');
+      else if(opts.callbackDate)addTask(s,l,'meeting','Attend follow-up meeting',opts.callbackDate,{origin:'commitment',dueTime:opts.callbackTime||'',isCommitment:true,description:opts.notes||'',dedupeKey:`meeting:${l.id}:${opts.callbackDate}:${opts.callbackTime||''}`});
+    }else if(outcome==='connected'){
+      l.sequenceState='paused';cancelTasks(s,l,x=>x.origin==='sequence'||x.origin==='followup','Meaningful conversation');
+      if(opts.callbackDate)scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
+      if(active(l)&&!s.tasks.some(x=>x.leadId===l.id&&x.status==='pending'&&(x.isCommitment||x.origin==='stage'))){
+        let due=opts.callbackDate||businessAdd(today(),2);
+        addTask(s,l,'deal','Progress agreed buyer milestone',due,{origin:'progression',contactId:c?.id||null,description:opts.notes||'',objective:l.nextMilestone||NEXT_MILESTONES[(l.readiness||1)-1],successCriteria:'Obtain evidence that the stated buyer barrier has changed',dedupeKey:`progression:${l.id}`});
+      }
+    }else if(outcome==='negative_nurture'){changeStatus(s,l,'Negative Nurture',opts.reason,{due:opts.callbackDate||businessAdd(today(),60)})}
+    else if(outcome==='disqualified'){changeStatus(s,l,'Disqualified',opts.reason)}
+    else if(outcome==='closed_lost'){changeStatus(s,l,'Closed Lost',opts.reason)}
+    else if(outcome==='optout'){changeStatus(s,l,'Take Me Off the List',opts.reason,{scope:opts.optoutScope||'contact',contact:c})}
+    return {ok:true,outcome};
+  }
+  function completeTask(s,t,opts={}){
+    const l=getLead(s,t?.leadId);if(!t||t.status!=='pending')return {error:'Task no longer pending.'};
+    if(t.type==='call'||t.type==='callback')return logCall(s,t,opts);
+    if(t.type==='deal'||t.type==='meeting'){
+      const result=markCompleted(s,t,'Task',opts.outcome||'Deal action completed',opts.notes||'',5);
+      const stageChanged=!!(opts.newStage&&l&&opts.newStage!==l.stage);
+      if(stageChanged)advanceStage(s,l,opts.newStage,opts.notes||'',opts.nextDate||'',opts.nextTime||'');
+      else if(l&&opts.nextDate)scheduleCallback(s,l,opts.nextDate,opts.nextTime||'',opts.notes||'',t.contactId);
+      else if(l&&active(l)&&!s.tasks.some(x=>x.status==='pending'&&x.leadId===l.id&&(x.isCommitment||x.origin==='stage'||x.origin==='progression'))){addTask(s,l,'deal','Continue work towards next milestone',businessAdd(today(),2),{origin:'progression',objective:l.nextMilestone||OBJECTIVES.deal,successCriteria:'New evidence or agreed buyer action',dedupeKey:`progression:${l.id}`})}
+      return {ok:result};
+    }
+    const earned={email:5,linkedin_connect:3,linkedin_message:4,research:8,review:3,leadgen:10,manual:5}[t.type]||4;
+    markCompleted(s,t,'Task',opts.outcome||'Completed',opts.notes||'',earned);
+    if(l&&t.origin==='sequence'&&active(l))nextSequence(s,l,t);
+    else if(l&&t.type==='review'&&l.status==='Negative Nurture'){
+      addTask(s,l,'review','Review whether nurture is appropriate',opts.nextDate||businessAdd(today(),60),{origin:'nurture',dedupeKey:`nurture:${l.id}`});
+    }
+    if(l&&opts.nextDate&&active(l))scheduleCallback(s,l,opts.nextDate,opts.nextTime||'',opts.notes||'',t.contactId);
+    return {ok:true};
+  }
+  function snoozeTask(s,t,due,time=''){if(!t||t.status!=='pending'||!due)return false;t.dueAt=due;t.dueTime=time;log(s,getLead(s,t.leadId),'Task','Snoozed',`Rescheduled to ${due} ${time}`,0,{taskId:t.id});return true}
+  function skipTask(s,t){if(!t||t.status!=='pending')return false;t.skippedAt=new Date().toISOString();t.dueAt=businessAdd(today(),1);t.dueTime='';log(s,getLead(s,t.leadId),'Task','Skipped to next working day','',0,{taskId:t.id});return true}
+  function resolveContact(s,t,opts={}){
+    const l=getLead(s,t?.leadId);if(!l||!t||t.status!=='pending')return {error:'Resolution task unavailable.'};
+    const mode=opts.mode;let c=getContact(l,opts.contactId)||getContact(l,t.contactId)||l.contacts[0];
+    if(mode==='new_number'){
+      if(!opts.value)return {error:'Enter the replacement number.'};if(!c)return {error:'Add a contact first.'};
+      if(c.roleStatus==='not_responsible'||c.roleStatus==='left_company')return {error:'This contact is not the FX decision-maker. Add the correct person instead.'};
+      addMethod(s,l,c,opts.kind==='phone'?'phone':'mobile',opts.value,'unverified');c.active=true;
+    } else if(mode==='new_contact'){
+      if(!opts.name)return {error:'Enter the new contact name.'};c=addContact(s,l,{name:opts.name,title:opts.title||'',mobile:opts.value||'',email:opts.email||'',roleStatus:'unknown'});
+      if(c?.duplicate)return {error:'Contact already exists.'};if(!c)return {error:'Could not add contact.'};
+      l.primaryContactId=c.id;
+    } else if(mode==='email'){
+      if(!c||!bestMethod(c,'email'))return {error:'This contact has no usable email address.'};
+    } else if(mode==='review'){
+      return snoozeTask(s,t,opts.nextDate||businessAdd(today(),5))?{ok:true}:{error:'Select a review date.'};
+    } else return {error:'Choose how to resolve contact information.'};
+    markCompleted(s,t,'Contact Resolution','Resolved: '+mode,opts.notes||'',10);
+    l.sequenceState='paused';
+    if(mode==='email')addTask(s,l,'email','Email to identify or reach the FX decision-maker',today(),{origin:'repair_followup',contactId:c.id,methodId:bestMethod(c,'email').id,dedupeKey:`repair_email:${l.id}`});
+    else if(c&&anyPhone(c))addTask(s,l,'call','Call updated FX contact',today(),{origin:'repair_followup',contactId:c.id,methodId:anyPhone(c).id,dedupeKey:`repair_call:${l.id}`});
+    else if(c&&bestMethod(c,'email'))addTask(s,l,'email','Email new contact',today(),{origin:'repair_followup',contactId:c.id,methodId:bestMethod(c,'email').id,dedupeKey:`repair_email:${l.id}`});
+    else addRepair(s,l,'New contact still needs a usable phone or email',businessAdd(today(),2),c?.id);
+    return {ok:true};
+  }
+  function isDue(t,now=new Date()){
+    if(t.status!=='pending')return false;
+    const d=today(now);if(t.dueAt>d)return false;if(t.dueAt<d||!t.dueTime)return true;
+    const [h,m]=String(t.dueTime).split(':').map(Number);return now.getHours()*60+now.getMinutes() >= h*60+m;
+  }
+  function potentialForLead(l,settings=DEFAULT_SETTINGS){
+    let discovered=0,qualified=0,revenue=0,unconverted=0,flows=0,assumedMargin=0;
+    for(const f of (l.fx?.flows||[])){
+      let amount=Math.max(0,num(f.amount));if(!amount)continue;
+      let factor=f.period==='monthly'?12:f.period==='quarterly'?4:f.period==='weekly'?52:1;
+      let annual=amount*factor,gbp=f.currency==='GBP'?annual:num(f.gbpAnnualEquivalent,0);
+      flows++;
+      if(!gbp){unconverted++;continue}
+      discovered+=gbp;
+      const confirmed=f.confidence==='confirmed';
+      const pct=f.addressablePct===''||f.addressablePct===null||f.addressablePct===undefined?null:clamp(f.addressablePct,0,100);
+      if(confirmed&&pct!==null&&stageIndex(l.stage)>=1&&l.status==='Active'){
+        let adr=gbp*pct/100;qualified+=adr;
+        let bps=(f.marginBps===''||f.marginBps===null||f.marginBps===undefined)?num(settings.defaultMarginBps):num(f.marginBps);
+        if(f.marginBps===''||f.marginBps===null||f.marginBps===undefined)assumedMargin++;
+        revenue+=adr*bps/10000;
+      }
+    }
+    return {discovered,qualified,revenue,unconverted,flows,assumedMargin};
+  }
+  const STAGE_PROB={'Prospecting':0.05,'Discovery Complete':0.12,'Meeting Booked':0.22,'Successful Meeting':0.4,'Onboarding':0.7,'Account Open':0.85,'First Trade':1};
+  function pipelineValue(s){let data={discovered:0,qualified:0,revenue:0,weighted:0,unconverted:0,assumedMargin:0,byStage:{},rows:[]};
+    for(let l of s.leads){if(l.status!=='Active'||l.stage==='First Trade')continue;let p=potentialForLead(l,s.settings);data.discovered+=p.discovered;data.qualified+=p.qualified;data.revenue+=p.revenue;data.unconverted+=p.unconverted;data.assumedMargin+=p.assumedMargin;data.weighted+=p.revenue*(STAGE_PROB[l.stage]||0);data.byStage[l.stage]=(data.byStage[l.stage]||0)+p.revenue;data.rows.push({...p,id:l.id,company:l.company,stage:l.stage,readiness:l.readiness,probability:STAGE_PROB[l.stage]||0})}
+    data.rows.sort((a,b)=>b.revenue-a.revenue);return data;
+  }
+  function isEligibleTask(s,t){if(t.status!=='pending')return false;if(!t.leadId)return true;
+    const l=getLead(s,t.leadId);if(!l||isSuppressed(s,l))return false;
+    if(l.status==='Negative Nurture')return t.type==='review'||t.isCommitment;if(!active(l))return false;
+    let c=t.contactId?getContact(l,t.contactId):null;
+    if(c&&(c.optedOut||c.roleStatus==='left_company'||(c.roleStatus==='not_responsible'&&['call','email','linkedin_connect','linkedin_message'].includes(t.type))))return false;
+    if(t.type==='call'&&!((c&&anyPhone(c))||preferredContact(l,'call')))return false;
+    if(t.type==='email'&&!((c&&bestMethod(c,'email'))||preferredContact(l,'email')))return false;
+    if(t.type==='linkedin_connect'&&!((c&&bestMethod(c,'linkedin'))||preferredContact(l,'linkedin_connect')))return false;
+    if(t.type==='linkedin_message'&&!((c?.linkedinConnected&&bestMethod(c,'linkedin'))||preferredContact(l,'linkedin_message')?.linkedinConnected))return false;
+    return true;
+  }
+  function taskTier(t){if(t.isCommitment||t.type==='callback')return 5;if(t.type==='meeting')return 5;if(t.type==='deal')return 4;if(t.type==='research')return 2;if(['call','email','linkedin_connect','linkedin_message'].includes(t.type))return 2;return 1}
+  function taskScore(s,t){const l=getLead(s,t.leadId);if(!l)return t.type==='leadgen'?20:0;
+    const p=potentialForLead(l,s.settings);
+    const age=clamp(daysBetween(today(),t.dueAt),0,25);
+    const meaningful=l.lastMeaningfulAt?clamp(daysBetween(today(),l.lastMeaningfulAt.slice(0,10)),0,30):0;
+    const money=clamp(Math.log10(Math.max(1,p.revenue)+1)*4,0,22);
+    const fit=clamp(l.fit,1,5)*3;
+    const readiness=l.readiness?l.readiness*1.25:0;
+    const barrierBonus=(t.type==='deal'&&l.barrier)?8:0;
+    return Math.round(age*1.3+meaningful*.25+money+fit+readiness+barrierBonus+(t.isCommitment?30:0));
+  }
+  function pending(s){return s.tasks.filter(t=>t.status==='pending'&&isEligibleTask(s,t))}
+  function due(s,now=new Date()){return pending(s).filter(t=>isDue(t,now)).sort((a,b)=>taskTier(b)-taskTier(a)||taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||''))}
+  function nextTask(s,options={}){const d=due(s);if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
+  function xpStats(s){let total=s.activities.reduce((sum,a)=>sum+num(a.xp),0);return {total,level:Math.floor(total/1000)+1,progress:total%1000}}
+  function activityToday(s){const activities=s.activities.filter(a=>a.at.startsWith(today()));return {calls:activities.filter(a=>a.type==='Call').length,tasks:activities.filter(a=>a.taskId).length,meetings:activities.filter(a=>a.type==='Pipeline'&&a.newStage==='Meeting Booked').length,minutes:activities.filter(a=>a.type==='Call').reduce((x,a)=>x+num(a.durationMins),0),xp:activities.reduce((x,a)=>x+num(a.xp),0)}}
+  function insights(s){const ls=s.leads.filter(x=>x.status==='Active'&&x.stage!=='First Trade');const assessed=ls.filter(x=>x.readiness!==null);const counts=Array(8).fill(0);assessed.forEach(x=>counts[x.readiness-1]++);
+    const cutoff=clamp(s.settings.stalledAfterDays,3,90);
+    const stalled=ls.filter(l=>l.readiness&&l.readiness<8&&daysBetween(today(),(l.lastProgressAt||l.readinessUpdatedAt||l.createdAt).slice(0,10))>=cutoff);
+    const noNext=ls.filter(l=>l.stage!=='First Trade'&&!s.tasks.some(t=>t.leadId===l.id&&t.status==='pending'&&isEligibleTask(s,t)));
+    const issues={};for(let l of stalled){const name=l.barrier||'Barrier not recorded';issues[name]=(issues[name]||0)+1}
+    let thisWeek=addDays(today(),-7);
+    const moved=[...new Set(s.readinessHistory.filter(x=>x.at.slice(0,10)>=thisWeek&&(x.from===null||x.to>x.from)).map(x=>x.leadId).concat(s.activities.filter(x=>x.at.slice(0,10)>=thisWeek&&x.type==='Pipeline'&&stageIndex(x.newStage)>stageIndex(x.oldStage)).map(x=>x.leadId)))].length;
+    const advances=s.readinessHistory.filter(x=>x.at.slice(0,10)>=thisWeek&&(x.from===null||x.to>x.from)).length;
+    const meetings=s.activities.filter(x=>x.at.slice(0,10)>=thisWeek&&x.type==='Pipeline'&&x.newStage==='Meeting Booked').length;
+    const firstTrades=s.activities.filter(x=>x.at.slice(0,10)>=thisWeek&&x.type==='Pipeline'&&x.newStage==='First Trade').length;
+    const stages=STAGES.map(st=>ls.filter(l=>l.stage===st).length);
+    const transitions=STAGES.slice(1).map((st,i)=>({label:`${STAGES[i]} → ${st}`,reached:s.leads.filter(l=>l.reachedStages.includes(st)).length,base:s.leads.filter(l=>l.reachedStages.includes(STAGES[i])).length}));
+    return {active:ls.length,assessed:assessed.length,unassessed:ls.length-assessed.length,counts,stalled,noNext,issues:Object.entries(issues).sort((a,b)=>b[1]-a[1]),moved,advances,meetings,firstTrades,stages,transitions,cutoff};
+  }
+  function leadSupply(s){const days=clamp(s.settings.supplyDays,2,20),end=businessAdd(today(),days-1), tasks=pending(s),ready=tasks.filter(t=>t.dueAt<=today()).length,upcoming=tasks.filter(t=>t.dueAt>today()&&t.dueAt<=end).length;
+    const prev=addDays(today(),-14),completed=s.activities.filter(a=>a.taskId&&a.at.slice(0,10)>=prev).length,pace=completed?Math.max(1,Math.round(completed/10)):num(s.settings.dailyCapacity);
+    const capacity=pace*days,coverage=capacity?((ready+upcoming)/capacity):0;
+    return {ready,upcoming,pace,capacity,coverage,days,end,label:coverage<0.7?'Low supply':coverage>1.5?'Heavy backlog':'Watch supply',gap:Math.max(0,capacity-ready-upcoming)};
+  }
+  function updateFX(s,l,data){if(!l||!data)return;let fx={...defaultFX(),...l.fx,...data};fx.products=Array.isArray(fx.products)?fx.products:[];fx.flows=Array.isArray(fx.flows)?fx.flows.filter(f=>num(f.amount)>0&&f.currency).map(f=>({...f,id:f.id||uid(),currency:String(f.currency).toUpperCase(),confidence:f.confidence==='confirmed'?'confirmed':'estimate'})):[];fx.updatedAt=new Date().toISOString();l.fx=fx;log(s,l,'Discovery','FX qualification updated',`${fx.flows.length} currency flow(s) saved`,0)}
+  function migrateV2(old){const s=newState();s.meta={createdAt:new Date().toISOString(),source:'migrated-v2',demo:!!old?.meta?.demo,migratedAt:new Date().toISOString()};
+    if(!old||!Array.isArray(old.leads))return s;
+    s.settings={...s.settings,...old.settings};
+    if(Array.isArray(old.sequence)&&old.sequence.length)s.sequence=old.sequence.map(x=>({type:x.type,title:x.title||x.label,delay:num(x.delay)}));
+    let map=new Map();
+    for(let x of old.leads){let l=buildLead({...x,readiness:null,contacts:undefined,primaryContactId:null,fx:defaultFX(),estimatedRevenue:num(x.estimatedRevenue),reachedStages:x.reachedStages||['Prospecting']});s.leads.push(l);map.set(x.id,l.contacts[0]?.id||null)}
+    s.tasks=(old.tasks||[]).filter(t=>t&&t.id).map(t=>({...t,contactId:map.get(t.leadId)||null,methodId:null,objective:OBJECTIVES[t.type]||'',successCriteria:'',isCommitment:t.type==='callback',dedupeKey:t.dedupeKey||'',origin:t.origin||'migration',description:t.description||''}));
+    s.activities=(old.activities||[]).map(a=>({...a,notes:a.notes??a.note??''}));
+    s.suppression=(old.suppression||[]).map(x=>({...x,phone:phoneDial(x.phone||x.mobile),company:companyKey(x.company),contact:String(x.contact||'').toLowerCase()}));
+    s.supplySnoozeUntil=old.supplySnoozeUntil||'';
+    return s;
+  }
+  function normalize(v){if(v?.version===2)return migrateV2(v);if(!v||v.version!==3||!Array.isArray(v.leads))return null;let s=newState();s={...s,...v,version:3,settings:{...DEFAULT_SETTINGS,...v.settings},sequence:Array.isArray(v.sequence)&&v.sequence.length?v.sequence:copy(STEPS),leads:v.leads.map(buildLead),tasks:Array.isArray(v.tasks)?v.tasks:[],activities:Array.isArray(v.activities)?v.activities:[],readinessHistory:Array.isArray(v.readinessHistory)?v.readinessHistory:[],milestoneHistory:Array.isArray(v.milestoneHistory)?v.milestoneHistory:[],suppression:Array.isArray(v.suppression)?v.suppression:[]};return s}
+  function checkInvariants(s){const errors=[];for(const l of s.leads){if(!STAGES.includes(l.stage))errors.push('Invalid pipeline stage');if(!STATUSES.includes(l.status))errors.push('Invalid outcome status');if(l.readiness!==null&&(!Number.isInteger(l.readiness)||l.readiness<1||l.readiness>8))errors.push('Invalid Buyer Readiness');if(l.status==='Take Me Off the List'&&pending(s).some(t=>t.leadId===l.id))errors.push('Suppressed lead has actionable tasks')}return errors}
+  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,updateFX,migrateV2,normalize,checkInvariants};
+});
+</script><script>/* SalesOS v3 UI: browser-only companion to core.js. */
+(() => {
+'use strict';
+const C=window.SalesCore;
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+const str=v=>String(v??'').trim();
+const niceDate=d=>d?new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'Not scheduled';
+const GBP=v=>new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP',maximumFractionDigits:0}).format(v||0);
+const val=id=>str($(id)?.value);
+const sel=(list,current)=>list.map(it=>{let v=Array.isArray(it)?it[0]:it,n=Array.isArray(it)?it[1]:it;return `<option value="${esc(v)}" ${String(v)===String(current)?'selected':''}>${esc(n)}</option>`}).join('');
+const tag=(value,color='')=>`<span class="tag ${color}">${esc(value)}</span>`;
+const btn=(title,action,cls='secondary',attrs='')=>`<button type="button" class="btn ${cls}" data-action="${action}" ${attrs}>${title}</button>`;
+const field=(id,label,value='',type='text',extra='')=>`<label class="field"><span>${esc(label)}</span>${type==='textarea'?`<textarea id="${id}" rows="3" ${extra}>${esc(value)}</textarea>`:`<input id="${id}" type="${type}" value="${esc(value)}" ${extra}>`}</label>`;
+const dropdown=(id,label,options,current,extra='')=>`<label class="field"><span>${esc(label)}</span><select id="${id}" ${extra}>${sel(options,current)}</select></label>`;
+const icons={focus:'◈',overview:'▦',prospects:'♙',pipeline:'▥',tasks:'☷',resolution:'◎',insights:'◉',value:'£',settings:'⚙'};
+let state=load();let tab='focus';let sidebarHidden=true;let lastRenderedTab=null;let dialog=null;let detailId=null;let taskId=null;let searchTerm='';let statusFilter='All';let readinessFilter='All';let sortProspects='priority';let callBlock=false;let toastHandle=null;let editingContactId=null;let fxDraft=null;
+function load(){try{let raw=localStorage.getItem(C.KEY);if(raw){let s=C.normalize(JSON.parse(raw));if(s)return s}}catch(e){console.error('v3 load failed',e)}try{let old=localStorage.getItem(C.OLD_KEY);if(old){let s=C.normalize(JSON.parse(old));if(s){localStorage.setItem(C.KEY,JSON.stringify(s));return s}}}catch(e){console.error('v2 migration failed',e)}return C.newState()}
+function save(){try{localStorage.setItem(C.KEY,JSON.stringify(state));return true}catch(e){toast('Browser storage failed. Export a backup.',true);return false}}
+function toast(message,error=false){let prev=document.querySelector('.toast');prev?.remove();let node=document.createElement('div');node.className='toast'+(error?' error':'');node.textContent=message;document.body.append(node);clearTimeout(toastHandle);toastHandle=setTimeout(()=>node.remove(),4200)}
+function currLead(){return C.getLead(state,detailId)}
+function currTask(){return C.getTask(state,taskId)}
+function cOf(t){let l=C.getLead(state,t?.leadId);let c=C.getContact(l,t?.contactId)||C.preferredContact(l,t?.type==='call'?'call':t?.type)||l?.contacts?.[0];return {l,c}}
+function getFocus(){return C.nextTask(state,{callBlock})}
+function lastActivity(l){return [...state.activities].reverse().find(x=>x.leadId===l.id&&x.notes&&(['Pipeline','Buyer Readiness','Status'].includes(x.type)||(x.type==='Call'&&!['No answer','Gatekeeper','Bad or invalid number'].includes(x.outcome))))}
+function unmet(l){return l.nextMilestone||C.NEXT_MILESTONES[(l.readiness||1)-1]||'Establish a meaningful buyer next step'}
+function pct(n,total){return total?Math.round(n/total*100):0}
+function pageHeader(eyebrow,title,subtitle,buttons=''){return `<div class="page-head"><div><span class="eyebrow">${esc(eyebrow)}</span><h1>${esc(title)}</h1><p>${esc(subtitle)}</p></div><div class="head-actions">${buttons}</div></div>`}
+function nav(){
+ const links=[['focus','Focus Mode'],['overview','Overview'],['prospects','Prospects'],['pipeline','Pipeline'],['tasks','Task Queue'],['resolution','Contact Resolution'],['insights','Buyer Intelligence'],['value','Pipeline Value'],['settings','Settings']];
+ let xp=C.xpStats(state),a=C.activityToday(state);
+ return `<aside class="sidebar" id="salesos-navigation" aria-label="Main navigation"><div class="sidebar-brandline"><div class="brand"><div class="brand-logo">ϟ</div><div><strong>Sales<span>OS</span></strong><small>PROGRESSION FIRST</small></div></div><button type="button" class="sidebar-dismiss" data-action="toggleSidebar" title="Hide navigation" aria-label="Hide navigation">✕</button></div><nav class="nav">${links.map(([key,name])=>`<button class="nav-item ${tab===key?'active':''}" data-tab="${key}"><span class="nav-icon">${icons[key]}</span>${name}${key==='resolution'&&C.pending(state).some(t=>t.type==='research')?`<em>${C.pending(state).filter(t=>t.type==='research').length}</em>`:''}</button>`).join('')}</nav><div class="side-bottom"><div class="level-row"><span>LEVEL ${xp.level}</span><span>${xp.total.toLocaleString()} XP</span></div><div class="progress-line"><i style="width:${xp.progress/10}%"></i></div><small>Today's progress · ${a.tasks} tasks · ${a.calls} calls</small><div class="privacy">LOCAL PROTOTYPE<br><span>Fictional or approved data only</span></div></div></aside>`;
+}
+function appShell(content){
+ const focused=tab==='focus';
+ return `<div class="shell ${focused?'shell-execution':''} ${sidebarHidden?'nav-collapsed':''}">${nav()}${!sidebarHidden?'<div class="sidebar-backdrop" data-action="toggleSidebar"></div>':''}<main class="main">${focused?'':`<header class="management-toolbar"><button class="utility-menu" type="button" data-action="toggleSidebar" aria-label="Toggle navigation" aria-expanded="${!sidebarHidden}">☰</button><strong>Sales<span>OS</span></strong><span>MANAGE</span></header>`}${content}${focused?'':'<footer>SalesOS v3.1 · Local prototype · Nothing is sent to Teams, Outlook or LinkedIn automatically · Export backups regularly</footer>'}</main></div>${dialog?modalHtml():''}`;
+}
+function stat(label,value,note=''){return `<div class="stat"><div class="stat-label">${esc(label)}</div><div class="stat-value">${value}</div><div class="stat-note">${esc(note)}</div></div>`}
+function stageTag(l){return tag(l.status==='Active'?l.stage:l.status,l.status==='Take Me Off the List'?'red':l.status==='Negative Nurture'?'amber':l.status==='Active'?'blue':'')}
+function readinessTag(l){return l.readiness?tag(`${l.readiness}/8 · ${C.READINESS[l.readiness-1]}`,'violet'):tag('Not assessed','muted')}
+function focusPage(){
+ const t=getFocus(),a=C.activityToday(state),xp=C.xpStats(state),supply=C.leadSupply(state);
+ const ready=C.due(state).length;
+ const toolbar=`<header class="execution-toolbar"><div class="exec-brand-group"><button type="button" class="utility-menu" data-action="toggleSidebar" title="${sidebarHidden?'Show':'Hide'} navigation (M)" aria-label="${sidebarHidden?'Show':'Hide'} navigation" aria-expanded="${!sidebarHidden}">☰</button><div class="exec-brand"><span class="exec-brand-mark">ϟ</span><strong>Sales<span>OS</span></strong><span class="exec-slash">/</span><span class="exec-focus-label">Focus</span></div></div><div class="exec-toolbar-actions"><button class="exec-toolbar-btn ${callBlock?'active':''}" data-action="toggleCallBlock" title="${callBlock?'Return to all tasks':'Prioritise callable tasks'}">${callBlock?'✓ Call block':'☎ Call block'}</button><button class="exec-toolbar-btn exec-add" data-action="newCompany">＋ <span>Prospect</span></button></div></header>`;
+ const progress=`<div class="execution-status" aria-label="Today's progress"><div class="exec-status-item"><span>Calls</span><strong>${a.calls}<em> / ${state.settings.callGoal}</em></strong></div><div class="exec-status-item"><span>Tasks</span><strong>${a.tasks}<em> / ${state.settings.taskGoal}</em></strong></div><div class="exec-status-item"><span>Meetings</span><strong>${a.meetings}</strong></div><div class="exec-status-item"><span>XP</span><strong>${a.xp}</strong></div><div class="exec-status-level"><div class="exec-level-label">LVL ${xp.level}</div><div class="exec-level-track"><i style="width:${xp.progress/10}%"></i></div></div></div>`;
+ const head=`<div class="execution-queue-head"><div><span class="exec-queue-pulse"></span><span>${ready} actionable ${ready===1?'task':'tasks'}</span><span class="exec-middle-dot">·</span><span>${C.pending(state).length} total pending</span></div><span class="exec-queue-helper">DO THE NEXT RIGHT THING</span></div>`;
+ const frame=(body)=>`<section class="execution-view">${toolbar}<div class="execution-main">${head}${body}${progress}<div class="execution-hint">${esc(callBlock?'Call block active — showing calling tasks first.':'Shortcuts: C copy · N no answer · G log · W wrong person · B bad number · S skip · M menu')}</div></div></section>`;
+ if(!t)return frame(`<article class="exec-empty"><div class="exec-empty-icon">✓</div><h1>You're caught up.</h1><p>No tasks are due right now. Scheduled commitments remain in your queue until they are due.</p><div class="exec-empty-actions">${btn('View upcoming tasks','goTasks','secondary')}${btn('Add prospect','newCompany','ghost')}</div></article>`);
+ if(!t.leadId)return frame(`<article class="execution-task-card"><div class="exec-card-top"><span class="exec-kind">LEAD SUPPLY</span>${tag('Source leads','amber')}</div><h1 class="exec-task-title">${esc(t.title)}</h1><p class="exec-task-sub">${esc(t.description||'Add suitable prospects to keep the pipeline healthy.')}</p><div class="exec-mission-strip"><small>YOUR OBJECTIVE</small><strong>Maintain a healthy supply of quality prospects.</strong></div><div class="exec-noncall-actions">${btn('Complete & next','completeTask','primary')}${btn('Reschedule','snooze','ghost')}</div></article>`);
+ const {l,c}=cOf(t);
+ if(!l)return frame(`<article class="exec-empty"><h1>Prospect not found</h1><p>Open Task Queue to investigate this task.</p>${btn('Open Task Queue','goTasks','primary')}</article>`);
+ const phones=c?[...C.methods(c,'mobile'),...C.methods(c,'phone')].filter(x=>x.status!=='invalid'&&x.status!=='blocked'):[];
+ const emails=c?C.methods(c,'email').filter(x=>x.status!=='invalid'&&x.status!=='blocked'):[];
+ const linkedin=c?C.bestMethod(c,'linkedin'):null;
+ const last=lastActivity(l),p=C.potentialForLead(l,state.settings),isCall=['call','callback'].includes(t.type);
+ const taskTitle=isCall?(c?.name?`Call ${c.name}`:t.title):t.title;
+ const kindLabel=({call:'CALL',callback:'CALLBACK',email:'EMAIL',deal:'DEAL PROGRESSION',meeting:'MEETING',research:'CONTACT RESEARCH',linkedin_connect:'LINKEDIN CONNECT',linkedin_message:'LINKEDIN MESSAGE'})[t.type]||t.type.replaceAll('_',' ').toUpperCase();
+ let primaryActions='',resultControls='';
+ if(isCall){
+   primaryActions=phones.length?`<div class="exec-call-actions">${phones.map((m,i)=>`<button class="exec-copy-btn ${i?'alternate':''}" data-action="copyMethod" data-lead="${l.id}" data-contact="${c?.id}" data-method="${m.id}" title="Copy number to paste into Teams"><span>⧉</span> Copy ${m.kind==='mobile'?'mobile':'landline'} <strong>${esc(m.value)}</strong></button>`).join('')}</div>`:`<div class="exec-contact-warning"><b>No usable number recorded</b><span>Open the contact record to check or replace the number before attempting a call.</span>${btn('Open contact record','detail','ghost',`data-lead="${l.id}"`)}</div>`;
+   resultControls=`<div class="exec-result-heading"><strong>After the call</strong><span>Choose an outcome to keep the queue moving</span></div><div class="exec-result-grid"><button type="button" class="exec-outcome-btn exec-noanswer" data-action="quickNoAnswer"><span>◌</span> No answer <kbd>N</kbd></button><button type="button" class="exec-outcome-btn exec-connected" data-action="logCall"><span>✓</span> Connected / log <kbd>G</kbd></button><button type="button" class="exec-outcome-btn" data-action="callOutcome" data-outcome="wrong_person"><span>♙</span> Wrong person <kbd>W</kbd></button><button type="button" class="exec-outcome-btn" data-action="callOutcome" data-outcome="bad_number"><span>⊘</span> Bad number <kbd>B</kbd></button></div>`;
+ }else if(t.type==='research'){
+   primaryActions=`<div class="exec-noncall-actions">${btn('Resolve contact details','resolveContact','primary')}${btn('Reschedule','snooze','ghost')}</div>`;
+ }else if(t.type==='deal'||t.type==='meeting'){
+   primaryActions=`<div class="exec-noncall-actions">${btn('Log milestone / progress','completeTask','primary')}${btn('Update buyer readiness','readiness','secondary')}${btn('Open FX discovery','fx','ghost')}</div>`;
+ }else{
+   primaryActions=`<div class="exec-noncall-actions">${t.type==='email'&&emails.length?btn('⧉ Copy email address','copyMethod','secondary',`data-lead="${l.id}" data-contact="${c?.id}" data-method="${emails[0].id}"`):''}${t.type.startsWith('linkedin')&&linkedin?btn('Open LinkedIn','openLinkedIn','secondary',`data-lead="${l.id}" data-contact="${c?.id}" data-method="${linkedin.id}"`):''}${btn('Mark complete & next','completeTask','primary')}</div><p class="exec-manual-hint">Send it manually in your existing app, then confirm completion here. Nothing is sent automatically.</p>`;
+ }
+ const contextHtml=`<details class="exec-details"><summary><span class="exec-summary-icon">＋</span> Buyer context, readiness & FX details <span class="exec-detail-hint">Open when needed</span></summary><div class="exec-detail-content"><div class="exec-detail-grid"><div class="exec-detail-unit"><small>WHAT WE KNOW</small><p>${esc(last?.notes||l.notes||l.readinessEvidence||'No meaningful conversation recorded yet.')}</p></div><div class="exec-detail-unit"><small>MAIN BARRIER</small><p>${esc(l.barrier||'Not yet established')}</p></div><div class="exec-detail-unit"><small>BUYER READINESS</small><p>${esc(l.readiness?`${l.readiness}/8 · ${C.READINESS[l.readiness-1]}`:'Not assessed')}</p><div class="exec-detail-cta">${btn('Update readiness','readiness','outline')}</div></div><div class="exec-detail-unit"><small>COMMERCIAL CONTEXT</small><p>Fit ${l.fit}/5 · qualified FX ${GBP(p.qualified)} · potential revenue ${GBP(p.revenue)}</p><div class="exec-detail-cta">${btn('FX discovery','fx','outline')}</div></div></div>${last?`<p class="exec-note-date">Last meaningful update: ${esc(niceDate((last.at||last.date||'').slice(0,10)))}</p>`:''}</div></details>`;
+ return frame(`<article class="execution-task-card"><div class="exec-card-top"><span class="exec-kind"><span class="exec-kind-dot"></span>${esc(kindLabel)} ${t.isCommitment?'· PROMISED':t.origin==='sequence'?'· SEQUENCE':''}</span><div class="exec-card-tags">${tag(l.stage,'blue')}${tag(l.readiness?`Readiness ${l.readiness}/8`:'Unassessed','muted')}${tag(niceDate(t.dueAt)+(t.dueTime?' · '+t.dueTime:''),t.isCommitment?'amber':'muted')}</div></div><h1 class="exec-task-title">${esc(taskTitle)}</h1><div class="exec-person-line"><div class="exec-person-avatar">${esc((c?.name||l.company).slice(0,2).toUpperCase())}</div><div><strong>${esc(c?.title||'Finance contact')}${c?.name?' · '+esc(l.company):''}</strong><span>${esc(isCall?t.title:c?.name||l.company)}</span></div><button class="exec-open-company" data-action="detail" data-lead="${l.id}" title="Open company record" aria-label="Open company record">↗</button></div><div class="exec-primary-zone">${primaryActions}</div><div class="exec-purpose-grid"><div class="exec-purpose"><small>YOUR OBJECTIVE</small><strong>${esc(t.objective||'Establish meaningful progress with this prospect.')}</strong><p>${esc(t.description||'Complete the task and record what you learn.')}</p></div><div class="exec-purpose"><small>NEXT BUYER MILESTONE</small><strong>${esc(unmet(l))}</strong><p>${esc(t.successCriteria||'Gain useful evidence or agree a concrete next step.')}</p></div></div>${isCall?`<section class="exec-result-section">${resultControls}</section>`:''}${contextHtml}<div class="exec-secondary-actions">${btn('Skip for now','skipTask','text')}${btn('Change due date','snooze','text')}${btn('View prospect','detail','text',`data-lead="${l.id}"`)}</div></article>`);
+}
+function supplyBlock(s){return `<div class="card supply"><div><small class="eyebrow">LEAD SUPPLY · ${s.days} WORKING DAYS</small><h3>${s.label}</h3><p>${s.ready} tasks ready, ${s.upcoming} scheduled soon. Forecast capacity ${s.capacity} at ${s.pace}/day. This is a rough task forecast, not a lead count.</p></div><div><b>${pct(s.ready+s.upcoming,s.capacity)}%</b><div class="progress-line"><i style="width:${Math.min(100,s.coverage*100)}%"></i></div>${s.coverage<.7?btn('Create a lead-sourcing task','createLeadgen','outline'):''}</div></div>`}
+function overviewPage(){const a=C.activityToday(state),i=C.insights(state),v=C.pipelineValue(state),s=C.leadSupply(state),xp=C.xpStats(state);
+ return pageHeader('YOUR COMMAND CENTRE','Overview','Daily execution, genuine buyer movement and upcoming workload.',btn('Return to Focus Mode','goFocus','primary'))+`<div class="metric-grid four">${stat('Calls today',a.calls,`Goal: ${state.settings.callGoal}`)}${stat('Tasks completed',a.tasks,`Goal: ${state.settings.taskGoal}`)}${stat('Prospects advanced / 7 days',i.moved,'Readiness or pipeline progress')}${stat('Total XP',xp.total.toLocaleString(),`Level ${xp.level}`)}</div><div class="two-cols"><div class="card"><div class="card-head"><div><small class="eyebrow">PROGRESSION</small><h2>Buyer journey</h2></div>${btn('Open insights','goInsights','text')}</div>${readinessBars(i)}<p class="muted small">${i.unassessed} prospects unassessed; not automatically counted as Unaware.</p></div><div class="card"><div class="card-head"><div><small class="eyebrow">COMMERCIAL IMPACT</small><h2>Qualified pipeline</h2></div>${btn('Pipeline Value','goValue','text')}</div><div class="hero-number">${GBP(v.revenue)}</div><p class="muted">Potential annual revenue · qualified opportunities with assessable volume</p><div class="detail-row"><span>Qualified addressable FX</span><b>${GBP(v.qualified)}</b></div><div class="detail-row"><span>Probability-weighted annual revenue</span><b>${GBP(v.weighted)}</b></div><div class="detail-row"><span>Annual revenue goal</span><b>${GBP(state.settings.annualTarget)}</b></div></div></div>${supplyBlock(s)}<div class="two-cols"><div class="card"><h2>Work requiring attention</h2><div class="detail-row"><span>Stalled prospects</span><b>${i.stalled.length}</b></div><div class="detail-row"><span>No pending next action</span><b>${i.noNext.length}</b></div><div class="detail-row"><span>Contact resolution</span><b>${C.pending(state).filter(t=>t.type==='research').length}</b></div>${btn('View action queue','goTasks','outline full')}</div><div class="card"><h2>Your 3 product goals</h2><div class="goal-list"><div><b>01</b><span>Move viable prospects towards first trade</span></div><div><b>02</b><span>Increase meaningful sales activity</span></div><div><b>03</b><span>Protect commitments and missed follow-ups</span></div></div></div></div>`;
+}
+function readinessBars(i){return `<div class="bar-list">${C.READINESS.map((name,n)=>`<div class="bar-row"><span>${n+1} · ${esc(name)}</span><div class="bar-track"><i style="width:${pct(i.counts[n],i.assessed)}%"></i></div><b>${i.counts[n]}</b></div>`).join('')}</div>`}
+function prospectFiltered(){let ls=state.leads.filter(l=>(statusFilter==='All'||l.status===statusFilter)&&(readinessFilter==='All'||(readinessFilter==='unassessed'?l.readiness===null:String(l.readiness)===readinessFilter))&&(`${l.company} ${l.sector} ${l.contacts.map(x=>x.name).join(' ')} ${l.barrier}`.toLowerCase().includes(searchTerm.toLowerCase())));
+ if(sortProspects==='readiness')ls.sort((a,b)=>(b.readiness||0)-(a.readiness||0));else if(sortProspects==='company')ls.sort((a,b)=>a.company.localeCompare(b.company));else if(sortProspects==='revenue')ls.sort((a,b)=>C.potentialForLead(b,state.settings).revenue-C.potentialForLead(a,state.settings).revenue);else ls.sort((a,b)=>C.taskScore(state,{leadId:b.id,dueAt:C.today()})-C.taskScore(state,{leadId:a.id,dueAt:C.today()}));return ls}
+function prospectsPage(){let ls=prospectFiltered();return pageHeader('THE DATABASE','Prospects',`${state.leads.length} companies with independent pipeline, readiness and contact details.`,btn('＋ New company','newCompany','primary')+btn('Import CSV','importCSV','ghost'))+`<div class="card"><div class="filter-bar"><input id="searchProspect" placeholder="Search company, contact or barrier..." value="${esc(searchTerm)}"><select id="statusFilter">${sel(['All',...C.STATUSES],statusFilter)}</select><select id="readinessFilter">${sel([['All','All readiness levels'],['unassessed','Not assessed'],...C.READINESS.map((n,i)=>[String(i+1),`${i+1} · ${n}`])],readinessFilter)}</select><select id="sortProspects">${sel([['priority','Priority'],['readiness','Buyer readiness'],['revenue','Potential revenue'],['company','Company A–Z']],sortProspects)}</select></div><div class="table-wrap"><table><thead><tr><th>Company / contacts</th><th>Acquisition stage</th><th>Buyer readiness</th><th>Main barrier / next milestone</th><th>Potential annual revenue</th><th></th></tr></thead><tbody>${ls.map(l=>{let p=C.potentialForLead(l,state.settings);return `<tr><td><strong>${esc(l.company)}</strong><small>${l.contacts.length} contact(s) · ${esc(l.sector||'Sector unspecified')}</small></td><td>${stageTag(l)}</td><td>${readinessTag(l)}</td><td><span class="truncate">${esc(l.barrier||'Barrier not established')}</span><small class="truncate">${esc(unmet(l))}</small></td><td><b>${GBP(p.revenue)}</b></td><td>${btn('Open','detail','tiny',`data-lead="${l.id}"`)}</td></tr>`}).join('')||`<tr><td colspan="6" class="muted center">No matching prospects. ${state.leads.length?'Try resetting filters.':'Add a company or load fictional demo data.'}</td></tr>`}</tbody></table></div><div class="table-footer">Showing ${ls.length} of ${state.leads.length} companies</div></div>`}
+function pipelinePage(){const active=state.leads.filter(l=>l.status==='Active');return pageHeader('THE ACQUISITION JOURNEY','Pipeline','Seven operational stages. Buyer Readiness is tracked separately.',btn('＋ New company','newCompany','primary'))+`<div class="pipeline-grid">${C.STAGES.map((st,i)=>{let ls=active.filter(l=>l.stage===st);return `<div class="stage-column"><div class="stage-title"><span>${i+1}. ${esc(st)}</span>${tag(ls.length)}</div>${ls.map(l=>`<button class="stage-card" data-action="detail" data-lead="${l.id}"><strong>${esc(l.company)}</strong><span>${esc(l.readiness?`L${l.readiness} · ${C.READINESS[l.readiness-1]}`:'Readiness not assessed')}</span><small>${esc(l.barrier||unmet(l))}</small></button>`).join('')||'<p class="muted small">No companies</p>'}</div>`}).join('')}</div><div class="outcome-grid">${C.STATUSES.filter(x=>x!=='Active').map(st=>`<div class="card"><h3>${esc(st)}</h3><div class="hero-number">${state.leads.filter(l=>l.status===st).length}</div><p class="muted small">${st==='Negative Nurture'?'Lower-frequency review only':st==='Disqualified'?'Not a qualifying FX opportunity':st==='Closed Lost'?'Qualified but decided against the solution':'Explicit suppression; no outreach'}</p></div>`).join('')}</div>`}
+function tasksPage(){let all=C.pending(state).sort((a,b)=>a.dueAt.localeCompare(b.dueAt)||C.taskTier(b)-C.taskTier(a)),due=C.due(state);return pageHeader('TASK MANAGEMENT','Task Queue','The single-task Focus Mode always selects the highest-priority actionable due task.',btn('Return to Focus','goFocus','primary')+btn('Add manual task','manualTask','ghost'))+`<div class="metric-grid three">${stat('Due and actionable',due.length,'Available in Focus Mode')}${stat('Scheduled later',all.filter(t=>t.dueAt>C.today()).length,'Future tasks')}${stat('Promised commitments',all.filter(t=>t.isCommitment).length,'Protected from ordinary sequence changes')}</div><div class="card"><div class="table-wrap"><table><thead><tr><th>Due</th><th>Priority</th><th>Task</th><th>Company</th><th>Origin</th><th></th></tr></thead><tbody>${all.map(t=>{let l=C.getLead(state,t.leadId);return `<tr><td>${esc(niceDate(t.dueAt))}<small>${esc(t.dueTime||'')}</small></td><td>${tag(t.isCommitment?'Commitment':t.type,'blue')}</td><td>${esc(t.title)}</td><td>${esc(l?.company||'Global task')}</td><td>${esc(t.origin||'Manual')}</td><td>${btn('Open','openTask','tiny',`data-task="${t.id}"`)}</td></tr>`}).join('')||'<tr><td colspan="6" class="muted center">No pending actionable tasks.</td></tr>'}</tbody></table></div></div>`}
+function resolutionPage(){let repair=C.pending(state).filter(t=>t.type==='research');let uncallable=state.leads.filter(l=>C.active(l)&&!C.preferredContact(l,'call'));
+ return pageHeader('DATA QUALITY','Contact Resolution','A bad number or wrong decision-maker is a research problem—not automatically a disqualified company.',btn('Return to Focus','goFocus','primary'))+`<div class="metric-grid three">${stat('Resolution tasks',repair.length,'Find a usable route in')}${stat('No usable number',uncallable.length,'Active companies')}${stat('Resolved tasks',state.activities.filter(a=>a.type==='Contact Resolution').length,'Historically completed')}</div><div class="card"><h2>Research queue</h2>${repair.map(t=>{let l=C.getLead(state,t.leadId);return `<div class="queue-row"><div class="queue-icon">⌕</div><div><strong>${esc(l?.company||'Unknown')}</strong><p>${esc(t.description||'Find the correct decision-maker and contact details')}</p></div><div>${btn('Resolve','openTask','outline',`data-task="${t.id}"`)}</div></div>`}).join('')||'<p class="muted">All currently scheduled contact-resolution tasks are complete.</p>'}</div><div class="info-card">A contact can be the wrong person while the company remains a valid prospect. Invalid numbers remain in history but are excluded from future call tasks. Explicit opt-outs cannot be bypassed by finding new details.</div>`}
+function insightsPage(){const i=C.insights(state),ls=state.leads.filter(l=>l.status==='Active'),unaware=i.counts[0],interested=i.stalled.filter(l=>l.readiness===3);const gap=ls.filter(l=>l.stage!=='First Trade'&&l.readiness===null).length;return pageHeader('PROGRESSION INTELLIGENCE','Buyer Intelligence','See where buyers are, where they are stuck, and what to do next.',btn('Focus Mode','goFocus','primary'))+`<div class="metric-grid four">${stat('Prospects advanced · 7d',i.moved,'Verified readiness or pipeline')}${stat('Readiness improvements',i.advances,'Evidence logged in 7 days')}${stat('Interested & stalled',interested.length,`No progress for ${i.cutoff}+ days`)}${stat('No next action',i.noNext.length,'Active prospects needing attention')}</div><div class="two-cols"><div class="card"><div class="card-head"><h2>Buyer Readiness distribution</h2>${tag(`${i.assessed} assessed`,'violet')}</div>${readinessBars(i)}<p class="muted small">${i.unassessed} unassessed. Proportions use assessed active prospects as the denominator.</p></div><div class="card"><h2>Actionable observations</h2><div class="insight"><span class="insight-icon">◉</span><div><strong>${i.assessed?pct(unaware,i.assessed):0}% of assessed prospects are Unaware</strong><p>${unaware} of ${i.assessed} assessed active companies. A high share means first-contact work may be needed; it does not imply higher-quality opportunities should be ignored.</p>${btn('Review prospecting tasks','goTasks','text')}</div></div><div class="insight"><span class="insight-icon">◷</span><div><strong>${interested.length} Interested prospects have stalled</strong><p>Confirm their barriers and schedule relevant discovery, without duplicating existing commitments.</p>${btn('Generate missing milestone tasks','generateStalled','outline')}</div></div><div class="insight"><span class="insight-icon">⊞</span><div><strong>${gap} active prospects not yet assessed</strong><p>Do not assume Unaware; classify only when there's evidence.</p></div></div></div></div><div class="two-cols"><div class="card"><h2>Common barriers among stalled prospects</h2>${i.issues.slice(0,7).map(([name,count])=>`<div class="detail-row"><span>${esc(name)}</span><b>${count}</b></div>`).join('')||'<p class="muted">No recorded stalled barriers yet.</p>'}</div><div class="card"><h2>Acquisition stage movements</h2><p class="muted small">Unique companies recorded as reaching each stage; indicative cumulative progression, not a time-cohort win rate.</p>${i.transitions.map(x=>`<div class="detail-row"><span>${esc(x.label)}</span><b>${x.reached}${x.base?' / '+x.base:''}</b></div>`).join('')}</div></div><div class="two-cols"><div class="card"><h2>Last 7 days</h2><div class="detail-row"><span>Meetings booked</span><b>${i.meetings}</b></div><div class="detail-row"><span>First trades</span><b>${i.firstTrades}</b></div><div class="detail-row"><span>Stalled at any readiness level</span><b>${i.stalled.length}</b></div></div><div class="card"><h2>Progression first</h2><p>Every insight must suggest a meaningful next milestone. Completed calls are not evidence that the buyer has moved forward.</p>${btn('Generate tasks for active gaps','generateMissing','outline')}</div></div>`}
+function valuePage(){const v=C.pipelineValue(state),target=C.num(state.settings.annualTarget),max=Math.max(1,...Object.values(v.byStage));return pageHeader('COMMERCIAL INTELLIGENCE','Pipeline Value','Discovered FX, addressable volume and realistic annual revenue estimates.',btn('Open Pipeline','goPipeline','primary'))+`<div class="metric-grid four">${stat('Discovered GBP-equivalent FX',GBP(v.discovered),'Estimated or confirmed; annual')}${stat('Qualified addressable FX',GBP(v.qualified),'Confirmed volume + addressability')}${stat('Potential annual revenue',GBP(v.revenue),'Qualified active opportunities')}${stat('Weighted annual forecast',GBP(v.weighted),'Illustrative stage probabilities')}</div><div class="two-cols"><div class="card"><h2>Potential revenue by stage</h2><div class="bar-list">${C.STAGES.map(st=>`<div class="bar-row value-row"><span>${esc(st)}</span><div class="bar-track"><i style="width:${Math.round((v.byStage[st]||0)/max*100)}%"></i></div><b>${GBP(v.byStage[st]||0)}</b></div>`).join('')}</div><p class="muted small">Acquisition values shown separately from realised revenue. First Trade marks acquisition completion; it does not confirm full annual revenue.</p></div><div class="card"><h2>Forecast quality</h2><div class="detail-row"><span>Annual revenue target</span><b>${GBP(target)}</b></div><div class="detail-row"><span>Potential / target</span><b>${target?pct(v.revenue,target):0}%</b></div><div class="detail-row"><span>Flows lacking GBP equivalent</span><b>${v.unconverted}</b></div><div class="detail-row"><span>Flows using assumed margin</span><b>${v.assumedMargin}</b></div><p class="muted small">We never add USD, EUR and GBP amounts as though they were the same currency. Enter a verified annual GBP equivalent where needed. Unconfirmed FX volume is excluded from the qualified revenue total.</p></div></div><div class="card"><h2>Commercial opportunities</h2><div class="table-wrap"><table><thead><tr><th>Company</th><th>Pipeline</th><th>Buyer readiness</th><th>Discovered FX (GBP)</th><th>Qualified FX (GBP)</th><th>Potential annual revenue</th><th></th></tr></thead><tbody>${v.rows.map(r=>`<tr><td><strong>${esc(r.company)}</strong></td><td>${esc(r.stage)}</td><td>${esc(r.readiness?C.READINESS[r.readiness-1]:'Not assessed')}</td><td>${GBP(r.discovered)}</td><td>${GBP(r.qualified)}</td><td><b>${GBP(r.revenue)}</b></td><td>${btn('View','detail','tiny',`data-lead="${r.id}"`)}</td></tr>`).join('')||'<tr><td colspan="7" class="muted center">No active opportunities yet.</td></tr>'}</tbody></table></div></div><div class="info-card">Estimated annual revenue = confirmed annual GBP-equivalent FX volume × addressable percentage × assumed or entered margin (basis points ÷ 10,000). Pipeline probabilities are illustrative, not calibrated from actual win rates.</div>`}
+function settingsPage(){let s=state.settings;return pageHeader('PERSONALISE YOUR SYSTEM','Settings & Data','Choose targets, edit the standard outreach sequence, and manage local backups.',btn('Export full backup','exportJSON','primary'))+`<div class="two-cols"><div class="card"><h2>Activity and commercial targets</h2><div class="two-cols compact">${field('s_callGoal','Daily calls',s.callGoal,'number','min="1"')}${field('s_taskGoal','Daily completed tasks',s.taskGoal,'number','min="1"')}${field('s_meetingGoal','Daily meetings',s.meetingGoal,'number','min="1"')}${field('s_dailyCapacity','Expected tasks per day',s.dailyCapacity,'number','min="1"')}${field('s_supplyDays','Supply forecast working days',s.supplyDays,'number','min="2" max="20"')}${field('s_stalledAfterDays','Stalled after (days)',s.stalledAfterDays,'number','min="3"')}${field('s_defaultMarginBps','Default revenue margin (bps)',s.defaultMarginBps,'number','min="0"')}${field('s_annualTarget','Annual revenue goal (£)',s.annualTarget,'number','min="0"')}</div>${btn('Save targets','saveSettings','primary')}</div><div class="card"><h2>Data safety</h2><p>Everything stays in this browser. No cloud sync, login or automatic backups. Opening the app from a different URL or clearing site storage can hide or erase data.</p><div class="stack">${btn('Download JSON backup','exportJSON','outline full')}${btn('Restore JSON backup (v2 or v3)','importJSON','outline full')}${btn('Download prospects CSV','exportCSV','outline full')}${btn('Import prospects CSV','importCSV','outline full')}${btn('Load fictional demo','seedDemo','secondary full')}${btn('Delete local v3 data','wipeData','danger full')}</div><div class="warning">This is not an approved system for confidential employer-owned prospect information. Only enter data you are authorised to store here.</div></div></div><div class="card"><div class="card-head"><div><h2>Prospecting sequence</h2><p class="muted small">Steps are consecutive. Delays are working days after the previous step; relevant buyer engagement pauses the sequence.</p></div>${btn('＋ Add step','addStep','ghost')}</div><div id="sequenceEditor">${state.sequence.map((it,i)=>`<div class="seq-row"><span class="seq-number">${i+1}</span><select class="seq-type">${sel([['call','Call'],['email','Email'],['linkedin_connect','LinkedIn connect'],['linkedin_message','LinkedIn message']],it.type)}</select><input class="seq-title" value="${esc(it.title||it.label)}" placeholder="Task title"><label><span>Delay (workdays)</span><input class="seq-delay" type="number" min="0" max="90" value="${C.num(it.delay)}"></label>${btn('×','removeStep','text',`data-index="${i}"`)}</div>`).join('')}</div><div class="button-row">${btn('Save sequence','saveSequence','primary')}${btn('Reset to default','resetSequence','ghost')}</div></div><input type="file" accept=".json,application/json" id="jsonUpload" hidden><input type="file" accept=".csv,text/csv" id="csvUpload" hidden>`}
+function render(){if(tab!==lastRenderedTab){sidebarHidden=tab==='focus'||window.matchMedia('(max-width:720px)').matches;lastRenderedTab=tab}const pages={focus:focusPage,overview:overviewPage,prospects:prospectsPage,pipeline:pipelinePage,tasks:tasksPage,resolution:resolutionPage,insights:insightsPage,value:valuePage,settings:settingsPage};let fn=pages[tab]||focusPage;document.getElementById('app').innerHTML=appShell(fn());document.title=`${tab==='focus'?'Focus Mode':tab[0].toUpperCase()+tab.slice(1)} · SalesOS v3.1`}
+function wrapModal(title,sub,body,footer=''){return `<div class="modal-overlay" data-action="overlayClose"><div class="modal" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div><span class="eyebrow">${esc(sub)}</span><h2>${esc(title)}</h2></div>${btn('✕','closeModal','icon-btn')}</div><div class="modal-body">${body}</div>${footer?`<div class="modal-foot">${footer}</div>`:''}</div></div>`}
+function detailModal(){let l=currLead();if(!l)return wrapModal('Unknown prospect','Company','No record available');let p=C.potentialForLead(l,state.settings);let pending=C.pending(state).filter(t=>t.leadId===l.id);let history=state.activities.filter(a=>a.leadId===l.id).slice(-10).reverse();let changes=state.readinessHistory.filter(a=>a.leadId===l.id).slice(-5).reverse();return wrapModal(l.company,`${l.sector||'COMPANY'} · PROSPECT PROFILE`,
+  `<div class="badge-row">${stageTag(l)} ${readinessTag(l)} ${tag('Fit '+l.fit+'/5')}</div><div class="profile-intro"><div><small>MAIN BARRIER</small><p>${esc(l.barrier||'Not established')}</p></div><div><small>NEXT BUYER MILESTONE</small><p>${esc(unmet(l))}</p></div><div><small>LAST PROGRESSION EVIDENCE</small><p>${esc(l.lastProgressEvidence||l.readinessEvidence||'None recorded')}</p></div></div><div class="button-row wrap">${btn('Edit company','editCompany','outline')}${l.status!=='Active'&&l.status!=='Take Me Off the List'&&!C.isSuppressed(state,l)?btn('Reopen opportunity','reopen','outline'):''}${btn('Buyer Readiness','readiness','outline')}${btn('Advance pipeline','stage','outline')}${btn('FX discovery','fx','outline')}${btn('Set outcome status','status','outline')}</div><div class="modal-section"><div class="card-head"><h3>People and contact methods</h3>${btn('＋ Add contact','addContact','ghost')}</div>${l.contacts.map(c=>`<div class="contact-card"><div><strong>${esc(c.name||'Unknown name')}</strong><p class="muted small">${esc(c.title||'Unspecified role')} · ${esc(c.roleStatus.replace('_',' '))} ${c.optedOut?' · OPTED OUT':''}</p>${c.methods.map(m=>`<div class="contact-method"><span>${esc(m.kind.toUpperCase())}: ${esc(m.value)} ${tag(m.status,m.status==='invalid'?'red':'muted')}</span>${m.status==='invalid'||c.optedOut?'':btn('Copy','copyMethod','tiny',`data-lead="${l.id}" data-contact="${c.id}" data-method="${m.id}"`)}${m.status!=='invalid'&&!c.optedOut&&['phone','mobile'].includes(m.kind)?btn('Mark invalid','invalidateMethod','text',`data-lead="${l.id}" data-contact="${c.id}" data-method="${m.id}"`):''}</div>`).join('')}</div>${btn('Edit','editContact','tiny',`data-contact="${c.id}"`)}</div>`).join('')||'<p class="muted">No people saved. Add the person responsible for FX.</p>'}</div><div class="metric-grid three">${stat('Annual FX discovered',GBP(p.discovered),'GBP-equivalent')}${stat('Qualified FX',GBP(p.qualified),'Annual addressable')}${stat('Revenue potential',GBP(p.revenue),'Annual estimate')}</div><div class="modal-section"><h3>Upcoming tasks</h3>${pending.map(t=>`<div class="detail-row"><span>${esc(t.title)}<small>${niceDate(t.dueAt)} ${esc(t.dueTime||'')}</small></span>${tag(t.type)}</div>`).join('')||'<p class="muted small">No pending tasks</p>'}${btn('Add task','manualTask','outline')}</div><div class="modal-section"><h3>Readiness change history</h3>${changes.map(x=>`<div class="history-item"><b>${x.from||'—'} → ${x.to} · ${esc(C.READINESS[x.to-1])}</b><span>${esc(new Date(x.at).toLocaleString('en-GB'))}</span><p>${esc(x.evidence)}</p></div>`).join('')||'<p class="muted small">No readiness changes recorded.</p>'}</div><div class="modal-section"><h3>Activity history</h3>${history.map(a=>`<div class="history-item"><b>${esc(a.type)} · ${esc(a.outcome)}</b><span>${esc(new Date(a.at).toLocaleString('en-GB'))}</span><p>${esc(a.notes||'No notes')}</p></div>`).join('')||'<p class="muted small">No activities yet.</p>'}</div>`,btn('Close','closeModal','primary'))}
+function companyModal(edit=false){let l=edit?currLead():null;return wrapModal(edit?'Edit company':'Add a prospect','COMPANY RECORD',
+ `${field('co_company','Company name',l?.company||'')}${field('co_sector','Sector',l?.sector||'')}${dropdown('co_fit','Prospect fit (1–5)',[1,2,3,4,5].map(x=>[x,`${x} / 5`]),l?.fit||3)}${field('co_notes','Company notes',l?.notes||'','textarea')}${edit?'':`<div class="modal-section"><h3>First contact (optional)</h3><div class="two-cols compact">${field('co_contact','Contact name')}${field('co_title','Title / role')}${field('co_mobile','Mobile')}${field('co_phone','Landline')}${field('co_email','Work email','email')}${field('co_linkedin','LinkedIn profile URL','url')}</div><p class="muted small">If contact details are missing, SalesOS will create a Contact Resolution task.</p></div>`}`,btn('Cancel','closeModal','ghost')+btn(edit?'Save company':'Create prospect','saveCompany','primary'))}
+function contactModal(){let l=currLead(),c=editingContactId?C.getContact(l,editingContactId):null;let read=kind=>C.methods(c,kind).find(x=>x.status!=='invalid')?.value||'';return wrapModal(c?'Edit contact':'Add contact',l?.company||'CONTACT',
+ `<div class="two-cols compact">${field('ct_name','Full name',c?.name||'')}${field('ct_title','Job title',c?.title||'')}${dropdown('ct_role','Relevance to FX',[['unknown','Not confirmed'],['decision_maker','FX decision-maker'],['not_responsible','Does not handle FX'],['left_company','Left company']],c?.roleStatus||'unknown')}${field('ct_mobile','Mobile',read('mobile'))}${field('ct_phone','Landline',read('phone'))}${field('ct_email','Work email',read('email'),'email')}${field('ct_linkedin','LinkedIn URL',read('linkedin'),'url')}</div><label class="check"><input id="ct_connected" type="checkbox" ${c?.linkedinConnected?'checked':''}> Already connected on LinkedIn</label>${field('ct_notes','Notes',c?.notes||'','textarea')}${c?.optedOut?'<div class="warning">This contact has opted out. Changing their details does not remove suppression.</div>':''}`,btn('Cancel','closeModal','ghost')+btn('Save contact','saveContact','primary'))}
+function readinessModal(){let l=currLead();if(!l)return '';return wrapModal('Buyer Readiness',l.company,
+ `<div class="info-card">Readiness measures willingness to buy, separately from the seven-stage acquisition pipeline. Calls and emails alone do not count as progression.</div><div class="badge-row">${readinessTag(l)} ${stageTag(l)}</div>${dropdown('rd_level','Confirmed buyer level',[['','Choose a level'],...C.READINESS.map((x,i)=>[i+1,`${i+1} — ${x}`])],l.readiness||'')}${field('rd_evidence','What did the prospect actually say or do? (required)', '', 'textarea','placeholder="Evidence, including reasons for regression"')}${field('rd_barrier','Main barrier to progress',l.barrier,'textarea')}${field('rd_milestone','Next milestone / condition to improve readiness',l.nextMilestone||C.NEXT_MILESTONES[(l.readiness||1)-1],'textarea')}<p class="muted small">You can move backwards when urgency, budget or support changes. Every confirmed change is timestamped and preserved.</p>`,btn('Cancel','closeModal','ghost')+btn('Confirm evidence-based change','saveReadiness','primary'))}
+function stageModal(){let l=currLead();return wrapModal('Advance acquisition stage',l.company,
+ `<div class="badge-row">${stageTag(l)} ${readinessTag(l)}</div>${dropdown('st_stage','Acquisition pipeline stage',C.STAGES,l.stage)}${field('st_evidence','What operational milestone actually happened?', '', 'textarea','placeholder="e.g. Meeting booked with CFO for Thursday"')}${field('st_nextDate','Next agreed date (optional)','', 'date')}${field('st_nextTime','Time (optional)','', 'time')}<div class="info-card">Changing stages will cancel obsolete sequence/stage tasks. Promised callbacks remain unless you explicitly cancel them. Buyer Readiness does not change automatically.</div>`,btn('Cancel','closeModal','ghost')+btn('Save stage','saveStage','primary'))}
+function reopenModal(){let l=currLead();return wrapModal('Reopen opportunity',l.company,`${dropdown('reopen_stage','Return to acquisition stage',C.STAGES.filter(x=>x!=='First Trade'),'Prospecting')}${field('reopen_reason','Why is this opportunity now viable again?', '', 'textarea')}<div class="info-card">Earlier readiness and activity history will remain intact. New buyer evidence can be recorded separately.</div>`,btn('Cancel','closeModal','ghost')+btn('Reopen and generate next task','saveReopen','primary'))}
+function statusModal(){let l=currLead();return wrapModal('Change prospect outcome',l.company,
+ `${dropdown('os_status','Outcome category',C.STATUSES.filter(x=>x!=='Active'),l.status==='Active'?'Negative Nurture':l.status)}${field('os_reason','Reason (required)','', 'textarea')}${field('os_date','Nurture review date (if relevant)',C.businessAdd(C.today(),60),'date')}${dropdown('os_scope','Take Me Off the List scope',[['contact','Contact only'],['company','Whole company']],'contact')}<div class="warning">Take Me Off the List immediately suppresses outreach. DQ = does not qualify; Closed Lost = qualified and chose not to proceed.</div>`,btn('Cancel','closeModal','ghost')+btn('Save outcome','saveStatus','primary'))}
+function callModal(){let t=currTask(),{l,c}=cOf(t);if(!l)return '';return wrapModal('Log call outcome',`${l.company} · ${c?.name||'UNKNOWN CONTACT'}`,
+ `<div class="badge-row">${stageTag(l)} ${readinessTag(l)}</div><label class="field"><span>What happened?</span><select id="call_outcome">${sel([['no_answer','No answer'],['gatekeeper','Gatekeeper / no decision-maker'],['connected','Meaningful conversation'],['callback','Callback requested'],['meeting_booked','Meeting booked'],['wrong_person','Wrong person / does not handle FX'],['bad_number','Bad / incorrect number'],['left_company','Person has left'],['negative_nurture','Negative nurture'],['disqualified','Disqualified (no viable FX)'],['closed_lost','Closed Lost (qualified, rejected solution)'],['optout','Take Me Off the List']],'no_answer')}</select></label><div id="call-more" class="call-more"><div class="two-cols compact">${field('call_minutes','Minutes (optional)',0,'number','min="0"')}${field('call_date','Agreed callback / meeting date','', 'date')}${field('call_time','Agreed time','', 'time')}</div>${field('call_notes','Call notes / what we learned','', 'textarea')}${field('call_reason','Objection / status reason','', 'textarea')}${field('call_referral','Who were you referred to? (if known)')}${dropdown('call_scope','Opt-out applies to',[['contact','This contact'],['company','Entire company']],'contact')}<section class="engaged-only" data-engaged><label class="check"><input id="call_decisionmaker" type="checkbox"> Confirmed I spoke with the person responsible for FX</label><div class="modal-section"><div class="card-head"><h3>Buyer Readiness (optional)</h3>${tag('Evidence required for changes','muted')}</div>${dropdown('call_readiness','Readiness after the call',[['','No change'],...C.READINESS.map((n,i)=>[String(i+1),`${i+1} · ${n}`])],'')}${field('call_evidence','Evidence for a change','', 'textarea')}${field('call_barrier','Main barrier',l.barrier,'textarea')}${field('call_milestone','Next desired buyer milestone',l.nextMilestone||unmet(l),'textarea')}</div><div class="info-card">You can save FX volumes, currency pairs, current pricing and spot/forwards from the Live FX Discovery panel without leaving this call unfinished.</div>${btn('Open Live FX Discovery','fxFromCall','outline')}</section></div>`,btn('Cancel','closeModal','ghost')+btn('Save outcome & next task','saveCall','primary'))}
+function taskModal(){let t=currTask(),l=C.getLead(state,t?.leadId);if(!t)return '';if(t.type==='research')return repairModal();if(t.type==='call'||t.type==='callback')return callModal();
+ return wrapModal('Complete task',l?.company||'GLOBAL TASK',`<div class="info-card"><b>${esc(t.title)}</b><p>${esc(t.objective||'Complete the action and record anything that changed.')}</p></div>${field('tk_notes','What did you do? What changed?', '', 'textarea')}${l&&['deal','meeting'].includes(t.type)?dropdown('tk_stage','Stage reached (only if actually achieved)',C.STAGES,l.stage):''}${field('tk_nextDate','Agreed next action date (optional)','', 'date')}${field('tk_nextTime','Time (optional)','', 'time')}<p class="muted small">Completing a task does not automatically improve Buyer Readiness. Log evidence separately if it changed.</p>`,btn('Cancel','closeModal','ghost')+btn('Complete & show next','saveTask','primary'))}
+function repairModal(){let t=currTask(),l=currLead()||C.getLead(state,t?.leadId);if(!l)return '';return wrapModal('Resolve contact details',l.company,
+ `<div class="info-card">${esc(t?.description||'Find the right person or a usable contact method.')}</div>${dropdown('repair_mode','What did you find?',[['new_number','Replacement number for an existing contact'],['new_contact','New contact / decision-maker'],['email','Use available email-only route'],['review','Still unresolved · review later']],'new_number')}${dropdown('repair_contact','Existing contact',l.contacts.length?l.contacts.map(c=>[c.id,c.name||c.title||'Contact']):[['','No contacts yet']],l.contacts[0]?.id||'')}${dropdown('repair_kind','New number type',[['mobile','Mobile'],['phone','Landline']],'mobile')}${field('repair_value','Replacement / new number')}${field('repair_name','New contact name')}${field('repair_title','New contact title')}${field('repair_email','New contact email','', 'email')}${field('repair_date','Review again on',C.businessAdd(C.today(),5),'date')}${field('repair_notes','Notes / verification source','', 'textarea')}<p class="muted small">Bad numbers remain marked invalid. The company stays qualified unless you separately choose DQ.</p>`,btn('Cancel','closeModal','ghost')+btn('Save resolution & next','saveRepair','primary'))}
+function snoozeModal(){let t=currTask();return wrapModal('Reschedule task',t?.title||'TASK',`${t?.dueAt||''} ${t?.dueTime||''}`,
+ `${field('sz_date','New due date',C.businessAdd(C.today(),1),'date')}${field('sz_time','Time (optional)',t?.dueTime||'', 'time')}<p class="muted small">Skipping or snoozing does not mark the task complete. Agreed commitments should only be rescheduled when genuinely rearranged.</p>`,btn('Cancel','closeModal','ghost')+btn('Save due date','saveSnooze','primary'))}
+function manualModal(){let l=currLead();return wrapModal('Add a manual task',l?.company||'CHOOSE A COMPANY',
+ `${dropdown('man_lead','Prospect',state.leads.filter(x=>C.active(x)).map(x=>[x.id,x.company]),l?.id||state.leads.find(x=>C.active(x))?.id||'')}${dropdown('man_type','Task type',[['call','Call'],['email','Email'],['deal','Deal progression'],['research','Find correct contact'],['manual','Other']], 'call')}${field('man_title','Task title')}${field('man_date','Due date',C.today(),'date')}${field('man_time','Due time (optional)','', 'time')}${field('man_objective','Why is this task useful?')}${field('man_success','What would count as progress?')}`,btn('Cancel','closeModal','ghost')+btn('Add task','saveManual','primary'))}
+function loadFXDraft(){let l=currLead();if(!l)return;try{let saved=JSON.parse(localStorage.getItem('salesos.fxDraft.v3.'+l.id));fxDraft=saved&&Array.isArray(saved.flows)?saved:JSON.parse(JSON.stringify(l.fx))}catch{fxDraft=JSON.parse(JSON.stringify(l.fx))}}
+function saveFXDraft(){let l=currLead();if(l&&fxDraft)try{localStorage.setItem('salesos.fxDraft.v3.'+l.id,JSON.stringify(fxDraft))}catch{}}
+function fxModal(){let l=currLead();if(!fxDraft)loadFXDraft();if(!l)return '';let fx=fxDraft||l.fx;return wrapModal('Live FX Discovery',`${l.company} · AUTOSAVED DRAFT`,
+ `<div class="info-card">Only fill fields the prospect actually gives you. Unknowns can stay blank. These details inform commercial insights but never automatically advance Buyer Readiness.</div><div class="two-cols compact">${field('fx_provider','Current FX provider',fx.provider||'','text','data-fx="provider"')}${field('fx_pricing','Current provider pricing (spread/fees, specify units)',fx.currentPricing||'','text','data-fx="currentPricing"')}${field('fx_hedgePct','Exposure currently hedged (%)',fx.hedgePct||'','number','min="0" max="100" data-fx="hedgePct"')}${field('fx_tenor','Typical forward tenor',fx.hedgeTenor||'','text','data-fx="hedgeTenor"')}${field('fx_timing','Payment frequency / next payment',fx.paymentTiming||'','text','data-fx="paymentTiming"')}${field('fx_budget','Budget rate, if applicable',fx.budgetRate||'','text','data-fx="budgetRate"')}</div><div class="field"><span>Products currently used</span><div class="checkbox-row">${['Spot','Forwards','Options'].map(x=>`<label class="check"><input type="checkbox" data-fx-product="${x}" ${fx.products?.includes(x)?'checked':''}> ${x}</label>`).join('')}</div></div>${field('fx_notes','Other discovery notes',fx.notes||'','textarea','data-fx="notes"')}<div class="modal-section"><div class="card-head"><h3>Currency flows</h3>${tag(`${fx.flows?.length||0} recorded`,'blue')}</div>${fx.flows?.map((f,i)=>`<div class="flow-row"><div><strong>${esc(f.pair||f.currency||'FX flow')}</strong><p class="muted small">${esc(f.direction||'Currency flow')} · ${esc(f.currency)} ${Number(f.amount||0).toLocaleString('en-GB')} ${esc(f.period||'annual')} · ${esc(f.confidence==='confirmed'?'Confirmed by prospect':'Estimate')}</p><small>Addressable ${f.addressablePct===''?'unknown':f.addressablePct+'%'} · margin ${f.marginBps===''?'assumed':f.marginBps+' bps'}</small></div>${btn('Remove','removeFlow','text',`data-index="${i}"`)}</div>`).join('')||'<p class="muted small">No volumes recorded yet. Add a flow when you learn a usable figure.</p>'}<div class="two-cols compact">${field('flow_pair','Currency pair (e.g. GBP/EUR)','','text','placeholder="GBP/EUR"')}${dropdown('flow_direction','Direction',[['buy','Buy foreign currency'],['sell','Sell foreign currency'],['both','Both / mixed'],['unknown','Unknown']],'unknown')}${field('flow_amount','Volume amount','','number','min="0" placeholder="2000000"')}${dropdown('flow_currency','Volume currency',['GBP','EUR','USD','AED','CHF','JPY','CAD','AUD'], 'GBP')}${dropdown('flow_period','Period',[['annual','Annually'],['monthly','Monthly'],['quarterly','Quarterly'],['weekly','Weekly']],'annual')}${dropdown('flow_confidence','Evidence',[['estimate','Estimated / approximate'],['confirmed','Prospect-confirmed']],'estimate')}${field('flow_gbp','Annual GBP equivalent (if not GBP)','','number','min="0" placeholder="Leave blank if unknown"')}${field('flow_addressable','Addressable share (%)','','number','min="0" max="100" placeholder="Unknown until confirmed"')}${field('flow_margin','Expected revenue margin (bps)','','number','min="0" placeholder="Blank = default assumption"')}</div>${btn('＋ Add currency flow','addFlow','outline full')}<p class="muted small">Amounts in different currencies are never added without a supplied GBP equivalent. Current-provider pricing is separate from the revenue margin you estimate you could earn.</p></div>`,btn('Save qualification & close','saveFX','primary')+btn('Close (keep draft)','closeModal','ghost'))}
+function modalHtml(){if(dialog==='detail')return detailModal();if(dialog==='newCompany')return companyModal();if(dialog==='editCompany')return companyModal(true);if(dialog==='addContact'||dialog==='editContact')return contactModal();if(dialog==='readiness')return readinessModal();if(dialog==='stage')return stageModal();if(dialog==='status')return statusModal();if(dialog==='reopen')return reopenModal();if(dialog==='call')return callModal();if(dialog==='complete')return taskModal();if(dialog==='repair')return repairModal();if(dialog==='snooze')return snoozeModal();if(dialog==='manual')return manualModal();if(dialog==='fx')return fxModal();return ''}
+function openModal(name,leadId=null,newTaskId=null){if(leadId!==null)detailId=leadId;if(newTaskId!==null)taskId=newTaskId;dialog=name;editingContactId=null;if(name==='fx')loadFXDraft();render();if(name==='call')updateCallPanels()}
+function closeModal(){dialog=null;fxDraft=null;render()}
+function showTask(t){if(!t)return;taskId=t.id;detailId=t.leadId;openModal(t.type==='call'||t.type==='callback'?'call':t.type==='research'?'repair':'complete',t.leadId,t.id)}
+function updateCallPanels(){let out=val('call_outcome'),engaged=['connected','callback','meeting_booked','negative_nurture','closed_lost','disqualified'].includes(out);let block=$('call-more');if(block)block.classList.toggle('simple-call',out==='no_answer'||out==='gatekeeper');let content=document.querySelector('[data-engaged]');if(content)content.hidden=!engaged;let date=$('call_date')?.closest('.field'), time=$('call_time')?.closest('.field');let needDate=['callback','meeting_booked','connected','negative_nurture'].includes(out);if(date)date.style.display=needDate?'':'none';if(time)time.style.display=needDate?'':'none';let reason=$('call_reason')?.closest('.field');if(reason)reason.style.display=['negative_nurture','disqualified','closed_lost','optout'].includes(out)?'':'none';let referral=$('call_referral')?.closest('.field');if(referral)referral.style.display=out==='wrong_person'?'':'none';let scope=$('call_scope')?.closest('.field');if(scope)scope.style.display=out==='optout'?'':'none'}
+function done(message='Saved'){save();dialog=null;fxDraft=null;tab='focus';render();toast(message)}
+function saveCompany(){const name=val('co_company');if(!name)return toast('Company name required.',true);if(dialog==='editCompany'){let l=currLead();if(!l)return;let collision=state.leads.find(x=>x.id!==l.id&&C.companyKey(x.company)===C.companyKey(name));if(collision)return toast('A company with this name already exists.',true);if(l.status==='Take Me Off the List'&&C.companyKey(name)!==C.companyKey(l.company))return toast('Do not rename a suppressed company to bypass contact restrictions.',true);l.company=name;l.sector=val('co_sector');l.fit=C.clamp(val('co_fit'),1,5);l.notes=val('co_notes');save();openModal('detail',l.id);toast('Company updated');return}
+ const result=C.createLead(state,{company:name,sector:val('co_sector'),fit:val('co_fit'),notes:val('co_notes'),contact:val('co_contact'),title:val('co_title'),mobile:val('co_mobile'),phone:val('co_phone'),email:val('co_email'),linkedin:val('co_linkedin')});if(result?.duplicate){openModal('detail',result.duplicate.id);return toast('Existing company opened rather than creating a duplicate.',true)}if(!result)return toast('Could not create company.',true);done('Prospect saved. Next task generated.')}
+function saveContact(){let l=currLead();if(!l)return;let name=val('ct_name');if(!name)return toast('Enter a contact name.',true);let current=editingContactId?C.getContact(l,editingContactId):null;
+ if(current){current.name=name;current.title=val('ct_title');current.roleStatus=val('ct_role');current.active=current.roleStatus!=='left_company';current.linkedinConnected=$('ct_connected')?.checked||false;current.notes=val('ct_notes');for(let type of ['mobile','phone','email','linkedin']){let v=val('ct_'+type);if(v){const old=current.methods.find(x=>x.kind===type&&x.value===v);if(!old){const res=C.addMethod(state,l,current,type,v);if(res?.duplicate){} }}}
+ if(current.roleStatus==='not_responsible'||current.roleStatus==='left_company'){C.cancelTasks(state,l,t=>t.contactId===current.id&&['call','email','linkedin_connect','linkedin_message'].includes(t.type),'Contact cannot handle FX');C.addRepair(state,l,'Identify the actual FX decision-maker and find a usable contact method.',C.today(),current.id)}
+ }else{let c=C.addContact(state,l,{name,title:val('ct_title'),roleStatus:val('ct_role'),mobile:val('ct_mobile'),phone:val('ct_phone'),email:val('ct_email'),linkedin:val('ct_linkedin'),linkedinConnected:$('ct_connected')?.checked,notes:val('ct_notes')});if(c?.duplicate)return toast('Contact already exists.',true);if(!c)return toast('Cannot save this contact.',true)}
+ save();openModal('detail',l.id);toast('Contact details saved')}
+function saveReadiness(){let l=currLead();if(!l)return;let level=val('rd_level'),evidence=val('rd_evidence'),barrier=val('rd_barrier'),milestone=val('rd_milestone');if(!level)return toast('Choose a readiness level.',true);
+ if(Number(level)!==l.readiness){let r=C.setReadiness(state,l,Number(level),evidence,{barrier,nextMilestone:milestone});if(r.error)return toast(r.error,true)}else{l.barrier=barrier;l.nextMilestone=milestone||unmet(l);C.log(state,l,'Buyer Readiness','Barrier / next milestone reviewed',evidence,0)}
+ save();openModal('detail',l.id);toast('Readiness and milestone saved')}
+function saveStage(){let l=currLead(),stage=val('st_stage'),evidence=val('st_evidence');if(!l)return;
+ if(stage!==l.stage&&!evidence)return toast('Record evidence for the stage progression.',true);
+ if(stage!==l.stage){C.advanceStage(state,l,stage,evidence,val('st_nextDate'),val('st_nextTime'))}else C.log(state,l,'Pipeline','Stage reviewed',evidence,0);
+ save();openModal('detail',l.id);toast('Pipeline milestone saved')}
+function saveStatus(){let l=currLead(),st=val('os_status'),reason=val('os_reason');if(!l)return;if(!reason)return toast('Record the reason.',true);let c=C.preferredContact(l,'call')||l.contacts[0];const ok=C.changeStatus(state,l,st,reason,{due:val('os_date'),scope:val('os_scope'),contact:c});if(!ok)return toast('Could not update status.',true);save();openModal('detail',l.id);toast(st+' saved')}
+function saveReopen(){let l=currLead();if(!l)return;let reason=val('reopen_reason');if(!reason)return toast('Record why the opportunity can be reopened.',true);let stage=val('reopen_stage');l.stage=stage;let ok=C.changeStatus(state,l,'Active',reason);if(!ok)return toast('The opportunity remains suppressed or cannot be reopened.',true);save();openModal('detail',l.id);toast('Opportunity reopened with a new next action')}
+function saveCall(){let t=currTask();if(!t)return;const outcome=val('call_outcome');const opts={outcome,notes:val('call_notes'),decisionMakerConfirmed:!!$('call_decisionmaker')?.checked,minutes:val('call_minutes'),reason:val('call_reason'),referredName:val('call_referral'),callbackDate:val('call_date'),callbackTime:val('call_time'),optoutScope:val('call_scope'),barrier:val('call_barrier'),nextMilestone:val('call_milestone')};
+ let r=val('call_readiness');if(r){opts.readiness=Number(r);opts.evidence=val('call_evidence')}
+ let response=C.logCall(state,t,opts);if(response.error)return toast(response.error,true);done('Outcome logged · next task selected')}
+function saveTask(){let t=currTask();if(!t)return;let l=C.getLead(state,t.leadId);let stage=val('tk_stage');if(l&&stage&&stage!==l.stage&&!val('tk_notes'))return toast('Explain what happened before advancing a stage.',true);
+ let result=C.completeTask(state,t,{notes:val('tk_notes'),newStage:stage||undefined,nextDate:val('tk_nextDate'),nextTime:val('tk_nextTime')});if(result.error)return toast(result.error,true);done('Task completed · next task ready')}
+function saveRepair(){let t=currTask();if(!t)return;let result=C.resolveContact(state,t,{mode:val('repair_mode'),contactId:val('repair_contact'),kind:val('repair_kind'),value:val('repair_value'),name:val('repair_name'),title:val('repair_title'),email:val('repair_email'),nextDate:val('repair_date'),notes:val('repair_notes')});if(result.error)return toast(result.error,true);done('Contact resolution updated')}
+function saveSnooze(){let t=currTask();if(!t)return;if(!C.snoozeTask(state,t,val('sz_date'),val('sz_time')))return toast('Choose a due date.',true);done('Task rescheduled')}
+function saveManual(){let l=C.getLead(state,val('man_lead'));if(!l)return toast('Choose an active company.',true);let type=val('man_type');let title=val('man_title');if(!title)return toast('Task title required.',true);
+ let c=C.preferredContact(l,type==='call'?'call':type==='email'?'email':type);if(['call','email'].includes(type)&&!c){C.addRepair(state,l,`Find usable contact information before: ${title}`);done('Contact Resolution task created because no usable contact method exists');return}
+ let m=type==='call'?C.anyPhone(c):type==='email'?C.bestMethod(c,'email'):null;
+ C.addTask(state,l,type,title,val('man_date')||C.today(),{origin:'manual',dueTime:val('man_time'),contactId:c?.id,methodId:m?.id,objective:val('man_objective')||undefined,successCriteria:val('man_success'),isCommitment:false});done('Manual task created')}
+function saveFX(){let l=currLead();if(!l||!fxDraft)return;C.updateFX(state,l,fxDraft);try{localStorage.removeItem('salesos.fxDraft.v3.'+l.id)}catch{}save();openModal('detail',l.id);toast('FX qualification saved')}
+function addFlow(){if(!fxDraft)return;let n=C.num(val('flow_amount'));if(n<=0)return toast('Enter a positive currency volume.',true);let currency=val('flow_currency');let a=val('flow_addressable'),bps=val('flow_margin');if(a&&C.num(a)>100)return toast('Addressable share must be 0–100%.',true);
+ fxDraft.flows.push({id:C.uid(),pair:val('flow_pair'),direction:val('flow_direction'),amount:n,currency,period:val('flow_period'),confidence:val('flow_confidence'),gbpAnnualEquivalent:val('flow_gbp')||'',addressablePct:a===''?'':C.num(a),marginBps:bps===''?'':C.num(bps)});saveFXDraft();render();toast('Flow added to locally saved draft')}
+function exportBlob(filename,contents,type){let blob=new Blob([contents],{type}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportJSON(){exportBlob(`SalesOS_v3_backup_${C.today()}.json`,JSON.stringify(state,null,2),'application/json');toast('Full local backup downloaded')}
+function csvCell(v){const s=String(v??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}
+function exportCSV(){const heads=['company','sector','fit','stage','status','buyer_readiness','barrier','next_milestone','contact','title','mobile','phone','email','linkedin','notes'];const rows=[heads];for(let l of state.leads){let c=l.contacts[0]||{};rows.push([l.company,l.sector,l.fit,l.stage,l.status,l.readiness??'',l.barrier,l.nextMilestone,c.name||'',c.title||'',C.bestMethod(c,'mobile')?.value||'',C.bestMethod(c,'phone')?.value||'',C.bestMethod(c,'email')?.value||'',C.bestMethod(c,'linkedin')?.value||'',l.notes])}exportBlob(`SalesOS_v3_prospects_${C.today()}.csv`,rows.map(r=>r.map(csvCell).join(',')).join('\r\n'),'text/csv;charset=utf-8');toast('CSV downloaded (JSON backups preserve full activity history)')}
+function parseCSV(raw){let out=[],row=[],cell='',quote=false;for(let i=0;i<raw.length;i++){const ch=raw[i];if(ch==='"'){if(quote&&raw[i+1]==='"'){cell+='"';i++}else quote=!quote}else if(ch===','&&!quote){row.push(cell);cell=''}else if((ch==='\n'||ch==='\r')&&!quote){if(ch==='\r'&&raw[i+1]==='\n')i++;row.push(cell);if(row.some(x=>String(x).trim()))out.push(row);row=[];cell=''}else cell+=ch}row.push(cell);if(row.some(x=>String(x).trim()))out.push(row);return out}
+function importCSV(text){let rows=parseCSV(text.replace(/^\uFEFF/,''));if(rows.length<2)return toast('No prospect rows detected.',true);let names=rows[0].map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,''));let get=(row,...alts)=>{let i=alts.map(x=>names.indexOf(x)).find(x=>x>=0);return i===undefined?'':str(row[i])};let added=0,merged=0,skipped=0;
+ for(let row of rows.slice(1)){const company=get(row,'company','companyname','business','businessname');if(!company)continue;const contact=get(row,'contact','contactname','name');let existing=state.leads.find(x=>C.companyKey(x.company)===C.companyKey(company));let newContact={name:contact,title:get(row,'title','role','jobtitle'),mobile:get(row,'mobile','mobilenumber','directdial'),phone:get(row,'phone','telephone','landline'),email:get(row,'email','workemail'),linkedin:get(row,'linkedin','linkedinurl')};
+ if(existing){if(contact&&!existing.contacts.some(x=>x.name.toLowerCase()===contact.toLowerCase())){C.addContact(state,existing,newContact);merged++}else skipped++;continue}
+ // CSV intentionally does not import readiness or revive suppressed records; evidence must be confirmed in the app.
+ const imported=C.createLead(state,{company,contact,sector:get(row,'sector','industry'),fit:get(row,'fit')||3,notes:get(row,'notes'),...newContact});if(imported&&!imported.duplicate)added++;
+ }save();render();toast(`${added} companies added; ${merged} contacts merged; ${skipped} duplicate rows skipped.`)}
+function importJSON(contents){let raw;try{raw=JSON.parse(contents)}catch{return toast('Invalid JSON file.',true)}let parsed=C.normalize(raw);if(!parsed)return toast('Not a compatible SalesOS v2 or v3 backup.',true);if(!confirm('Restore this backup and replace current v3 records? Export a backup first.'))return;state=parsed;save();dialog=null;tab='focus';render();toast(`Backup restored · ${state.leads.length} companies`)}
+function requestUpload(type){let input=document.createElement('input');input.type='file';input.accept=type==='json'?'.json,application/json':'.csv,text/csv';input.style.display='none';document.body.append(input);input.addEventListener('change',()=>{let f=input.files[0];if(!f){input.remove();return}if(f.size>12*1024*1024){toast('File too large (12MB maximum)',true);input.remove();return}f.text().then(type==='json'?importJSON:importCSV).catch(()=>toast('Could not read file.',true)).finally(()=>input.remove())});input.click()}
+function saveSettings(){for(let key of ['callGoal','taskGoal','meetingGoal','dailyCapacity','supplyDays','stalledAfterDays','defaultMarginBps','annualTarget']){let raw=val('s_'+key),n=C.num(raw,state.settings[key]);if(n<0)return toast('Settings cannot be negative.',true);state.settings[key]=n}save();render();toast('Targets saved')}
+function captureSequence(){return [...document.querySelectorAll('.seq-row')].map(row=>({type:row.querySelector('.seq-type')?.value||'call',title:str(row.querySelector('.seq-title')?.value)||'Untitled action',delay:C.clamp(row.querySelector('.seq-delay')?.value,0,90)}))}
+function saveSequence(){let steps=captureSequence();if(!steps.length)return toast('Add at least one sequence step.',true);state.sequence=steps;save();render();toast('Sequence template saved for new sequences')}
+function seedDemo(){if(state.leads.length&&!confirm('Add fictional demo companies alongside your current records?'))return;
+ const dataset=[
+ {company:'Northstar Talent Partners Ltd',sector:'International recruitment',contact:'Alex Morgan',title:'Finance Director',mobile:'07700 900201',email:'alex@northstar.example',fit:5,readiness:4,barrier:'Impact of FX volatility not quantified',stage:'Discovery Complete',fxVol:2400000,fxBps:45,addr:80},
+ {company:'Orion Machinery Imports Ltd',sector:'Industrial machinery',contact:'Sam Taylor',title:'CFO',mobile:'07700 900202',email:'sam@orion.example',fit:5,readiness:6,barrier:'Wants to compare pricing and forward terms',stage:'Successful Meeting',fxVol:5000000,fxBps:42,addr:60},
+ {company:'Bluebridge Search Ltd',sector:'International recruitment',contact:'Jordan Lee',title:'Managing Director',mobile:'07700 900203',email:'jordan@bluebridge.example',fit:4,readiness:3,barrier:'FX requirement not yet understood',stage:'Prospecting',fxVol:0},
+ {company:'Cedar People Solutions Ltd',sector:'Recruitment',contact:'Riley Jones',title:'Head of Finance',mobile:'07700 900204',email:'riley@cedar.example',fit:4,readiness:2,barrier:'Relevance not established',stage:'Prospecting',fxVol:0},
+ {company:'Meridian Equipment Group Ltd',sector:'Wholesale equipment',contact:'Charlie Singh',title:'Financial Controller',mobile:'07700 900205',email:'charlie@meridian.example',fit:4,readiness:7,barrier:'Onboarding documents outstanding',stage:'Onboarding',fxVol:1800000,fxBps:40,addr:100},
+ {company:'Atlas Workforce Services Ltd',sector:'Recruitment',contact:'Jamie Brooks',title:'Director',mobile:'07700 900206',email:'jamie@atlas.example',fit:3,readiness:1,barrier:'Not contacted yet',stage:'Prospecting',fxVol:0},
+ {company:'Harbour Executive Search Ltd',sector:'International recruitment',contact:'Parker White',title:'CFO',mobile:'07700 900207',email:'parker@harbour.example',fit:4,readiness:5,barrier:'Decision-maker approval still needed',stage:'Meeting Booked',fxVol:1350000,fxBps:35,addr:70},
+ {company:'Sterling Corporate Support Ltd',sector:'Professional services',contact:'Avery King',title:'MD',mobile:'07700 900208',email:'avery@sterling.example',fit:2,readiness:2,barrier:'Happy with incumbent',stage:'Prospecting',fxVol:0,status:'Negative Nurture'},
+ {company:'Fairview Domestic Staffing Ltd',sector:'Domestic staffing',contact:'Robin Clarke',title:'Owner',mobile:'07700 900209',email:'robin@fairview.example',fit:1,readiness:1,stage:'Prospecting',fxVol:0,status:'Disqualified'}
+ ];
+ for(let d of dataset){let x=C.createLead(state,{...d,status:'Active',readiness:d.readiness,readinessEvidence:d.readiness?'Fictional demonstration evidence':'',readinessUpdatedAt:d.readiness?C.addDays(C.today(),-20)+'T10:00:00':'',lastProgressAt:d.readiness?C.addDays(C.today(),-20)+'T10:00:00':'',nextMilestone:C.NEXT_MILESTONES[(d.readiness||1)-1]});if(!x||x.duplicate)continue;
+ if(d.fxVol)C.updateFX(state,x,{provider:'Example incumbent bank',products:['Spot','Forwards'],currentPricing:'Not confirmed',hedgePct:'50',flows:[{id:C.uid(),pair:'GBP/EUR',direction:'buy',currency:'GBP',amount:d.fxVol,period:'annual',confidence:'confirmed',addressablePct:d.addr,marginBps:d.fxBps}]});
+ if(d.status&&d.status!=='Active')C.changeStatus(state,x,d.status,d.status==='Disqualified'?'No currency exposure':'Not reviewing provider at present');
+ }
+ let company=state.leads.find(l=>l.company==='Northstar Talent Partners Ltd');if(company){C.cancelTasks(state,company,t=>t.origin==='stage','Demo override');C.scheduleCallback(state,company,C.today(),'','Fictional callback: revisit overseas-placement FX impact',company.contacts[0].id)}
+ save();tab='focus';render();toast('Fictional demo loaded. All companies, numbers and emails are examples.')}
+function generateInsights(which){let targets=which==='stalled'?C.insights(state).stalled.filter(x=>x.readiness===3):C.insights(state).noNext;let added=0;
+ for(let l of targets){if(!C.active(l)||C.isSuppressed(state,l))continue;let found=state.tasks.find(t=>t.leadId===l.id&&t.status==='pending'&&t.isCommitment);if(found)continue;
+ let t=C.addTask(state,l,'deal',which==='stalled'?'Revisit interested buyer milestone':'Establish next buyer milestone',C.today(),{origin:'insight',description:`Review current barrier: ${l.barrier||'Unknown'}`,objective:unmet(l),successCriteria:'A new evidence-backed buyer step or justified nurture decision',dedupeKey:`insight:${which}:${l.id}`});if(t)added++}
+ save();render();toast(`${added} insight-driven tasks created or already scheduled`)}
+async function copyMethod(target){let l=C.getLead(state,target.dataset.lead),c=C.getContact(l,target.dataset.contact),m=c?.methods.find(x=>x.id===target.dataset.method);if(!m||m.status==='invalid'||m.status==='blocked'||C.isSuppressed(state,l,c))return toast('Contact method unavailable or suppressed.',true);let value=['mobile','phone'].includes(m.kind)?C.phoneDial(m.value):m.value;
+ try{if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(value);else{let el=document.createElement('textarea');el.value=value;el.style.position='fixed';el.style.opacity='0';document.body.append(el);el.select();if(!document.execCommand('copy'))throw new Error('Clipboard unavailable');el.remove()}toast(`${m.kind==='email'?'Email':m.kind==='linkedin'?'LinkedIn URL':'Number'} copied to clipboard`)}catch(e){toast('Clipboard access blocked. Select and copy the displayed value manually.',true)}}
+function openLinkedIn(target){let l=C.getLead(state,target.dataset.lead),c=C.getContact(l,target.dataset.contact),m=c?.methods.find(x=>x.id===target.dataset.method);if(!m||!C.bestMethod(c,'linkedin')||C.isSuppressed(state,l,c))return toast('LinkedIn link unavailable.',true);try{let url=new URL(m.value);if(!['https:','http:'].includes(url.protocol))throw new Error('Unsafe link');window.open(url.href,'_blank','noopener,noreferrer')}catch{toast('Invalid LinkedIn URL.',true)}}
+function action(name,target){if(name==='overlayClose'){if(target.classList.contains('modal-overlay'))closeModal();return}
+ if(name==='closeModal')return closeModal();if(name==='toggleNav'||name==='toggleSidebar'){sidebarHidden=!sidebarHidden;render();return}
+ if(name.startsWith('go')){let route={goFocus:'focus',goTasks:'tasks',goInsights:'insights',goValue:'value',goPipeline:'pipeline'}[name];if(route){tab=route;dialog=null;render()}return}
+ if(name==='newCompany')return openModal('newCompany');if(name==='reopen')return openModal('reopen',detailId);if(name==='detail')return openModal('detail',target.dataset.lead||getFocus()?.leadId);
+ if(name==='editCompany')return openModal('editCompany',detailId);
+ if(name==='addContact'){editingContactId=null;openModal('addContact',detailId);return}
+ if(name==='editContact'){const cid=target.dataset.contact;openModal('editContact',detailId);editingContactId=cid;render();return}
+ if(['readiness','stage','status'].includes(name))return openModal(name,dialog?detailId:(tab==='focus'?getFocus()?.leadId:detailId));
+ if(name==='fx'||name==='fxFromCall'){let l=dialog?detailId:(tab==='focus'?getFocus()?.leadId:detailId);openModal('fx',l);return}
+ if(name==='openTask'){let t=C.getTask(state,target.dataset.task);return showTask(t)}
+ if(name==='toggleCallBlock'){callBlock=!callBlock;render();return}
+ if(name==='copyMethod')return copyMethod(target);if(name==='openLinkedIn')return openLinkedIn(target);
+ if(name==='invalidateMethod'){let l=C.getLead(state,target.dataset.lead),c=C.getContact(l,target.dataset.contact);if(!confirm('Mark this number invalid and prevent future calling tasks from using it?'))return;C.invalidateMethod(state,l,c,target.dataset.method);if(!C.preferredContact(l,'call'))C.addRepair(state,l,'All known numbers are invalid or unusable. Source another contact method.');save();openModal('detail',l.id);toast('Number marked invalid');return}
+ if(name==='logCall'){let t=getFocus();if(!t||!['call','callback'].includes(t.type))return;return openModal('call',t.leadId,t.id)}
+ if(name==='callOutcome'){let t=getFocus();if(!t||!['call','callback'].includes(t.type))return;openModal('call',t.leadId,t.id);const select=$('call_outcome');if(select){select.value=target.dataset.outcome||'no_answer';updateCallPanels()}return}
+ if(name==='quickNoAnswer'){let t=getFocus();if(!t)return;let result=C.logCall(state,t,{outcome:'no_answer'});if(result.error)return toast(result.error,true);save();render();toast('No answer · follow-up scheduled, next task selected');return}
+ if(name==='completeTask'||name==='resolveContact'){let t=dialog?currTask():getFocus();if(!t)return;return showTask(t)}
+ if(name==='skipTask'){let t=getFocus();if(!t)return;if(t.isCommitment&&!confirm('This is a promised commitment. Skip until the next working day without completing it?'))return;C.skipTask(state,t);save();render();toast('Task deferred, not completed');return}
+ if(name==='snooze'){let t=getFocus()||currTask();if(!t)return;return openModal('snooze',t.leadId,t.id)}
+ if(name==='manualTask')return openModal('manual',detailId);
+ if(name==='saveCompany')return saveCompany();if(name==='saveReopen')return saveReopen();if(name==='saveContact')return saveContact();if(name==='saveReadiness')return saveReadiness();if(name==='saveStage')return saveStage();if(name==='saveStatus')return saveStatus();if(name==='saveCall')return saveCall();if(name==='saveTask')return saveTask();if(name==='saveRepair')return saveRepair();if(name==='saveSnooze')return saveSnooze();if(name==='saveManual')return saveManual();if(name==='saveFX')return saveFX();if(name==='addFlow')return addFlow();
+ if(name==='removeFlow'){if(!fxDraft)return;fxDraft.flows.splice(Number(target.dataset.index),1);saveFXDraft();render();return}
+ if(name==='generateStalled')return generateInsights('stalled');if(name==='generateMissing')return generateInsights('missing');
+ if(name==='createLeadgen'){const x=C.addTask(state,null,'leadgen','Find 10 more high-fit prospects',C.today(),{origin:'supply',description:'Add qualified companies so daily call supply does not run dry.',dedupeKey:'supply:leadgen'});save();tab='focus';render();toast(x?'Lead sourcing task available':'Lead sourcing task already queued');return}
+ if(name==='saveSettings')return saveSettings();if(name==='exportJSON')return exportJSON();if(name==='exportCSV')return exportCSV();if(name==='importJSON')return requestUpload('json');if(name==='importCSV')return requestUpload('csv');if(name==='seedDemo')return seedDemo();
+ if(name==='wipeData'){if(prompt('Type DELETE to clear the local v3 database:')!=='DELETE')return;state=C.newState();save();tab='focus';render();toast('v3 local records deleted. Existing v2 storage was not modified.');return}
+ if(name==='saveSequence')return saveSequence();if(name==='addStep'){state.sequence=captureSequence();state.sequence.push({type:'call',title:'Additional contact attempt',delay:2});render();return}
+ if(name==='removeStep'){state.sequence=captureSequence();if(state.sequence.length<=1)return toast('Keep at least one step.',true);state.sequence.splice(Number(target.dataset.index),1);render();return}
+ if(name==='resetSequence'){if(!confirm('Reset the sequence template? This does not rewrite existing scheduled tasks.'))return;state.sequence=JSON.parse(JSON.stringify(C.STEPS));save();render();toast('Sequence template reset');return}
+}
+document.addEventListener('click',event=>{let t=event.target.closest('[data-action],[data-tab]');if(!t)return;if(t.tagName==='A')event.preventDefault();if(t.dataset.tab){tab=t.dataset.tab;dialog=null;render();return}action(t.dataset.action,t)});
+document.addEventListener('change',e=>{let t=e.target;if(t.id==='statusFilter'){statusFilter=t.value;render()}else if(t.id==='readinessFilter'){readinessFilter=t.value;render()}else if(t.id==='sortProspects'){sortProspects=t.value;render()}else if(t.id==='call_outcome'){updateCallPanels()}else if(t.hasAttribute('data-fx-product')){if(!fxDraft)return;let v=t.dataset.fxProduct;fxDraft.products=t.checked?[...new Set([...(fxDraft.products||[]),v])]:fxDraft.products.filter(x=>x!==v);saveFXDraft()}});
+document.addEventListener('input',e=>{let t=e.target;if(t.id==='searchProspect'){let pos=t.selectionStart;searchTerm=t.value;render();let x=$('searchProspect');x?.focus();x?.setSelectionRange(pos,pos)}else if(t.hasAttribute('data-fx')){if(!fxDraft)return;fxDraft[t.dataset.fx]=t.value;saveFXDraft()}});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&dialog){closeModal();return}
+ if(e.ctrlKey||e.metaKey||e.altKey||dialog||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)||document.activeElement?.isContentEditable)return;
+ const key=e.key.toLowerCase();
+ if(key==='m'){e.preventDefault();action('toggleSidebar',document.body);return}
+ if(tab!=='focus')return;
+ let t=getFocus();if(!t)return;
+ if(key==='s'){e.preventDefault();action('skipTask',document.body);return}
+ if(!['call','callback'].includes(t.type))return;
+ if(key==='n'){e.preventDefault();action('quickNoAnswer',document.body);return}
+ if(key==='g'){e.preventDefault();action('logCall',document.body);return}
+ if(key==='w'||key==='b'){e.preventDefault();action('callOutcome',{dataset:{outcome:key==='w'?'wrong_person':'bad_number'}});return}
+ if(key==='c'){let {l,c}=cOf(t),m=C.anyPhone(c);if(!m)return;e.preventDefault();copyMethod({dataset:{lead:l.id,contact:c.id,method:m.id}})}
+});
+render();
+})();
+</script></body></html>
