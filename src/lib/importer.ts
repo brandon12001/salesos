@@ -1,6 +1,6 @@
 import type {State,Lead} from '../types';
 import {core} from './core';
-export type ImportStats={created:number;merged:number;duplicates:number;skipped:number;warnings:string[]};
+export type ImportStats={created:number;merged:number;duplicates:number;skipped:number;scored:number;researchUpdated:number;unscored:number;warnings:string[]};
 export function parseCSV(text:string):string[][]{
   const rows:string[][]=[];let row:string[]=[],value='',quoted=false;const s=text.replace(/^\uFEFF/,'');
   for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='"'){if(quoted&&s[i+1]==='"'){value+='"';i++}else quoted=!quoted}
@@ -21,20 +21,60 @@ function linkedinProfile(value:string):string{
   }catch{return ''}
 }
 const companyDomains=['companydomain','companywebsite','website','domain'];
-const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains};
+const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains,companyNumber:['companynumber','companieshousenumber','registrationnumber','companyregistrationnumber','crn'],score:['opportunityscore','fxopportunityscore','leadscore','priorityscore'],researchDate:['researchdate','scoredon','scoredate','lastresearched'],rationale:['researchrationale','scorereason','scoringrationale','researchreason','scorejustification'],sources:['researchsources','researchsource','sources','researchurls','sourcelinks'],confidence:['researchconfidence','scoreconfidence']};
+function researchDateValid(value:string):boolean{
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+  const date=new Date(value+'T12:00:00Z');
+  return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value&&value<=new Date().toISOString().slice(0,10);
+}
+function researchRow(row:string[],line:number,pick:(row:string[],type:keyof typeof aliases)=>string){
+  const raw=pick(row,'score');
+  if(!raw)return null;
+  const score=Number(raw),date=pick(row,'researchDate'),rationale=pick(row,'rationale'),sources=pick(row,'sources'),confidence=pick(row,'confidence');
+  if(!Number.isFinite(score)||score<0||score>100)throw new Error('CSV row '+line+': Opportunity Score must be between 0 and 100.');
+  if(!researchDateValid(date))throw new Error('CSV row '+line+': scored leads need a valid, non-future Research Date (YYYY-MM-DD).');
+  if(!rationale)throw new Error('CSV row '+line+': a researched score needs a Research Rationale.');
+  return {score,date,rationale,sources,confidence};
+}
 export function importLusha(state:State,text:string):ImportStats{
-  const rows=parseCSV(text),report:ImportStats={created:0,merged:0,duplicates:0,skipped:0,warnings:[]};
+  const rows=parseCSV(text),report:ImportStats={created:0,merged:0,duplicates:0,skipped:0,scored:0,researchUpdated:0,unscored:0,warnings:[]};
   if(rows.length<2)throw new Error('This CSV has no contact rows.');
+  if(rows.length>10001)throw new Error('Import up to 10,000 contact rows at a time. Split larger exports into batches.');
   const h=rows[0].map(canonical);const pick=(row:string[],type:keyof typeof aliases)=>{for(const alias of aliases[type]){const idx=h.indexOf(alias);if(idx>=0&&row[idx]?.trim())return row[idx].trim()}return ''};
   if(!aliases.company.some(alias=>h.includes(alias)))throw new Error('Company name column not detected. Please use a Lusha contacts export.');
-  for(const row of rows.slice(1)){
+  const seenResearch=new Map<string,string>();
+  for(let index=1;index<rows.length;index++){
+    const row=rows[index],line=index+1;
     const company=pick(row,'company');if(!company){report.skipped++;continue}
     const name=pick(row,'name')||[pick(row,'first'),pick(row,'last')].filter(Boolean).join(' ');
     const data={name,title:pick(row,'title'),mobile:pick(row,'mobile'),phone:pick(row,'phone'),email:pick(row,'email'),linkedin:pick(row,'linkedin')};
-    const domain=pick(row,'domain').replace(/^https?:\/\//,'').replace(/^www\./,'').split('/')[0].toLowerCase();
-    // V3 stores company and contacts; use domain as an extra source hint, not a blanket merge of related subsidiaries.
-    const existing=state.leads.find(l=>core.companyKey(l.company)===core.companyKey(company));
+    const domain=pick(row,'domain').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0].toLowerCase();
+    const companyNumber=pick(row,'companyNumber').replace(/\s/g,'').toUpperCase();
+    const researched=researchRow(row,line,pick);
+    const key=companyNumber||core.companyKey(company);
+    if(researched){
+      const signature=JSON.stringify([researched.score,researched.date,researched.rationale,researched.sources]);
+      if(seenResearch.has(key)&&seenResearch.get(key)!==signature)throw new Error('CSV row '+line+': conflicting research scores for '+company+'. Use one consistent score/date/rationale per company.');
+      seenResearch.set(key,signature);
+    }
+    // Registration number is a stable legal-entity identifier. Do not merge unrelated
+    // subsidiaries simply because they share a domain or a trading-group name.
+    const byNumber=companyNumber?state.leads.find(l=>l.companyNumber===companyNumber):null;
+    const byName=state.leads.find(l=>core.companyKey(l.company)===core.companyKey(company));
+    if(byName&&companyNumber&&byName.companyNumber&&byName.companyNumber!==companyNumber)throw new Error('CSV row '+line+': '+company+' has a conflicting company registration number. Resolve identity before importing.');
+    if(byNumber&&byName&&byNumber.id!==byName.id)throw new Error('CSV row '+line+': company name and registration number identify different existing records.');
+    const existing=byNumber||byName;
     if(existing){
+      if(companyNumber&&!existing.companyNumber)existing.companyNumber=companyNumber;
+      if(domain&&!existing.companyDomain)existing.companyDomain=domain;
+      if(researched&&(!existing.researchDate||researched.date>=existing.researchDate)){
+        const changed=existing.opportunityScore!==researched.score||existing.researchDate!==researched.date||existing.researchRationale!==researched.rationale||existing.researchSources!==researched.sources;
+        if(changed){
+          existing.opportunityScore=researched.score;existing.researchDate=researched.date;existing.researchRationale=researched.rationale;existing.researchSources=researched.sources;existing.researchConfidence=researched.confidence;
+          report.researchUpdated++;
+          core.log(state,existing,'Research','Opportunity score updated',researched.rationale,0);
+        }
+      }
       const profile=linkedinProfile(data.linkedin),email=data.email.toLowerCase();
       // Stable identifiers outrank display names: Lusha can change a contact's name
       // or email between exports without creating a new decision-maker.
@@ -58,9 +98,10 @@ export function importLusha(state:State,text:string):ImportStats{
       continue;
     }
     // Level 1 is a starting cold-prospect assumption, not demonstrated knowledge of the buyer.
-    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,readiness:1,readinessEvidence:'Default assumption from Lusha import',nextMilestone:core.NEXT_MILESTONES[0],notes:domain?`Source: Lusha CSV · Company domain: ${domain}`:'Source: Lusha CSV'});
-    if(lead&&!(lead as {duplicate?:Lead}).duplicate)report.created++;else report.duplicates++;
+    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,companyNumber,companyDomain:domain,leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:researched?.score??null,researchDate:researched?.date||'',researchRationale:researched?.rationale||'',researchSources:researched?.sources||'',researchConfidence:researched?.confidence||'',readiness:1,readinessEvidence:'Default assumption from CSV import',nextMilestone:core.NEXT_MILESTONES[0],notes:'Source: researched CSV / Lusha'});
+    if(lead&&!(lead as {duplicate?:Lead}).duplicate){report.created++;if(researched)report.scored++;else report.unscored++}else report.duplicates++;
   }
-  report.warnings.push('Existing Buyer Readiness, deal history and opt-out suppression have been preserved. Imported numbers are unverified.');
+  report.warnings.push('New companies enter the lead reserve with no outreach tasks. Existing Buyer Readiness, deal history and opt-outs are preserved. Imported numbers are unverified.');
+  if(report.unscored)report.warnings.push(report.unscored+' new companies have no researched score and cannot be activated until scored.');
   return report;
 }
