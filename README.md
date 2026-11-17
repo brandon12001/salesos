@@ -1,5 +1,7 @@
 # SalesOS
 
+Production: https://salesos-up-next7.vercel.app (Vercel sign-in required). Automatic deployments follow pushes to `main`.
+
 Permanent source repository: https://github.com/brandon12001/salesos (branch `main`).
 
 Existing React 19 / TypeScript / Vite application for progression-first personal FX sales execution. Focus Mode shows one task at a time; management screens are secondary.
