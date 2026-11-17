@@ -1,0 +1,26 @@
+name: Verify reliability
+on:
+  pull_request:
+  push:
+    branches: [main, 'reliability/**']
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: fictional-reliability-screenshots
+          path: .test-artifacts/*.png
+          if-no-files-found: ignore

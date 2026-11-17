@@ -18,16 +18,22 @@ export function useCloudWorkspace(userId?:string){
  useEffect(()=>{
   if(!engine)return;
   let cancelled=false;
+  let acquired=false;
+  const lockRequest=new AbortController();
+  let lockTimer:ReturnType<typeof setTimeout>|undefined;
   let release=()=>{};
   const held=new Promise<void>(resolve=>{release=resolve});
   // One writer per browser/account prevents two tabs overwriting the shared local outbox.
   if(navigator.locks){
-   void navigator.locks.request('salesos.account.'+userId,{ifAvailable:true},async lock=>{
+   // A short queued acquisition lets a just-unmounted instance release its lock
+   // before reporting another tab (including React Strict Mode's effect replay).
+   lockTimer=setTimeout(()=>{if(!acquired&&!cancelled){lockRequest.abort();engine.blockForOtherTab()}},250);
+   void navigator.locks.request('salesos.account.'+userId,{signal:lockRequest.signal},async ()=>{
     if(cancelled)return;
-    if(!lock){engine.blockForOtherTab();return}
+    acquired=true;clearTimeout(lockTimer);
     void engine.start(navigator.onLine);
     await held;
-   }).catch(()=>engine.blockForOtherTab());
+   }).catch(()=>{if(!cancelled&&!lockRequest.signal.aborted){clearTimeout(lockTimer);engine.blockForOtherTab()}});
   }else engine.blockForOtherTab();
   const online=()=>engine.setOnline(true),offline=()=>engine.setOnline(false);
   const leaving=(e:BeforeUnloadEvent)=>{if(engine.getSnapshot().dirty){e.preventDefault();e.returnValue=''}};
@@ -37,7 +43,7 @@ export function useCloudWorkspace(userId?:string){
   };
   window.addEventListener('online',online);window.addEventListener('offline',offline);window.addEventListener('focus',refresh);window.addEventListener('beforeunload',leaving);
   const interval=window.setInterval(refresh,15000);
-  return()=>{cancelled=true;engine.stop();release();clearInterval(interval);window.removeEventListener('online',online);window.removeEventListener('offline',offline);window.removeEventListener('focus',refresh);window.removeEventListener('beforeunload',leaving)};
+  return()=>{cancelled=true;clearTimeout(lockTimer);lockRequest.abort();engine.stop();release();clearInterval(interval);window.removeEventListener('online',online);window.removeEventListener('offline',offline);window.removeEventListener('focus',refresh);window.removeEventListener('beforeunload',leaving)};
  },[engine]);
  return engine&&snapshot?{engine,snapshot}:null;
 }

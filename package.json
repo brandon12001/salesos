@@ -11,7 +11,8 @@
     "test:import": "node tests/test_importer.cjs",
     "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave",
     "test:reserve": "node tests/test_reserve.cjs",
-    "test:autosave": "node tests/test_autosave.cjs"
+    "test:autosave": "node tests/test_autosave.cjs",
+    "test:browser": "node tests/browser/run.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",
@@ -23,6 +24,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "playwright": "1.65.1",
     "typescript": "~5.8.3",
     "vite": "^7.0.0"
   },

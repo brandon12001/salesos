@@ -24,7 +24,7 @@ export function workspaceRemote(userId:string):RemoteWorkspace{
    body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)
   });
   const result=await response.json();
-  if(!response.ok){if(result.code==='40001')throw new RevisionConflict();throw new Error(result.message||'Cloud save failed. Your changes remain in this browser.')}
+  if(!response.ok){if(result.code==='40001'||result.code==='PT409')throw new RevisionConflict();throw new Error(result.message||'Cloud save failed. Your changes remain in this browser.')}
   return result;
  }
  return {
