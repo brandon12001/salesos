@@ -371,7 +371,9 @@
   function due(s,now=new Date()){return pending(s).filter(t=>isDue(t,now)).sort((a,b)=>taskTier(b)-taskTier(a)||taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||''))}
   function nextTask(s,options={}){const d=due(s);if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
   function xpStats(s){let total=s.activities.reduce((sum,a)=>sum+num(a.xp),0);return {total,level:Math.floor(total/1000)+1,progress:total%1000}}
-  function activityToday(s){const activities=s.activities.filter(a=>a.at.startsWith(today()));return {calls:activities.filter(a=>a.type==='Call').length,tasks:activities.filter(a=>a.taskId).length,meetings:activities.filter(a=>a.type==='Pipeline'&&a.newStage==='Meeting Booked').length,minutes:activities.filter(a=>a.type==='Call').reduce((x,a)=>x+num(a.durationMins),0),xp:activities.reduce((x,a)=>x+num(a.xp),0)}}
+  // Rescheduling is audit history, not completed work. Preserve old backup formats.
+  const isCompletionActivity=a=>a.taskId&&!['Snoozed','Skipped to next working day'].includes(a.outcome);
+  function activityToday(s){const activities=s.activities.filter(a=>a.at.startsWith(today()));return {calls:activities.filter(a=>a.type==='Call').length,tasks:activities.filter(isCompletionActivity).length,meetings:activities.filter(a=>a.type==='Pipeline'&&a.newStage==='Meeting Booked').length,minutes:activities.filter(a=>a.type==='Call').reduce((x,a)=>x+num(a.durationMins),0),xp:activities.reduce((x,a)=>x+num(a.xp),0)}}
   function insights(s){const ls=s.leads.filter(x=>x.status==='Active'&&x.stage!=='First Trade');const assessed=ls.filter(x=>x.readiness!==null);const counts=Array(8).fill(0);assessed.forEach(x=>counts[x.readiness-1]++);
     const cutoff=clamp(s.settings.stalledAfterDays,3,90);
     const stalled=ls.filter(l=>l.readiness&&l.readiness<8&&daysBetween(today(),(l.lastProgressAt||l.readinessUpdatedAt||l.createdAt).slice(0,10))>=cutoff);
@@ -387,7 +389,7 @@
     return {active:ls.length,assessed:assessed.length,unassessed:ls.length-assessed.length,counts,stalled,noNext,issues:Object.entries(issues).sort((a,b)=>b[1]-a[1]),moved,advances,meetings,firstTrades,stages,transitions,cutoff};
   }
   function leadSupply(s){const days=clamp(s.settings.supplyDays,2,20),end=businessAdd(today(),days-1), tasks=pending(s),ready=tasks.filter(t=>t.dueAt<=today()).length,upcoming=tasks.filter(t=>t.dueAt>today()&&t.dueAt<=end).length;
-    const prev=addDays(today(),-14),completed=s.activities.filter(a=>a.taskId&&a.at.slice(0,10)>=prev).length,pace=completed?Math.max(1,Math.round(completed/10)):num(s.settings.dailyCapacity);
+    const prev=addDays(today(),-14),completed=s.activities.filter(a=>isCompletionActivity(a)&&a.at.slice(0,10)>=prev).length,pace=completed?Math.max(1,Math.round(completed/10)):num(s.settings.dailyCapacity);
     const capacity=pace*days,coverage=capacity?((ready+upcoming)/capacity):0;
     return {ready,upcoming,pace,capacity,coverage,days,end,label:coverage<0.7?'Low supply':coverage>1.5?'Heavy backlog':'Watch supply',gap:Math.max(0,capacity-ready-upcoming)};
   }

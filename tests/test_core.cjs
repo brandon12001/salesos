@@ -49,3 +49,25 @@ assert(meeting);
 C.advanceStage(committed,promised,'Successful Meeting','Commercial next step agreed');
 assert.equal(meeting.status,'pending','Stage-origin commitments survive stage changes');
 console.log('COMMITMENT PASS: stage-origin promises preserved');
+
+// Deferring work must never inflate completion totals or observed task pace.
+const deferred=C.newState();
+const deferredLead=C.createLead(deferred,{company:'FICTIONAL Deferred Work',contact:'Test CFO',mobile:'07700900901',email:'cfo@deferred.example'});
+const deferredCall=C.pending(deferred).find(t=>t.leadId===deferredLead.id);
+for(let i=0;i<20;i++){
+  C.skipTask(deferred,deferredCall);
+  C.snoozeTask(deferred,deferredCall,C.businessAdd(C.today(),2),'10:00');
+}
+assert.equal(deferredCall.status,'pending');
+assert.equal(C.activityToday(deferred).tasks,0,'Skip/snooze are not task completions');
+assert.equal(C.activityToday(deferred).calls,0);
+assert.equal(C.xpStats(deferred).total,0);
+assert.equal(C.leadSupply(deferred).pace,deferred.settings.dailyCapacity,'Deferrals must not become observed completion pace');
+C.logCall(deferred,deferredCall,{outcome:'no_answer'});
+assert.equal(C.activityToday(deferred).tasks,1,'An actual call counts once despite prior deferrals');
+assert.equal(C.activityToday(deferred).calls,1);
+assert.equal(C.leadSupply(deferred).pace,1);
+const restoredDeferred=C.normalize(JSON.parse(JSON.stringify(deferred)));
+assert.equal(C.activityToday(restoredDeferred).tasks,1,'Existing backups with deferral history use corrected counts');
+assert.equal(C.leadSupply(restoredDeferred).pace,1);
+console.log('METRICS PASS: skip/snooze excluded from completions and task pace, including restored history');
