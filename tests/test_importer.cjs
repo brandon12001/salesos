@@ -115,7 +115,7 @@ try{
   assert.throws(()=>importLusha(structuredClone(holdState),
     [header+',CRM Last Activity Date',['Invalid Activity Date Ltd','00110100','Alex','07700900100','78',date,'Intl','https://research.example','Medium','Hold',date,'Assigned','2027-01-01'].join(','),''].join(String.fromCharCode(10))),/CRM Last Activity Date/);
   const later=core.today();
-  const updatedActivity=core.addCalendarMonths(later,-1);
+  const updatedActivity=later; // must be newer than prior activity to advance the CRM clock
   importLusha(holdState,[header+',CRM Last Activity Date',
     ['CSV Banked Recruitment Ltd','00110099','Alex Example','07700900888','88',date,'International offices','https://research.example','Medium','Hold',later,'Newer activity recorded',updatedActivity].join(','),''].join(String.fromCharCode(10)));
   assert.equal(banked.crmLastActivityAt,updatedActivity);
