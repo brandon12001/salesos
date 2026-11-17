@@ -8,7 +8,7 @@ Existing React 19 / TypeScript / Vite application for progression-first personal
 
 Read AGENTS.md and the canonical specifications in docs/ before changing business functionality.
 
-**Scored import and reserve (feature branch):** Research and score companies in ChatGPT, upload a dated/evidenced CSV, rank in the Lead Reserve, record Salesforce clearance manually, and activate the highest-ranked eligible companies in controlled batches. Details and field template: [Scored lead reserve](docs/SCORED_RESERVE.md).
+**Scored import and reserve (released):** Research and score companies in ChatGPT, upload a dated/evidenced CSV, rank in the Lead Reserve, record Salesforce clearance manually, and activate the highest-ranked eligible companies in controlled batches. Details and field template: [Scored lead reserve](docs/SCORED_RESERVE.md).
 
 ## Verified cloud build
 
@@ -20,10 +20,10 @@ See CLOUD_DEPLOY.md for browser-only private GitHub → Vercel deployment.
 
 ## Cloud autosave rollout
 
-Supabase autosave, account sign-in, offline outbox and conflict protection are implemented and tested at the controller/database level. **Production activation is pending the Supabase email redirect configuration.** See [docs/CLOUD_AUTOSAVE.md](docs/CLOUD_AUTOSAVE.md) for the exact activation steps and verification limits.
+Supabase autosave is enabled in production. Real sign-in and a prospect saved from the live app have been confirmed in the database. The first scored batch is stored in the account. Authenticated reload, second-device and offline/conflict UI acceptance remain incomplete. See [current status](docs/CODEX_STATUS_2026-11-17.md) and [autosave design and limits](docs/CLOUD_AUTOSAVE.md).
 
 ## Persistence and compatibility
 
-Browser localStorage remains the default under salesos.personal.v3, with v2/v3 JSON backup support. Optional Supabase provides manual snapshots, not live sync. Seven pipeline stages, eight independent readiness levels, statuses, FX discovery, CSV imports, scheduled follow-ups and XP remain in the existing application. No Salesforce, Teams or Outlook integrations.
+Configured production uses authenticated Supabase autosave with a per-account browser recovery cache and revision checks. Without cloud configuration, browser-local mode remains available under salesos.personal.v3, with v2/v3 JSON backup support. Manual snapshots are separate backups. Seven pipeline stages, eight independent readiness levels, statuses, FX discovery, CSV imports, scheduled follow-ups and XP remain in the existing application. No Salesforce, Teams or Outlook integrations.
 
 Source is deployable; full product acceptance and production cloud persistence remain incomplete. Use fictional data for validation.

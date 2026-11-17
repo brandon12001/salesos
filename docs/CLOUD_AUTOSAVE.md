@@ -2,6 +2,8 @@
 
 ## Rollout status — 17 November 2026
 
+**Latest verification:** the user created a fictional prospect through the signed-in live app; an account-scoped database read confirmed the record and its task at 15:25:47 UTC (revision 2). The first approved ten-contact batch subsequently committed at revision 3: five active, five reserve and five pending tasks; the fictional test is excluded from outreach. This verifies cloud writes and readback, not authenticated browser reload, second-device or offline/conflict UI recovery. See [current handoff](CODEX_STATUS_2026-11-17.md). Older rollout descriptions below are historical where they conflict with this update.
+
 Supabase project **SalesOS** (`yzluyxqbohzkmctgvtwf`) exists in London (`eu-west-2`) in brandon12001's Org. The schema and row-security checks have been applied and verified. The application implementation and automated tests are included in this repository.
 
 **Update after initial rollout:** The user confirmed configuring Authentication URLs, and live Supabase queries on 17 November 2026 showed one successfully signed-in user and a cloud workspace saved at 11:33:39 UTC (revision 1, zero leads/tasks at that check). Public Vercel Supabase configuration is present, and production is deployed. Thus the earlier statements that Supabase was unconfigured or that sign-in had never succeeded are historical. **Full end-to-end persistence is still NOT verified**: create/reload a fictional prospect, second-browser/device recovery, conflicts, and offline recovery remain unchecked. See [current Codex handoff](CODEX_STATUS_2026-11-17.md).
@@ -15,7 +17,7 @@ Supabase project **SalesOS** (`yzluyxqbohzkmctgvtwf`) exists in London (`eu-west
 5. On the first sign-in, browser records are not uploaded automatically. If no cloud workspace exists, choose **Back up and use these records** to export JSON and migrate explicitly, or start empty while retaining the originals. If cloud records already exist, they load first; old browser-only records remain exportable in Settings.
 6. Verify a fictional record reaches **Saved to cloud**, then sign in in a separate browser/device and verify it loads. Check offline queueing/reconnect and a deliberate conflicting edit before migrating real data.
 
-The authorisation above does not supply an email inbox or change the Supabase project's redirect settings. Actual email-link delivery, a completed user sign-in and two authenticated browser/device sessions remain unverified until these steps are performed.
+Email-link sign-in and production redirect configuration have already succeeded. A second authenticated browser/device session remains to be verified; do not ask the user to repeat completed setup.
 
 ## Behaviour and safety
 

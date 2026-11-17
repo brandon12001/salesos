@@ -1,5 +1,21 @@
 # SalesOS — current Codex handoff (17 November 2026)
 
+## Current release and first batch — supersedes all status below
+
+- PR #2 was authorised for release in the user conversation and merged as `73923dc8e307f9863103a0226c347b750d9088d9`. Vercel production deployment `dpl_8YijqDP1bgdRM1qCMzHV5GFEwXGR` reached READY. Canonical app: https://salesos-up-next7.vercel.app/ . Deployment protection remains enabled. Do not treat this PR as draft or unmerged.
+- Merge CI passed: https://github.com/brandon12001/salesos/actions/runs/44114897910 . All four test suites and TypeScript/Vite build also passed in the cloud before release. Later documentation commits may advance main; inspect its current tip.
+- The user created a fictional prospect in the signed-in production app. A targeted database read confirmed that exact company, Prospecting stage, readiness 1 and one pending task at 15:25:47 UTC (revision 2). The cloud write is verified.
+- The user supplied the enriched ten-contact CSV and explicitly confirmed checking all ten companies manually. Treat dated CRM Clearance/Note fields as their attestation; do not ask them to reconfirm these same ten. The original source status wording predates that confirmation. Existing holds, opt-outs and newer evidence must still be preserved.
+- The actual importer/engine prepared the batch against a backed-up workspace copy: ten new companies first entered reserve, then the top five eligible scores were explicitly activated. Five remain in reserve; automatic replenishment is OFF. The known fictional test remains stored as Disqualified with a test-only reason; its sequence task was cancelled, not deleted.
+- A connected database operation scoped to that account and expected revision 2 committed at 15:32:40 UTC (revision 3). Readback confirmed ten scored prospects, five active, five reserve, five pending tasks and one excluded fictional test. The revision condition protected concurrent edits. No schema, permissions or authentication settings changed. This was controlled server-side intake using the shipped importer, not an authenticated browser upload test.
+- Private backup/preparation files are under `/workspace/work/private-intake`; user CSVs are in private attachments, outside the repository. Do not commit contact details or these private files to this public repository. Synthetic fixtures remain the test data.
+- **Still to verify:** user-browser reload of the imported batch, a second authenticated browser/device, and authenticated offline/conflict/lock recovery through UI. Do not claim these passed based on controller tests or database reads. The agent's cloud browser was signed out; no authentication tokens were copied or fabricated.
+- **Next action:** have the user refresh production and confirm five active tasks/prospects and five reserve companies, with the fictional test excluded. Do not reset or reimport because the agent's browser is signed out. Keep Focus Mode minimal and preserve all existing buyer/task/opt-out rules.
+
+## Historical pre-release handoff
+
+The sections below retain the earlier review history. Their draft/unmerged, empty-database, unavailable-CSV and unconfirmed-clearance statements are superseded by the current release update above. PR #2 includes PR #1's identity fix; do not merge PR #1 separately without reconciling overlaps.
+
 > **Current status supersedes the historical first-build instructions** in `docs/ENGINEERING_HANDOFF.md`, the original status sections of `AGENTS.md`, and the initial rollout description in `docs/CLOUD_AUTOSAVE.md`. Read those files for architecture and safeguards, but do **not** treat the original TypeScript build failure or the original lack of Supabase configuration as the current situation.
 
 ## Follow-up PR #2 validation

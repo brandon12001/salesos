@@ -1,5 +1,7 @@
 # Engineering handoff — historical initial plan
 
+> **RELEASE UPDATE:** PR #2 is merged and deployed to production. A user-created fictional prospect's cloud save and the first scored batch are confirmed in Supabase. Authenticated reload/cross-device/offline/conflict UI checks remain incomplete. The current release section of [the Codex status document](CODEX_STATUS_2026-11-17.md) supersedes the older snapshot below.
+
 > **CURRENT STATUS (17 November 2026):** The original first-build failures, unconfigured cloud settings and unverified sign-in described below are historical, not current. Read [the current Codex handoff](CODEX_STATUS_2026-11-17.md) before planning or changing code. GitHub CI and Vercel preview build pass on draft PR #2; a real Supabase account sign-in and creation of an empty cloud workspace succeeded, but persisted prospect/cross-browser tests remain incomplete. The scored Lead Reserve and Duplicate Queue remain **unmerged**.
 
 
