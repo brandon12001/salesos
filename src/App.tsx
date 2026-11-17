@@ -5,18 +5,19 @@ import {CloudSignIn,CloudGate,CloudPanel,SyncIndicator,useCloudAuth} from './com
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {core} from './lib/core';
 import {restoreLocal,persistLocal} from './lib/storage';
-import {importLusha} from './lib/importer';
+import {importLusha,type ImportStats} from './lib/importer';
 import type {Lead,State,Task} from './types';
 import {Focus} from './components/Focus';
 import {FXQuickDialog} from './components/FXQuickDialog';
 import {Prospects} from './components/Prospects';
+import {LeadReserve} from './components/Reserve';
 import {Insights,ValueDashboard,Pipeline,TaskQueue} from './components/Dashboards';
 import {Settings} from './components/Settings';
 import {ConfirmReadiness,TaskDialog,SnoozeDialog,type TaskForm} from './components/Dialogs';
 import {Icon} from './components/UI';
-type Tab='focus'|'prospects'|'pipeline'|'tasks'|'resolution'|'insights'|'value'|'settings';
+type Tab='focus'|'prospects'|'reserve'|'pipeline'|'tasks'|'resolution'|'insights'|'value'|'settings';
 type Modal={task:Task;preset:string}|null;
-const NAV:[Tab,string,string][]=[['focus','Focus Mode','bolt'],['prospects','Prospects','users'],['pipeline','Pipeline','chart'],['tasks','Task Queue','list'],['resolution','Contact Resolution','search'],['insights','Buyer Intelligence','target'],['value','Pipeline Value','chart'],['settings','Settings','settings']];
+const NAV:[Tab,string,string][]=[['focus','Focus Mode','bolt'],['prospects','Prospects','users'],['reserve','Lead Reserve','target'],['pipeline','Pipeline','chart'],['tasks','Task Queue','list'],['resolution','Contact Resolution','search'],['insights','Buyer Intelligence','target'],['value','Pipeline Value','chart'],['settings','Settings','settings']];
 export default function App(){
  const auth=useCloudAuth();
  if(cloud&&(auth.loading||!auth.session))return <CloudSignIn loading={auth.loading}/>;
@@ -31,7 +32,10 @@ function Workspace({user}:{user?:User}){
  const message=useCallback((x:string)=>setToast(x),[]);
  useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(id)},[toast]);
  const commit=useCallback(<T,>(action:(draft:State)=>T):T=>{
-   const draft=structuredClone(engine?engine.getSnapshot().document:stateRef.current);const result=action(draft);const violations=core.checkInvariants(draft) as string[];
+   const draft=structuredClone(engine?engine.getSnapshot().document:stateRef.current);const result=action(draft);
+   // Opt-in replenishment runs only after a saved user action. New CSV imports stay
+   // passive by default; no auto-activation happens until the user enables it.
+   core.autoReplenishReserve(draft);const violations=core.checkInvariants(draft) as string[];
    if(violations.length){throw new Error('Safety rule blocked save: '+violations.join('; '))}
    if(engine)engine.change(draft);else persistLocal(draft);stateRef.current=draft;setState(draft);return result;
  },[engine]);
@@ -74,7 +78,7 @@ function Workspace({user}:{user?:User}){
  };
  const updateFX=(l:Lead,fx:any)=>{try{commit(s=>core.updateFX(s,core.getLead(s,l.id),fx));message('FX discovery saved.');return true}catch(e){message((e as Error).message);return false}};
  const openTab=(t:Tab)=>{setTab(t);setMenu(false)};
- const handleImport=(text:string)=>{try{const report=commit(s=>importLusha(s,text));message(`${report.created} companies added · ${report.merged} contact records updated · ${report.duplicates} duplicates.`)}catch(e){message((e as Error).message)}};
+ const handleImport=(text:string):ImportStats|null=>{try{const report=commit(s=>importLusha(s,text));message(`${report.created} companies added to reserve · ${report.scored} scored · ${report.merged} contact updates.`);return report}catch(e){message((e as Error).message);return null}};
  const demo=()=>{try{commit(s=>{
    const make=(data:any)=>core.createLead(s,data);
    const a=make({company:'Northstar Talent Partners Ltd',sector:'International recruitment',contact:'Alex Morgan',title:'Finance Director',mobile:'07700900201',email:'alex@northstar.example',readiness:1,fit:5});
@@ -92,6 +96,7 @@ function Workspace({user}:{user?:User}){
   <main className="main-app">{tab==='focus'?<Focus syncIndicator={syncIndicator} state={state} onFX={setFxLead} copy={copy} onAction={doTask} onToggleMenu={()=>setMenu(v=>!v)} onTab={t=>openTab(t as Tab)}/>:
   <><div className="manage-toolbar"><button className="icon-btn" title="Show navigation" onClick={()=>setMenu(v=>!v)}><Icon name="menu"/></button><span className="brand-small">ϟ Sales<span>OS</span></span><small>MANAGEMENT</small>{syncIndicator}<span className="toolbar-spacer"/><button className="btn secondary small" onClick={()=>openTab('focus')}><Icon name="bolt"/> Back to Focus</button></div>
    {currentTab==='prospects'&&<Prospects state={state} openLeadId={focusLead} editReadiness={setReadinessLead} onUpdateFX={updateFX} onStage={stage} onStatus={status} onAddLead={addLead} onAddContact={(l,data)=>{commit(s=>core.addContact(s,core.getLead(s,l.id),data));message('Contact saved.')}} onAddMethod={(l,id,kind,value)=>{try{commit(s=>core.addMethod(s,core.getLead(s,l.id),core.getContact(core.getLead(s,l.id),id),kind,value));message('Contact method saved.')}catch(e){message((e as Error).message)}}} onImport={()=>openTab('settings')}/>}
+   {currentTab==='reserve'&&<LeadReserve state={state} onActivate={ids=>{try{const result=commit(s=>core.activateReserve(s,ids));message(`${result.activated} prospects activated · ${result.skipped} skipped.`)}catch(e){message((e as Error).message)}}} onSettings={settings=>{try{commit(s=>{s.settings={...s.settings,...settings}});message('Reserve rules saved.')}catch(e){message((e as Error).message)}}} onImport={()=>openTab('settings')}/>}
    {currentTab==='pipeline'&&<Pipeline state={state} onProspect={openProspect}/>}
    {currentTab==='tasks'&&<TaskQueue state={tab==='resolution'?{...state,tasks:state.tasks.filter(t=>t.type==='research')}:state} onTask={t=>doTask(t,t.type==='call'?'connected':'complete')}/>}
    {currentTab==='insights'&&<Insights state={state} onProspect={openProspect}/>}
