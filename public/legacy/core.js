@@ -387,7 +387,8 @@
     const meetings=s.activities.filter(x=>x.at.slice(0,10)>=thisWeek&&x.type==='Pipeline'&&x.newStage==='Meeting Booked').length;
     const firstTrades=s.activities.filter(x=>x.at.slice(0,10)>=thisWeek&&x.type==='Pipeline'&&x.newStage==='First Trade').length;
     const stages=STAGES.map(st=>ls.filter(l=>l.stage===st).length);
-    const transitions=STAGES.slice(1).map((st,i)=>({label:`${STAGES[i]} → ${st}`,reached:s.leads.filter(l=>l.reachedStages.includes(st)).length,base:s.leads.filter(l=>l.reachedStages.includes(STAGES[i])).length}));
+    const progressedLeads=s.leads.filter(l=>l.leadPool!=='reserve');
+     const transitions=STAGES.slice(1).map((st,i)=>({label:`${STAGES[i]} → ${st}`,reached:progressedLeads.filter(l=>l.reachedStages.includes(st)).length,base:progressedLeads.filter(l=>l.reachedStages.includes(STAGES[i])).length}));
     return {active:ls.length,assessed:assessed.length,unassessed:ls.length-assessed.length,counts,stalled,noNext,issues:Object.entries(issues).sort((a,b)=>b[1]-a[1]),moved,advances,meetings,firstTrades,stages,transitions,cutoff};
   }
   function leadSupply(s){const days=clamp(s.settings.supplyDays,2,20),end=businessAdd(today(),days-1), tasks=pending(s),ready=tasks.filter(t=>t.dueAt<=today()).length,upcoming=tasks.filter(t=>t.dueAt>today()&&t.dueAt<=end).length;
