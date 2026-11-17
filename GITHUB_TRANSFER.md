@@ -1,42 +1,23 @@
-# Publish the validated SalesOS source without losing changes
+# SalesOS repository transfer record
 
-This task retains the validated application at `/workspace/salesos`. It is now a Git repository on branch `main`, with origin `https://github.com/brandon12001/salesos.git`. Product source and behaviour have not changed during repository preparation.
+## Completed — 17 November 2026
 
-## Current blocker
+The validated application was transferred from `/workspace/salesos` to https://github.com/brandon12001/salesos on branch `main`. The initial publication preserved the local commits and all 46 tracked source, test, configuration and documentation files. No application behaviour changed during this transfer.
 
-The GitHub CLI reported an invalid GH_TOKEN (HTTP 401). HTTPS push failed because no usable GitHub username/credential was available. No source has been published by this task. Do not paste tokens into chat or commit credentials.
+The production build and every available engine/importer test passed immediately before publication. Commit `170a9ea` was confirmed as the remote main head after the first push. Subsequent documentation updates record successful transfer and deployment readiness.
 
-## Preferred recovery: keep this cloud workspace
+Earlier publication attempts failed because the existing task's GitHub credentials were invalid. After GitHub was connected, write permissions became available and a normal HTTPS push succeeded. No force-push or history replacement was required.
 
-Reconnect GitHub for this Codex environment, grant access to brandon12001/salesos, then resume this same task. Connecting a repository elsewhere does not by itself refresh an existing task's credentials. Once access works, the cloud agent should fetch origin, inspect any new branches, rerun npm test and npm run build, then push main normally. Never force-push over existing history.
+## Continuing development
 
-Pending command (cloud environment only):
+Use this repository as the source of truth. Existing cloud checkout: `/workspace/salesos`, origin `https://github.com/brandon12001/salesos.git`, branch `main`. A new repository-connected Codex task or GitHub Codespace can clone directly from GitHub; it no longer needs the original handoff ZIP or a cross-task file transfer.
 
-```sh
-git -C /workspace/salesos push -u origin main
-```
+Run `npm ci`, `npm test`, and `npm run build` in the cloud environment before publishing changes. Do not install software on the work laptop. Keep secrets and user prospect backups outside Git.
 
-## If a new repository-connected cloud task is required
+## Recovery
 
-Preserve this workspace until transfer is verified. The previous uploaded handoff ZIP does not include all validation fixes. Transfer the current source archive or complete Git bundle, including dotfiles, through the cloud environment's available file export/upload interface. Do not assume a new task can see another task's /workspace.
+The complete source archive and Git bundle remain under `/workspace/output`. They are optional recovery copies, not the primary repository. The initial source commit is `689a21a`. A bundle can be cloned into a separate cloud directory without losing committed history. Prefer GitHub for future transfers and verify remote main after pushing.
 
-Recovery artifacts are `/workspace/output/SalesOS_Validated_Source.zip` and `/workspace/output/SalesOS_Validated.bundle`. The bundle includes the complete committed source and history. The ZIP contains source, tests, config and docs with package.json at root; it excludes node_modules, dist and secrets. This session has no working downloadable-attachment output, so these paths are retained cloud files, not download links.
+## Continuous deployment
 
-In a GitHub Codespace or a new cloud workspace, upload the bundle and clone it into a separate directory:
-
-```sh
-git clone /path/to/SalesOS_Validated.bundle salesos-recovered
-cd salesos-recovered
-git remote set-url origin https://github.com/brandon12001/salesos.git
-git fetch origin
-npm ci
-npm test
-npm run build
-git push -u origin main
-```
-
-If GitHub has acquired commits, compare them first and integrate without discarding either tree. Verify remote main matches the intended local commit and GitHub lists all source/test/config/doc files. No software needs to be installed on the work laptop.
-
-## Vercel
-
-After successful GitHub publication, import brandon12001/salesos into a single Vercel project, production branch main, Node 24.x, install npm ci, build npm run build, output dist. Root vercel.json and GitHub validation workflow are included. No Supabase variables are required for localStorage mode. See CLOUD_DEPLOY.md for persistence and access limitations.
+The repository includes `.github/workflows/validate.yml`, `package-lock.json`, Node 24.x configuration and `vercel.json`. GitHub validation runs on pushes and pull requests. Import the repository into Vercel once, using main as the production branch; future pushes deploy through that project. See CLOUD_DEPLOY.md for the exact settings and the distinction between hosting and cloud persistence.

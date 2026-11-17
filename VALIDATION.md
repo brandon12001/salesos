@@ -38,7 +38,7 @@ Clipboard read returned no text through the browser tooling, so actual cross-app
 
 ## Remaining gaps and unverified areas
 
-- No connected GitHub remote or Vercel project; no public production URL. Follow CLOUD_DEPLOY.md to publish through browser interfaces.
+- Update, 17 November 2026: source published to https://github.com/brandon12001/salesos on main after rerunning build and all tests. Vercel remains unconnected; no production application URL yet. Follow CLOUD_DEPLOY.md to connect continuous deployment.
 - Supabase auth, RLS, snapshot upload/restore and multi-device use are unverified. Current storage is localStorage; optional snapshots are manual, not live sync.
 - Full browser acceptance is incomplete: JSON download/restore into a fresh origin, mobile layout, every dashboard, FX draft recovery, wrong/bad-number UI transitions, exact-time callback rollover and long-session behaviour need further browser coverage. Engine tests cover some but not all of these behaviours.
 - Existing manual email task copies an address, not suggested subject/body. Connected conversations do not expose a dedicated send-information branch. These documented P2 gaps were not expanded during the build-repair scope.
