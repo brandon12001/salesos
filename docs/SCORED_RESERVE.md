@@ -29,6 +29,7 @@ Start with a Lusha contacts export and append these company-level columns. Get a
 | CRM Clearance | Cleared, Hold or Unknown; **Unknown by default** |
 | CRM Checked Date | Required for a Cleared or Hold CSV declaration |
 | CRM Note | Required for a Cleared or Hold CSV declaration; user-confirmed Salesforce ownership/activity check |
+| CRM Last Activity Date | Optional for Salesforce `Hold` records; latest known qualifying activity (YYYY-MM-DD). If unknown, no reclaim date is assumed |
 
 **Do not include real employer-owned contact records unless approved.** No Salesforce integration exists: a CSV's "Cleared" value is a user's attestation, not an API verification. SalesOS provides a *Record Salesforce check* control on each reserve row. A CRM hold cannot be removed by an older imported clearance. Every clearance expires for activation purposes after 30 days and must be rechecked against current Salesforce ownership and activity. An expired check does not itself make a lead reclaimable.
 
@@ -41,6 +42,18 @@ Start with a Lusha contacts export and append these company-level columns. Get a
 - Imported **new** companies enter `leadPool='reserve'`, stage Prospecting and readiness 1 Unaware. **No outreach tasks are created by default.** Existing companies keep their leadPool, stages, readiness, status, activity history, notes, FX facts and opt-outs. Newer dated research may refresh scores without rewriting existing opportunities.
 - Unscored and uncontactable companies remain visible for research/repair, rather than receiving a made-up score.
 - Import batches cap at 10,000 contact rows. Use smaller batches if browser storage or sync limits are reached.
+
+## Duplicate Queue and three-month reclaim reviews
+
+Companies already owned by colleagues are **not discarded**: mark CRM Clearance = `Hold` and they appear in **Duplicate Queue** while retaining their Opportunity Score, research, contacts, notes, readiness, stages and source evidence. They do not enter Focus Mode or create outreach tasks.
+
+- Record the date of the **last qualifying activity in Salesforce** (the relevant definition is governed by your employer's ownership/reclaim rules). A duplicate with an unknown activity date stays in a *date needed* state; the import date or check date is **never** substituted.
+- The earliest review is **three calendar months after that last qualifying activity**, with calendar month-end clamping; this is a date to **re-check the account**, not a guarantee that the company can be claimed. The queue computes current state when the page loads; the navigation badge counts due reviews. There is no push/email notification or Salesforce connection.
+- On or after the review date, check Salesforce again for new qualifying activity and ownership. Record an up-to-date CRM review; activity newly found restarts the three-month clock and invalidates any pending request.
+- Submit an actual reassignment request through your internal company process. Then select **Log reclaim request** and enter the request reference/description. Logging does not submit the request, award ownership or permit outreach.
+- When an actual decision arrives, select **Record decision** and capture who confirmed it. **Approved** changes CRM Clearance from Hold to Cleared, keeps the prospect in the scored reserve and makes it eligible for activation according to normal contact and research rules; **Declined** keeps it on hold.
+- **Important:** A generic CRM-clearance edit or a newer imported `Cleared` CSV column is **not** allowed to bypass the reclaim request/approval sequence for a held company. Reimports may update a newer last-activity date but may not silently release a hold.
+- Requests, rechecks, decisions and discovered newer activity are recorded in the SalesOS activity history. The queue stores only noncontactable banked prospects. No eight-level readiness advancement or pipeline-stage change is implied.
 
 ## Ranked reserve and activation
 
@@ -59,7 +72,7 @@ Manual **Activate** action can override the configured score floor but never opt
 
 ## Reserve freshness
 
-- Scores 80+ receive a reserve review deadline five working days after import; other reserves 15 working days.
+- Available reserve scores 80+ receive a review deadline five working days after import; other reserves 15 working days. CRM-held duplicates are tracked separately in Duplicate Queue.
 - Research older than 30 days is visibly flagged for re-evaluation; scores are **not** silently changed or falsely reverified.
 - CRM checks older than 30 days **block activation** until the user confirms current ownership/activity.
 - Reupload a refreshed ChatGPT-scored CSV to update a score with newer research evidence. Older research must not overwrite it.
