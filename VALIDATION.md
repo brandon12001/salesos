@@ -38,9 +38,9 @@ Clipboard read returned no text through the browser tooling, so actual cross-app
 
 ## Remaining gaps and unverified areas
 
-- Update, 17 November 2026: source published to https://github.com/brandon12001/salesos on main after rerunning build and all tests. Vercel project salesos is now GitHub-linked and the production deployment of commit 5e6561c reached READY. Production: https://salesos-up-next7.vercel.app . Sign-in protection remains enabled; protected production browser acceptance remains unverified. See CLOUD_DEPLOY.md.
+- Update, 17 November 2026: source published to https://github.com/brandon12001/salesos on main after rerunning build and all tests. Vercel project salesos is now GitHub-linked and the production deployment of commit 5e6561c reached READY. Production: https://salesos-up-next7.vercel.app . Sign-in protection remains enabled. A production desktop smoke/functional pass and counting fix are recorded in docs/LIVE_VERIFICATION.md. See CLOUD_DEPLOY.md.
 - Supabase auth, RLS, snapshot upload/restore and multi-device use are unverified. Current storage is localStorage; optional snapshots are manual, not live sync.
-- Full browser acceptance is incomplete: JSON download/restore into a fresh origin, mobile layout, every dashboard, FX draft recovery, wrong/bad-number UI transitions, exact-time callback rollover and long-session behaviour need further browser coverage. Engine tests cover some but not all of these behaviours.
+- Full browser acceptance remains incomplete. Production checks now include same-origin JSON download/restore, dashboard rendering, FX save/restore, Lusha sample import and wrong/bad-number UI routing. Fresh-origin restoration, mobile layout, FX draft recovery, exact-time callback rollover and long-session behaviour still need coverage. See docs/LIVE_VERIFICATION.md.
 - Existing manual email task copies an address, not suggested subject/body. Connected conversations do not expose a dedicated send-information branch. These documented P2 gaps were not expanded during the build-repair scope.
 - Import deduplication matches company name, not domain, and contact name/email rather than LinkedIn identity. Imports immediately enrol new companies; no batch activation control. Large and redacted real-world Lusha exports remain unverified.
 - Readiness Level 8 relies on human evidence text; the engine does not independently verify a completed transaction. FX conversion provenance, realised revenue and all reporting requirements have not been certified against the full specification.
@@ -49,3 +49,7 @@ Clipboard read returned no text through the browser tooling, so actual cross-app
 ## Deliverables
 
 Source remains in /workspace/salesos. A source-only ZIP is retained in /workspace/output, excluding dependencies, dist, environment files and build caches. The environment denied creation of the designated /codex output directory, so a downloadable attachment could not be produced there. This is an OS permission failure, not an automatic approval-review rejection.
+
+## Production follow-up
+
+Live testing found and fixed skip/snooze history incorrectly inflating completed-task totals and Lead Supply pace (commit b9e54d2). Regression tests, npm test, npm run build and GitHub CI passed. The automatically deployed fix was retested in the protected production browser. Existing data and history formats were preserved. Full evidence and limits: docs/LIVE_VERIFICATION.md.
