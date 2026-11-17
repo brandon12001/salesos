@@ -402,8 +402,10 @@
     if(!l||l.leadPool!=='reserve')return 'Already active';
     if(l.status!=='Active'||l.stage==='First Trade'||isSuppressed(s,l))return 'Not contactable due to status or suppression';
     if(!Number.isFinite(l.opportunityScore))return 'Research score needed';
+    if(!l.researchRationale||!/^\d{4}-\d{2}-\d{2}$/.test(l.researchDate||'')||l.researchDate>today())return 'Score needs dated research evidence';
     if(l.crmClearance==='hold')return 'Salesforce ownership hold';
     if(l.crmClearance!=='cleared'||!l.crmCheckedAt)return 'Salesforce clearance required';
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(l.crmCheckedAt)||l.crmCheckedAt>today())return 'Invalid Salesforce clearance date';
     if(daysBetween(today(),l.crmCheckedAt)>30)return 'Salesforce clearance is older than 30 days';
     if(l.opportunityScore<minScore)return 'Below minimum score';
     const c=l.contacts.some(c=>canContact(c)&&!isSuppressed(s,l,c)&&(anyPhone(c)||bestMethod(c,'email')));
