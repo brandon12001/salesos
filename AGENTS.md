@@ -1,12 +1,12 @@
 # SalesOS — instructions for Codex
 
-**Read this file first, then `docs/PRODUCT_SPEC.md`, `docs/ENGINE_RULES.md`, `docs/ENGINEERING_HANDOFF.md` and `docs/ACCEPTANCE_TESTS.md` before changing functionality.** This is the source repository for a one-person, browser-only FX sales execution app, not a generic CRM starter project.
+**Read this file first, then `docs/CODEX_STATUS_2026-11-17.md`, `docs/PRODUCT_SPEC.md`, `docs/ENGINE_RULES.md`, `docs/ENGINEERING_HANDOFF.md` and `docs/ACCEPTANCE_TESTS.md` before changing functionality.** This is the source repository for a one-person, browser-only FX sales execution app, not a generic CRM starter project.
 
 ## Non-negotiable product vision
 
 The priority order is: **(1) move viable prospects towards becoming customers; (2) increase meaningful sales activity and consistency; (3) improve organisation, eliminate missed follow-ups.** Every task should answer: who, why now, what is known, what to achieve, and what counts as meaningful progress. The default experience is one actionable task at a time in distraction-free Focus Mode, not a busy CRM dashboard.
 
-## First engineering task — get a verified cloud build
+## Historical first engineering task — already addressed in CI; see current handoff
 
 1. Inspect the existing source and run `npm install`, `npm run build`, and `npm test` inside your own **cloud** development environment. Fix any build/runtime failures. Do not ask the user to install software, open a terminal on their work laptop, or run a local server.
 2. Two Vercel Drop deployments failed with TypeScript `TS18047` in `src/components/Settings.tsx` (`cloud` possibly `null`). The prior fixes were incomplete. This handoff has changed the remaining `cloud.auth.signOut()` callback to `cloud?.auth.signOut()` as a likely correction, **but there has not been a verified production build yet**. Don't assume this is the only error. Treat a passing real `npm run build` as the initial checkpoint.
