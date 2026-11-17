@@ -23,6 +23,24 @@ try{
   core.changeStatus(state,state.leads[0],'Take Me Off the List','Explicit opt-out',{scope:'company',contact:state.leads[0].contacts[0]});
   importLusha(state,'Company Name,First Name,Last Name,Mobile Phone\n"Example, Ltd",Another,Person,07700900222\n');
   assert.equal(core.pending(state).filter(t=>t.leadId===state.leads[0].id).length,0);
+  // A renamed person with a changed email but the same LinkedIn identity
+  // must remain one contact; tracking query and trailing slash are irrelevant.
+  const profileState=core.newState();
+  const original='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\\nProfile Example Ltd,Alex Morgan,alex.old@example.invalid,https://www.linkedin.com/in/alex-morgan-unique/,07700900231\\n';
+  importLusha(profileState,original);
+  const tracked='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\\nProfile Example Ltd,Alexandra Morgan,alex.new@example.invalid,https://linkedin.com/in/alex-morgan-unique?trk=lusha,07700900231\\n';
+  const trackedResult=importLusha(profileState,tracked);
+  assert.equal(trackedResult.created,0);
+  assert.equal(profileState.leads[0].contacts.length,1,'same LinkedIn profile should not duplicate contact');
+  assert.equal(profileState.leads[0].contacts[0].methods.filter(m=>m.kind==='linkedin').length,1,'tracking params must not create duplicate LinkedIn methods');
+  assert.equal(profileState.leads[0].contacts[0].methods.filter(m=>m.kind==='email').length,2,'retain historical contact email');
+  const trackedAgain=importLusha(profileState,tracked);
+  assert.equal(trackedAgain.duplicates,1);
+  assert.equal(profileState.leads[0].contacts.length,1);
+  const anotherProfile='Company Name,Full Name,LinkedIn URL\\nProfile Example Ltd,Jamie Morgan,https://linkedin.com/in/jamie-morgan-unique\\n';
+  importLusha(profileState,anotherProfile);
+  assert.equal(profileState.leads[0].contacts.length,2,'distinct LinkedIn identity stays separate');
+  assert.equal(core.checkInvariants(profileState).length,0);
   assert.equal(core.checkInvariants(state).length,0);
   console.log('IMPORT PASS: Lusha CSV, company/contact merges, initial Unaware, preserved readiness and opt-outs');
 }finally{fs.rmSync(tmp,{recursive:true,force:true})}
