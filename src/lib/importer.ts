@@ -1,6 +1,6 @@
 import type {State,Lead} from '../types';
 import {core} from './core';
-export type ImportStats={created:number;merged:number;duplicates:number;skipped:number;scored:number;researchUpdated:number;unscored:number;warnings:string[]};
+export type ImportStats={created:number;merged:number;duplicates:number;skipped:number;scored:number;researchUpdated:number;unscored:number;crmCleared:number;crmHeld:number;warnings:string[]};
 export function parseCSV(text:string):string[][]{
   const rows:string[][]=[];let row:string[]=[],value='',quoted=false;const s=text.replace(/^\uFEFF/,'');
   for(let i=0;i<s.length;i++){const ch=s[i];if(ch==='"'){if(quoted&&s[i+1]==='"'){value+='"';i++}else quoted=!quoted}
@@ -21,7 +21,7 @@ function linkedinProfile(value:string):string{
   }catch{return ''}
 }
 const companyDomains=['companydomain','companywebsite','website','domain'];
-const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains,companyNumber:['companynumber','companieshousenumber','registrationnumber','companyregistrationnumber','crn'],score:['opportunityscore','fxopportunityscore','leadscore','priorityscore'],researchDate:['researchdate','scoredon','scoredate','lastresearched'],rationale:['researchrationale','scorereason','scoringrationale','researchreason','scorejustification'],sources:['researchsources','researchsource','sources','researchurls','sourcelinks'],confidence:['researchconfidence','scoreconfidence']};
+const aliases={company:['company','companyname','organization','organizationname','companynameenglish'],name:['name','fullname','contactname','contact','personname'],first:['firstname','contactfirstname'],last:['lastname','contactlastname'],title:['title','jobtitle','position','jobposition'],mobile:['mobile','mobilephone','mobilenumber','directdial','mobilephonenumber','mobilephone1'],phone:['phone','phonenumber','directphone','workphone','companyphone','officephone'],email:['email','workemail','emailaddress','businessemail','workemailaddress'],linkedin:['linkedin','linkedinurl','linkedinprofile','personlinkedinurl','linkedinprofileurl'],sector:['sector','industry','companyindustry'],domain:companyDomains,companyNumber:['companynumber','companieshousenumber','registrationnumber','companyregistrationnumber','crn'],score:['opportunityscore','fxopportunityscore','leadscore','priorityscore'],researchDate:['researchdate','scoredon','scoredate','lastresearched'],rationale:['researchrationale','scorereason','scoringrationale','researchreason','scorejustification'],sources:['researchsources','researchsource','sources','researchurls','sourcelinks'],confidence:['researchconfidence','scoreconfidence'],crmClearance:['crmclearance','salesforceclearance','salesforcestatus'],crmCheckedAt:['crmcheckeddate','salesforcecheckeddate','crmcheckedat'],crmNote:['crmnote','salesforcenote','crmownershipnote']};
 function researchDateValid(value:string):boolean{
   if(!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
   const date=new Date(value+'T12:00:00Z');
@@ -37,12 +37,13 @@ function researchRow(row:string[],line:number,pick:(row:string[],type:keyof type
   return {score,date,rationale,sources,confidence};
 }
 export function importLusha(state:State,text:string):ImportStats{
-  const rows=parseCSV(text),report:ImportStats={created:0,merged:0,duplicates:0,skipped:0,scored:0,researchUpdated:0,unscored:0,warnings:[]};
+  const rows=parseCSV(text),report:ImportStats={created:0,merged:0,duplicates:0,skipped:0,scored:0,researchUpdated:0,unscored:0,crmCleared:0,crmHeld:0,warnings:[]};
   if(rows.length<2)throw new Error('This CSV has no contact rows.');
   if(rows.length>10001)throw new Error('Import up to 10,000 contact rows at a time. Split larger exports into batches.');
   const h=rows[0].map(canonical);const pick=(row:string[],type:keyof typeof aliases)=>{for(const alias of aliases[type]){const idx=h.indexOf(alias);if(idx>=0&&row[idx]?.trim())return row[idx].trim()}return ''};
   if(!aliases.company.some(alias=>h.includes(alias)))throw new Error('Company name column not detected. Please use a Lusha contacts export.');
   const seenResearch=new Map<string,string>();
+  const seenClearance=new Map<string,string>();
   for(let index=1;index<rows.length;index++){
     const row=rows[index],line=index+1;
     const company=pick(row,'company');if(!company){report.skipped++;continue}
@@ -51,7 +52,18 @@ export function importLusha(state:State,text:string):ImportStats{
     const domain=pick(row,'domain').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0].toLowerCase();
     const companyNumber=pick(row,'companyNumber').replace(/\s/g,'').toUpperCase();
     const researched=researchRow(row,line,pick);
+    const clearanceRaw=pick(row,'crmClearance').toLowerCase();
+    const crmClearance=clearanceRaw==='cleared'||clearanceRaw==='clear'?'cleared':clearanceRaw==='hold'||clearanceRaw==='assigned'?'hold':'unknown';
+    if(clearanceRaw&&!['cleared','clear','hold','assigned','unknown'].includes(clearanceRaw))throw new Error('CSV row '+line+': CRM Clearance must be Cleared, Hold, or Unknown.');
+    const crmCheckedAt=pick(row,'crmCheckedAt'),crmNote=pick(row,'crmNote');
+    if(crmClearance!=='unknown'&&(!researchDateValid(crmCheckedAt)||!crmNote))throw new Error('CSV row '+line+': Cleared/Hold CRM status needs a valid CRM Checked Date and a CRM Note explaining the manual Salesforce check.');
+
     const key=companyNumber||core.companyKey(company);
+    if(crmClearance!=='unknown'){
+      const signature=JSON.stringify([crmClearance,crmCheckedAt,crmNote]);
+      if(seenClearance.has(key)&&seenClearance.get(key)!==signature)throw new Error('CSV row '+line+': inconsistent Salesforce clearance for '+company+'.');
+      seenClearance.set(key,signature);
+    }
     if(researched){
       const signature=JSON.stringify([researched.score,researched.date,researched.rationale,researched.sources]);
       if(seenResearch.has(key)&&seenResearch.get(key)!==signature)throw new Error('CSV row '+line+': conflicting research scores for '+company+'. Use one consistent score/date/rationale per company.');
@@ -67,6 +79,12 @@ export function importLusha(state:State,text:string):ImportStats{
     if(existing){
       if(companyNumber&&!existing.companyNumber)existing.companyNumber=companyNumber;
       if(domain&&!existing.companyDomain)existing.companyDomain=domain;
+      if(crmClearance!=='unknown'&&(!existing.crmCheckedAt||crmCheckedAt>=existing.crmCheckedAt)){
+        // An old CSV cannot release an existing ownership hold.
+        if(!(existing.crmClearance==='hold'&&crmClearance==='cleared'&&crmCheckedAt<=existing.crmCheckedAt)){
+          existing.crmClearance=crmClearance;existing.crmCheckedAt=crmCheckedAt;existing.crmNote=crmNote;
+        }
+      }
       if(researched&&(!existing.researchDate||researched.date>=existing.researchDate)){
         const changed=existing.opportunityScore!==researched.score||existing.researchDate!==researched.date||existing.researchRationale!==researched.rationale||existing.researchSources!==researched.sources;
         if(changed){
@@ -98,10 +116,11 @@ export function importLusha(state:State,text:string):ImportStats{
       continue;
     }
     // Level 1 is a starting cold-prospect assumption, not demonstrated knowledge of the buyer.
-    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,companyNumber,companyDomain:domain,leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:researched?.score??null,researchDate:researched?.date||'',researchRationale:researched?.rationale||'',researchSources:researched?.sources||'',researchConfidence:researched?.confidence||'',readiness:1,readinessEvidence:'Default assumption from CSV import',nextMilestone:core.NEXT_MILESTONES[0],notes:'Source: researched CSV / Lusha'});
-    if(lead&&!(lead as {duplicate?:Lead}).duplicate){report.created++;if(researched)report.scored++;else report.unscored++}else report.duplicates++;
+    const lead=core.createLead(state,{company,sector:pick(row,'sector'),contact:name,...data,companyNumber,companyDomain:domain,crmClearance,crmCheckedAt:crmClearance==='unknown'?'':crmCheckedAt,crmNote:crmClearance==='unknown'?'':crmNote,leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:researched?.score??null,researchDate:researched?.date||'',researchRationale:researched?.rationale||'',researchSources:researched?.sources||'',researchConfidence:researched?.confidence||'',readiness:1,readinessEvidence:'Default assumption from CSV import',nextMilestone:core.NEXT_MILESTONES[0],notes:'Source: researched CSV / Lusha'});
+    if(lead&&!(lead as {duplicate?:Lead}).duplicate){report.created++;if(researched)report.scored++;else report.unscored++;if(crmClearance==='cleared')report.crmCleared++;if(crmClearance==='hold')report.crmHeld++}else report.duplicates++;
   }
   report.warnings.push('New companies enter the lead reserve with no outreach tasks. Existing Buyer Readiness, deal history and opt-outs are preserved. Imported numbers are unverified.');
   if(report.unscored)report.warnings.push(report.unscored+' new companies have no researched score and cannot be activated until scored.');
+  report.warnings.push('Salesforce clearance is never inferred. Unknown and held companies cannot activate. Clearance older than 30 days needs a fresh manual check.');
   return report;
 }
