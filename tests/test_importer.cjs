@@ -26,9 +26,9 @@ try{
   // A renamed person with a changed email but the same LinkedIn identity
   // must remain one contact; tracking query and trailing slash are irrelevant.
   const profileState=core.newState();
-  const original='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\\nProfile Example Ltd,Alex Morgan,alex.old@example.invalid,https://www.linkedin.com/in/alex-morgan-unique/,07700900231\\n';
+  const original='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\nProfile Example Ltd,Alex Morgan,alex.old@example.invalid,https://www.linkedin.com/in/alex-morgan-unique/,07700900231\n';
   importLusha(profileState,original);
-  const tracked='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\\nProfile Example Ltd,Alexandra Morgan,alex.new@example.invalid,https://linkedin.com/in/alex-morgan-unique?trk=lusha,07700900231\\n';
+  const tracked='Company Name,Full Name,Work Email,LinkedIn URL,Mobile Phone\nProfile Example Ltd,Alexandra Morgan,alex.new@example.invalid,https://linkedin.com/in/alex-morgan-unique?trk=lusha,07700900231\n';
   const trackedResult=importLusha(profileState,tracked);
   assert.equal(trackedResult.created,0);
   assert.equal(profileState.leads[0].contacts.length,1,'same LinkedIn profile should not duplicate contact');
@@ -37,7 +37,7 @@ try{
   const trackedAgain=importLusha(profileState,tracked);
   assert.equal(trackedAgain.duplicates,1);
   assert.equal(profileState.leads[0].contacts.length,1);
-  const anotherProfile='Company Name,Full Name,LinkedIn URL\\nProfile Example Ltd,Jamie Morgan,https://linkedin.com/in/jamie-morgan-unique\\n';
+  const anotherProfile='Company Name,Full Name,LinkedIn URL\nProfile Example Ltd,Jamie Morgan,https://linkedin.com/in/jamie-morgan-unique\n';
   importLusha(profileState,anotherProfile);
   assert.equal(profileState.leads[0].contacts.length,2,'distinct LinkedIn identity stays separate');
   assert.equal(core.checkInvariants(profileState).length,0);
