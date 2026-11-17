@@ -465,6 +465,14 @@
     if(l.crmClearance==='hold'&&clearance==='cleared')return {error:'This company is in the Duplicate Queue. Record a submitted reclaim request and an approval first.'};
     const activity=options.lastActivityAt||'';
     if(activity&&!validPastDate(activity))return {error:'Last qualifying Salesforce activity must be a valid, non-future date.'};
+    if(clearance==='hold'&&Object.prototype.hasOwnProperty.call(options,'lastActivityAt')&&!activity){
+      // An explicitly unknown date must not reverify a historical date or leave
+      // an old request approvable. Keep that previous date in the audit trail.
+      if(l.crmLastActivityAt||l.crmReclaimStatus==='requested'){
+        log(s,l,'CRM','Qualifying activity date no longer verified','Previous date: '+(l.crmLastActivityAt||'Unknown')+'; reclaim requires a verified activity date and fresh request.',0);
+      }
+      l.crmLastActivityAt='';l.crmReclaimStatus='waiting';l.crmReclaimRequestedAt='';l.crmReclaimDecisionAt='';
+    }
     if(clearance==='hold'&&activity){
       if(l.crmLastActivityAt&&activity<l.crmLastActivityAt)return {error:'Do not replace a newer Salesforce activity date with an older one.'};
       if(l.crmLastActivityAt!==activity&&l.crmReclaimStatus==='requested'){

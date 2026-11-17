@@ -14,6 +14,30 @@ try{
   const core=require(path.join(__dirname,'core.cjs'));
   global.window={SalesCore:core};
   const {importLusha}=require(path.join(tmp,'lib','importer.js'));
+  // Match the user's enriched export headers using only fictional contacts.
+  // The explicit Mobile Phone column supplies telephone compatibility; source
+  // ownership labels and hypotheses never establish CRM clearance or FX facts.
+  const fullHeaders=fs.readFileSync(path.join(__dirname,'fixtures','scored_full_headers.csv'),'utf8');
+  const headerState=core.newState();
+  const headerReport=importLusha(headerState,fullHeaders);
+  assert.equal(headerReport.created,2);assert.equal(headerReport.scored,2);
+  assert.equal(headerState.tasks.length,0);
+  assert.ok(headerState.leads.every(l=>l.leadPool==='reserve'&&l.crmClearance==='unknown'&&l.readiness===1&&l.stage==='Prospecting'));
+  const headerLead=headerState.leads[0];
+  assert.equal(headerLead.contacts[0].methods.find(m=>m.kind==='mobile').value,'+447700900101');
+  assert.equal(headerLead.callObjective,'Confirm who manages FX');
+  assert.equal(headerLead.researchHypothesis,'Overseas placements may involve FX');
+  assert.equal(headerLead.fx.flows.length,0);
+  core.setReadiness(headerState,headerLead,4,'Fictional buyer acknowledged currency costs');
+  core.advanceStage(headerState,headerLead,'Discovery Complete','Fictional completed discovery');
+  core.reviewReserveCRM(headerState,headerLead.id,'hold','Synthetic ownership hold',{lastActivityAt:core.addDays(core.today(),-1)});
+  core.changeStatus(headerState,headerLead,'Take Me Off the List','Synthetic opt-out',{scope:'company',contact:headerLead.contacts[0]});
+  const preserved=JSON.stringify({tasks:headerState.tasks,activities:headerState.activities,suppression:headerState.suppression});
+  importLusha(headerState,fullHeaders);
+  assert.equal(headerState.leads.length,2);assert.equal(headerLead.contacts.length,1);
+  assert.equal(headerLead.readiness,4);assert.equal(headerLead.stage,'Discovery Complete');
+  assert.equal(headerLead.status,'Take Me Off the List');assert.equal(headerLead.crmClearance,'hold');
+  assert.equal(JSON.stringify({tasks:headerState.tasks,activities:headerState.activities,suppression:headerState.suppression}),preserved);
   const state=core.newState();
   const csv='Company Name,First Name,Last Name,Job Title,Mobile Phone,Work Email\n"Example, Ltd",John,Smith,CFO,07700900123,john@example.example\n"Example, Ltd",Jane,Smith,FD,07700900124,jane@example.example\n';
   const first=importLusha(state,csv);

@@ -2,6 +2,12 @@
 
 > **Current status supersedes the historical first-build instructions** in `docs/ENGINEERING_HANDOFF.md`, the original status sections of `AGENTS.md`, and the initial rollout description in `docs/CLOUD_AUTOSAVE.md`. Read those files for architecture and safeguards, but do **not** treat the original TypeScript build failure or the original lack of Supabase configuration as the current situation.
 
+## Follow-up PR #2 validation
+
+Validation resumed from `2fb36c9c7987fc9189a362a47c3e5a3918b227e6`. Clean install, all four automated suites and TypeScript/Vite production build passed. Isolated headless Chromium checks passed against the built app for synthetic full-header CSV preview/import, activation and CRM/reclaim gates, repeated-import preservation, callback priority, reload and fresh-browser-context JSON restoration. A reproduced bug where an explicitly cleared CRM activity date reused the historical date was fixed with regressions. See [PR #2 validation evidence and limits](PR2_VALIDATION_2026-11-17.md).
+
+PR #2 remains a draft; production has not been changed. The successful real Supabase sign-in/empty-workspace verification below remains valid; authenticated prospect saving and cross-device/offline/conflict UI acceptance remain incomplete. Use the current branch tip and its latest CI run for subsequent work, rather than treating the earlier feature head below as current.
+
 ## Repository, branches and deployment
 
 - Repo: `brandon12001/salesos`. The `main` production head last verified at `83e3d0b5c878da71f5263ece1134db5966b080f1`.

@@ -117,6 +117,32 @@ assert.ok(core.logReclaimRequest(bank,pendingDupe.id,'submitted ticket #789').ok
 assert.ok(core.reviewReserveCRM(bank,pendingDupe.id,'hold','New activity found',{lastActivityAt:newerActivity}).ok);
 assert.equal(core.dupeState(pendingDupe),'waiting','new CRM activity cancels prior pending status');
 assert.match(core.recordReclaimDecision(bank,pendingDupe.id,'approved','old ticket approved').error,/No pending/i);
+
+// A recheck that cannot establish the activity date must fail closed, including
+// when an older reclaim request was already awaiting a decision.
+const unresolved=reserve(bank,'Unknown Activity Recheck Ltd',87,'hold');
+assert.ok(core.reviewReserveCRM(bank,unresolved.id,'hold','Verified old activity',{lastActivityAt:threeMonthsAgo}).ok);
+assert.ok(core.logReclaimRequest(bank,unresolved.id,'Synthetic request #UNKNOWN').ok);
+assert.ok(core.reviewReserveCRM(bank,unresolved.id,'hold','Could not verify latest qualifying activity',{lastActivityAt:''}).ok);
+assert.equal(unresolved.crmLastActivityAt,'');
+assert.equal(core.reclaimReviewDate(unresolved),'');
+assert.equal(core.dupeState(unresolved),'missing-activity');
+assert.match(core.logReclaimRequest(bank,unresolved.id,'Retry without a date').error,/date.*first/i);
+assert.match(core.recordReclaimDecision(bank,unresolved.id,'approved','Old decision').error,/No pending/i);
+assert.equal(core.activateReserve(bank,[unresolved.id]).activated,0);
+assert.ok(bank.activities.some(a=>a.leadId===unresolved.id&&a.outcome==='Qualifying activity date no longer verified'&&a.notes.includes(threeMonthsAgo)),'retain the previous date in audit history');
+assert.ok(core.reviewReserveCRM(bank,unresolved.id,'hold','Activity re-established',{lastActivityAt:threeMonthsAgo}).ok);
+assert.ok(core.reviewReserveCRM(bank,unresolved.id,'hold','Note-only update').ok);
+assert.equal(unresolved.crmLastActivityAt,threeMonthsAgo,'omitting the date option must not erase known activity');
+
+// Every supported pipeline/readiness value survives old v3 normalization;
+// scores and reserve bookkeeping never change these independent dimensions.
+for(const stage of core.STAGES)for(let readiness=1;readiness<=8;readiness++){
+  const legacy=core.newState();
+  legacy.leads.push({company:'Legacy '+stage+' '+readiness,stage,readiness,contacts:[]});
+  const restored=core.normalize(legacy).leads[0];
+  assert.equal(restored.stage,stage);assert.equal(restored.readiness,readiness);assert.equal(restored.leadPool,'active');
+}
 const oldBackup=core.normalize(structuredClone({version:3,...bank,leads:bank.leads.map(l=>{const x={...l};delete x.crmLastActivityAt;delete x.crmReclaimStatus;return x})}));
 assert.equal(oldBackup.leads.find(l=>l.id===pendingDupe.id).crmReclaimStatus,'waiting','older snapshots remain compatible');
 assert.equal(core.checkInvariants(bank).length,0);
