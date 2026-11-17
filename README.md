@@ -8,6 +8,8 @@ Existing React 19 / TypeScript / Vite application for progression-first personal
 
 Read AGENTS.md and the canonical specifications in docs/ before changing business functionality.
 
+**Scored import and reserve (feature branch):** Research and score companies in ChatGPT, upload a dated/evidenced CSV, rank in the Lead Reserve, record Salesforce clearance manually, and activate the highest-ranked eligible companies in controlled batches. Details and field template: [Scored lead reserve](docs/SCORED_RESERVE.md).
+
 ## Verified cloud build
 
 On 17 November 2026: dependency installation, production TypeScript/Vite build and all engine/importer tests passed in Codex cloud. See VALIDATION.md for scope and remaining gaps.
