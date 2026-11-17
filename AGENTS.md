@@ -40,6 +40,10 @@ The priority order is: **(1) move viable prospects towards becoming customers; (
 - **Lusha CSV imports:** Every genuinely NEW imported prospect starts at **readiness Level 1 Unaware** as a practical default assumption. Existing confirmed readiness, history, contacts, statuses and opt-outs MUST NOT reset on duplicates.
 - Protect existing promised callbacks and commitments when sequences, stages and readiness change; avoid duplicate generated tasks and duplicate milestone XP.
 
+## Current lead intake decision — research outside SalesOS
+
+The user has explicitly chosen to score prospects in ChatGPT and upload an enriched contact CSV, rather than paying for in-app AI/company research. New CSV companies enter a ranked **lead reserve** with no automatic outreach tasks by default. A distinct Opportunity Score (0–100, dated and evidenced) ranks reserve activation and is **not** Buyer Readiness, FX revenue, pipeline stage or guaranteed suitability. Users can activate scored prospects in batches; optional auto-replenishment is OFF by default and must respect limits, commitments, opt-outs and CRM clearance. Salesforce integration remains forbidden, so a recent **manually recorded Salesforce ownership/activity check** is required before any reserve activation. Keep existing prospect history, stages, readiness and suppression on reimport. See `docs/SCORED_RESERVE.md` and `tests/test_reserve.cjs`.
+
 ## Product management rule
 
 Do NOT implement many new features at once. First: verified build and correct current workflows; second: trustworthy cloud storage/migration when authorised; third: tighten any missing requirements from the spec. Preserve minimal/no-admin No Answer path; show detailed FX discovery only when a decision-maker engages. Functionality must remain usable across an entire calling day.
