@@ -40,6 +40,7 @@ export function importLusha(state:State,text:string):ImportStats{
   const rows=parseCSV(text),report:ImportStats={created:0,merged:0,duplicates:0,skipped:0,scored:0,researchUpdated:0,unscored:0,crmCleared:0,crmHeld:0,warnings:[]};
   if(rows.length<2)throw new Error('This CSV has no contact rows.');
   if(rows.length>10001)throw new Error('Import up to 10,000 contact rows at a time. Split larger exports into batches.');
+  const columns=rows[0].map(canonical);if(columns.includes('businessdescription')&&columns.includes('standardisedindustry'))throw Error('This Business Clarity CSV must be imported with Update company descriptions & industries, not the Lusha/Scored CSV importer.');
   const h=rows[0].map(canonical);const pick=(row:string[],type:keyof typeof aliases)=>{for(const alias of aliases[type]){const idx=h.indexOf(alias);if(idx>=0&&row[idx]?.trim())return row[idx].trim()}return ''};
   if(!aliases.company.some(alias=>h.includes(alias)))throw new Error('Company name column not detected. Please use a Lusha contacts export.');
   const seenResearch=new Map<string,string>();

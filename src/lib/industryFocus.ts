@@ -54,10 +54,23 @@ export function inferredIndustry(sector:string):string {
  if(/\b(logistics|freight|transportation|transport services|banking|insurance|financial services|consulting|real estate|property services|software|it services|education|hospitality|hotel|healthcare|pharmaceutical|retail|advertising|marketing|legal services|accounting|utilities|agriculture|tourism|travel services|charities|not-for-profit)\b/i.test(value))return 'other';
  return 'unclassified';
 }
+export function mappedStandardisedIndustry(value:string):string {
+ const label=value.trim().toLowerCase();
+ if(!label)return '';
+ if(['recruitment & staffing','executive search','healthcare recruitment'].includes(label))return 'recruitment';
+ if(['machinery & equipment distribution','industrial equipment & manufacturing'].includes(label))return 'machinery';
+ if(label==='manufacturing & engineering')return 'manufacturing';
+ if(label==='other / needs classification')return 'unclassified';
+ // Explicitly researched non-focus categories are Other, not guessed machinery/recruitment.
+ if(['wholesale & distribution','marketing & advertising','software & technology','events & production','business & professional services','translation & language services','packaging & distribution','energy & renewables','logistics & freight'].includes(label))return 'other';
+ return '';
+}
 export function industryForLead(s:State,l:Lead):string {
  const override=l.industryCategory;
  if(override&&industryOptions(s).some(x=>x.id===override))return override;
- return inferredIndustry(l.sector);
+ // Supplier-provided Standardised Industry is a distinct classification source;
+ // an explicit manual correction always takes priority over a later CSV upload.
+ return mappedStandardisedIndustry(l.standardisedIndustry||'')||inferredIndustry(l.sector);
 }
 export function industryLabel(s:State,category:string){
  return industryOptions(s).find(o=>o.id===category)?.label||'Unclassified';
