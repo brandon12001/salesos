@@ -24,6 +24,7 @@ function lead(s,company,sector,more={}){const l=core.createLead(s,{company,secto
  const off=evaluate(s,new Date(at)),offFiltered=mod.filterIndustryDecision(s,off);
  assert.equal(offFiltered,off,'disabled filter preserves intelligence decision object');
  mod.setIndustryFocus(s,{enabled:true,category:'recruitment'});
+ assert.equal(mod.industryAllowsTask(s,{id:'global-review',leadId:null,type:'leadgen',isCommitment:false}),false,'global discretionary work does not interrupt focused prospecting');
  const chosen=mod.industryLegacyNext(s,false);
  assert.equal(chosen.leadId,rec.id,'legacy selection scoped to recruitment');
  const d=mod.filterIndustryDecision(s,evaluate(s,new Date(at)));
