@@ -49,7 +49,9 @@ export function importLusha(state:State,text:string):ImportStats{
     const company=pick(row,'company');if(!company){report.skipped++;continue}
     const name=pick(row,'name')||[pick(row,'first'),pick(row,'last')].filter(Boolean).join(' ');
     const data={name,title:pick(row,'title'),mobile:pick(row,'mobile'),phone:pick(row,'phone'),email:pick(row,'email'),linkedin:pick(row,'linkedin')};
-    const domain=pick(row,'domain').replace(/^https?:\/\//i,'').replace(/^www\./i,'').split('/')[0].toLowerCase();
+    // Preserve the supplied destination, including subdomains, path and case.
+    // Navigation validates it; importing never guesses a domain.
+    const domain=pick(row,'domain').trim();
     const companyNumber=pick(row,'companyNumber').replace(/\s/g,'').toUpperCase();
     const researched=researchRow(row,line,pick);
     const callObjective=pick(row,'callObjective'),researchHypothesis=pick(row,'researchHypothesis');

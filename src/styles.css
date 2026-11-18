@@ -32,3 +32,34 @@
 .sf-summary{display:flex;gap:10px;flex-wrap:wrap}.sf-summary .btn[aria-pressed=true]{border-color:#83aafa}.sf-filters{grid-template-columns:2fr 1fr 1fr}.sf-queue-list{display:grid;gap:12px}.sf-queue-row p{margin:7px 0}.sf-queue-row .section-between{flex-wrap:wrap}
 @media(max-width:600px){.sf-copy-row{gap:7px;grid-template-columns:minmax(0,1fr) 110px}.sf-copy-row button{padding:9px 6px}.sf-filters{grid-template-columns:minmax(0,1fr)}.sf-dialog-actions{display:grid;grid-template-columns:minmax(0,1fr)}.sf-summary .btn{white-space:normal}.sf-queue-row .check-row{align-items:start}.sf-focus-actions .btn{white-space:normal}}
 @media(max-width:700px){.manage-toolbar{height:auto;min-height:60px;flex-wrap:wrap;gap:8px;padding:10px 12px}.manage-toolbar small{display:none}.manage-toolbar .brand-small{white-space:nowrap}.manage-toolbar .toolbar-spacer{display:none}.manage-toolbar .sync-indicator{margin-left:auto;max-width:90px;overflow:hidden;text-overflow:ellipsis}.manage-toolbar>.btn{margin-left:auto}}
+
+/* Research is manual navigation; execution feedback never captures input. */
+.company-research { margin: 12px 0; min-width: 0; }
+.company-research .button-row { flex-wrap: wrap; gap: 6px; }
+.company-research a { text-decoration: none; white-space: normal; }
+.research-unavailable,.focus-loaded { color: #9fb4cf; font-size: 12px; }
+.research-editor { margin-top: 10px; max-width: 560px; }
+.research-editor input { min-width: 0; width: 100%; }
+.focus-enter { animation: focus-enter 220ms ease-out; }
+.focus-card-frame { position: relative; width: min(970px,100%); min-width: 0; border-radius: 17px; }
+.focus-accepted-pulse { z-index: 1; content: ''; position: absolute; inset: 0; border: 2px solid #36b879; border-radius: inherit; pointer-events: none; opacity: 0; animation: focus-accepted 600ms ease-out; }
+.execution-feedback { pointer-events: none; position: fixed; z-index: 80; bottom: 90px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 24px); display: flex; gap: 12px; align-items: center; padding: 12px 18px; border: 1px solid #49677c; border-radius: 12px; background: #152633; color: #edf6f7; box-shadow: 0 8px 24px #0004; }
+.execution-feedback small { display: block; font-size: 12px; margin-top: 3px; }
+.execution-feedback.is-confirmed { border-color: #36b879; }
+.execution-mark { font-size: 26px; color: #a9c5d5; }
+.is-confirmed .execution-mark { color: #73e2a8; animation: completion-check 600ms ease-out; }
+.execution-feedback.commercial.is-confirmed.celebrate .execution-mark { font-size: 34px; animation: achievement-pulse 650ms ease-out; }
+.execution-feedback.calls.is-confirmed.celebrate .execution-mark { animation: completion-check 650ms ease-out; }
+.execution-feedback.is-failed { border-color: #e7aa4f; }
+.milestone-sparks { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; }
+.milestone-sparks i { position: absolute; width: 5px; height: 5px; background: #73e2a8; left: calc(12% + var(--spark) * 15%); top: 50%; opacity: 0; animation: milestone-spark 650ms ease-out; }
+@keyframes focus-enter { from { opacity: .55; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes focus-accepted { 0%,30% { opacity: .8; } to { opacity: 0; } }
+@keyframes completion-check { from { opacity: .3; transform: scale(.8); } 50% { transform: scale(1.12); } to { opacity: 1; transform: scale(1); } }
+@keyframes achievement-pulse { from { transform: scale(.8); } 50% { transform: scale(1.25); } to { transform: scale(1); } }
+@keyframes milestone-spark { from { opacity: .9; transform: translateY(0) rotate(0); } to { opacity: 0; transform: translateY(-32px) rotate(90deg); } }
+@media (prefers-reduced-motion: reduce) { .focus-enter,.focus-accepted-pulse,.execution-feedback .execution-mark,.milestone-sparks i { animation: none !important; } .milestone-sparks { display: none; } }
+@media (max-width: 700px) { .execution-feedback { bottom: 120px; padding: 10px 12px; } .company-research .btn { max-width: 100%; } }
+
+.execution-feedback.calls.is-confirmed { border-color: #80c9f0; }
+.execution-feedback.calls.is-confirmed .execution-mark { font-size: 30px; }
