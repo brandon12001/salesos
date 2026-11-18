@@ -1,3 +1,13 @@
+# Current update — 18 November 2026: company research and execution feedback
+
+The user requested one-click Companies House / website research and professional Focus completion feedback, with draft PR only. Work is on `feature/company-research-feedback`, **stacked on PR #6** at `1b9cbd2`. PR #6 is still draft/unmerged; production main remains PR #5's `e9705a7`. Merge the dependency first and retarget this branch to main after explicit approval; do not duplicate/revert its Salesforce Lead work. New feature-branch Vercel deployments are disabled.
+
+Implemented: reusable always-visible research links in active/review Focus, Save & Stay, prospect details and Salesforce queue/preview; safe HTTP(S) URL validation; explicit verified website edit with stale-write guard and no replenishment; CSV destination/path preservation. Accepted actions get immediate local/queued feedback, cloud-confirmed green completion feedback, neutral task navigation and first-time evidenced commercial/call milestones. CSS-only effects respect reduced motion; celebrations and call milestones are configurable. No sales rules, XP, schema, APIs, infrastructure or production data are changed.
+
+See [behaviour, dependency, validation and limitations](COMPANY_RESEARCH_FEEDBACK.md). Validation uses fictional-only localhost Auth/Postgres/REST/mail and intercepted external destinations. Real website/legal-entity identity and subjective work-browser acceptance remain manual; no production workspace or real company was used as a test fixture. Earlier PR #6 Salesforce field/record-type/SSO limitations remain unchanged. No merge/deployment is authorised by this request.
+
+---
+
 # Priority update — 18 November 2026: prefilled Salesforce Leads (draft PR #6)
 
 The user corrected the record type: **Salesforce Leads, not Contacts**, and approved URL-based New Lead navigation with prefilled values. The same branch/draft [PR #6](https://github.com/brandon12001/salesos/pull/6) now adds the fixed approved organisation/path, separate recordTypeId, seven-field preview and launch, exact Industry choices supplied by the user, popup/copy fallbacks, manual saved confirmation, and Create Lead actions in Focus, historical review, the Lead Queue and Prospects contact cards. Existing per-contact status metadata is retained for compatibility. PR #5 is merged/deployed; this branch already contains it.
