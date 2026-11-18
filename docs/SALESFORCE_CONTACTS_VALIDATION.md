@@ -1,4 +1,35 @@
-# Salesforce contact workflow validation — 18 November 2026
+# Salesforce Lead URL update validation — 18 November 2026
+
+This priority update extends **draft PR #6**, keeping its per-SalesOS-contact status/queue model but targeting Salesforce **Leads**. PR #5 is already merged and included in this branch. No production workspace or Salesforce record was changed; no SalesOS merge/deployment is authorised.
+
+**Local result:** all seven regression suites, strict production build and the full production-bundle browser suite pass. The new intercepted navigation tests pass; the 350-record queue navigation/search sample was 389 ms. This does not verify live Salesforce behaviour.
+
+## New verification coverage
+
+- Pure URL tests: exact approved organisation and `/lightning/o/Lead/new`; separate `recordTypeId`; only the seven confirmed API field names; no RecordTypeId inside defaults and no transient navigation parameters.
+- Special characters: spaces, both apostrophe forms, Unicode, ampersands, commas, equals, plus, hash, newlines and literal `%2C` round-trip through the nested serialization/query boundaries. Unknown extra object keys cannot inject Salesforce fields or navigation state.
+- Industry: exact user-supplied options; blank/--None--/unknown values omitted. No guessed sector-to-picklist mapping.
+- Browser: actual requested URL captured by an intercepting fixture; no opener/referrer; blocked-popup link fallback; edits invalidate old retry URLs; a **simulated client-side authentication redirect** retains the fields. This is not an authenticated Salesforce test or proof about the employer's SSO.
+- No status/task side effects from opening or cancelling. The original SalesOS document remains identical. Manual saved confirmation is separate.
+- Entry points: Focus before calls, Save & Stay/review (existing workflow tests), Lead Queue and the specific person in Prospects contact cards.
+- Extra form labels: registration-number/job-title/Position copy-only helpers; no guessed custom API mapping, no inferred role/status from Position, no override of existing Lead Source/Country defaults.
+- Existing seven regression suites, strict production build and full fictional browser persistence/isolation/offline/conflict/backup/reserve/dupe/Focus checks remain required.
+
+## Live Salesforce verification is incomplete
+
+An anonymous cloud request to the approved organisation failed to connect with **ECONNREFUSED**. No live New Lead form, authenticated layout, record-type choice, server-side Industry API values or login redirect was verified. No Salesforce test Lead was saved. The browser fixture's form/redirect are local intercepted responses and must never be reported as live Salesforce acceptance.
+
+The user's visible form labels do not identify the API names for Company Registration Number, Lusha Job Title and Position. Those fields remain copy-only pending confirmed names. The URL still uses standard `Title`, as explicitly specified in the original field mapping; its relationship to the visible Lusha Job Title label needs manual checking.
+
+Use the [single manual, cancel-only test](SALESFORCE_CONTACTS.md#one-manual-salesforce-test--cancel-without-saving) on an approved preview in the work browser. Check organisation, record type and every visible field, then **Cancel**, without marking Added. A separately approved saved fictional record would be needed to verify the real Salesforce save path.
+
+## Issues addressed during validation
+
+The popup initially used location navigation, which still sent the SalesOS origin as a referrer. It now navigates using an explicit no-referrer link inside the opener-isolated tab. The intercepted fixture initially lacked a UTF-8 declaration, causing its test heading to be misdecoded; its response now specifies UTF-8. These findings do not prove how the live Salesforce form renders or redirects.
+
+---
+
+## Earlier queue foundation validation (before the URL priority update)
 
 Scope: manual Salesforce contact administration, based on released Focus Mode 2.0/main `e9705a7`. No integration, migration, production record access or deployment is part of this change.
 

@@ -1,3 +1,13 @@
+# Priority update — 18 November 2026: prefilled Salesforce Leads (draft PR #6)
+
+The user corrected the record type: **Salesforce Leads, not Contacts**, and approved URL-based New Lead navigation with prefilled values. The same branch/draft [PR #6](https://github.com/brandon12001/salesos/pull/6) now adds the fixed approved organisation/path, separate recordTypeId, seven-field preview and launch, exact Industry choices supplied by the user, popup/copy fallbacks, manual saved confirmation, and Create Lead actions in Focus, historical review, the Lead Queue and Prospects contact cards. Existing per-contact status metadata is retained for compatibility. PR #5 is merged/deployed; this branch already contains it.
+
+The user also supplied form labels for Company Registration Number, Lusha Job Title and Position. Their API names are unconfirmed. Extra copy-only helpers are provided, with no guessed custom URL mappings; standard Title remains the explicitly requested job-title mapping. Existing Lusha/United Kingdom form defaults are untouched. Actual record-type/layout/custom fields/SSO behaviour remain manual checks: the anonymous live probe failed to connect, and automated browser redirects are intercepted fixtures, not live Salesforce verification. No Salesforce Lead was submitted. See [workflow, sources and cancel-only manual test](SALESFORCE_CONTACTS.md).
+
+Do not merge/deploy or alter real prospects, and do not submit fictional Leads into production Salesforce, without explicit approval. The old no-integration restriction still excludes APIs and automatic submission; the new explicit exception permits only the approved URL navigation. No database migration is needed.
+
+---
+
 # Current update — 18 November 2026: manual Salesforce contact administration
 
 This section supersedes older release statements below. The user approved PR #5 with “Deploy it”. It was merged as `e9705a7ba1e5de2791e999e4447636aaafbeb2d1` and released READY in Vercel deployment `dpl_EybRtFNkDJXFi9RDBxacNdXj8MZs`, https://salesos-n3t0l19rc-up-next7.vercel.app, canonical https://salesos-up-next7.vercel.app/. The production tree exactly matched tested PR head `d015676`. No database migration or workspace write was performed. Live authenticated acceptance remains a manual user check; deployment assets returned HTTP 200.

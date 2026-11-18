@@ -155,3 +155,8 @@ See [Focus workflow v2](FOCUS_WORKFLOW_V2.md) for Save & Stay/Next, historical r
 ## Manual Salesforce contact administration review candidate
 
 See [Salesforce Contacts](SALESFORCE_CONTACTS.md) for independent per-person Not Checked / Needs Adding / Added status, Focus Quick Add and the separate administration queue. This introduces manual copying and confirmation only, no integration or new sales tasks. Company ownership, suppression and sales progression remain independent. New approval is required before merge/deployment.
+
+
+## Approved Salesforce Lead navigation update
+
+The user confirmed Salesforce Leads and approved URL-prefilled Lightning New Lead navigation, with a preview and manual save/status confirmation. [Draft PR #6 workflow](SALESFORCE_CONTACTS.md) supersedes earlier contact-creation terminology. Exact Industry choices are supplied by the user; unconfirmed custom field API names remain copy-only. No API integration, automated submission, schema migration or deployment approval is implied.
