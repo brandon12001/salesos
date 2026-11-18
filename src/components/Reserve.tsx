@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react';
 import type {Lead,State} from '../types';
 import {core} from '../lib/core';
+import {industryFocusConfig,industryOptions,industryForLead,industryLabel,industrySupply} from '../lib/industryFocus';
 import {Badge,Empty,Icon,day} from './UI';
 
 type ReserveSettings={reserveAutoActivate:number;reserveSupplyFloor:number;reserveActivationBatch:number;reserveMinScore:number;reserveActiveCap:number;reserveIntelligentRefill:number};
@@ -13,7 +14,9 @@ const settingsFrom=(s:State):ReserveSettings=>({
   reserveIntelligentRefill:s.settings.reserveIntelligentRefill??0
 });
 export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void}){
-  const ranked=useMemo(()=>(core.reserveRank(state) as Lead[]).filter(l=>l.crmClearance!=='hold'),[state]);
+  const focus=industryFocusConfig(state);
+  const [industryFilter,setIndustryFilter]=useState(()=>focus.enabled?focus.category:'all');
+  const ranked=useMemo(()=>(core.reserveRank(state) as Lead[]).filter(l=>l.crmClearance!=='hold'&&(industryFilter==='all'||industryForLead(state,l)===industryFilter)),[state,industryFilter]);
   const holdCount=state.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance==='hold').length;
   const [settings,setSettings]=useState<ReserveSettings>(()=>settingsFrom(state));
   const [review,setReview]=useState<Lead|null>(null),[reviewStatus,setReviewStatus]=useState<'cleared'|'hold'>('cleared'),[reviewNote,setReviewNote]=useState(''),[lastActivityAt,setLastActivityAt]=useState(''),[acknowledged,setAcknowledged]=useState(false);
@@ -24,7 +27,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
   const needsScore=ranked.filter(l=>l.opportunityScore===null).length;
   const overdue=ranked.filter(l=>core.reserveReviewDue(l)<=core.today()).length;
   const stale=ranked.filter(l=>l.researchDate&&core.daysBetween(core.today(),l.researchDate)>=30).length;
-  const active=state.leads.filter(l=>l.leadPool!=='reserve'&&l.status==='Active'&&l.stage!=='First Trade').length;
+  const active=state.leads.filter(l=>l.leadPool!=='reserve'&&l.status==='Active'&&l.stage!=='First Trade'&&(industryFilter==='all'||industryForLead(state,l)===industryFilter)).length;
   const supply=core.leadSupply(state);
   const update=(key:keyof ReserveSettings,value:number)=>setSettings(s=>({...s,[key]:value}));
   const save=()=>{
@@ -33,6 +36,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
   };
   return <div className="page-content">
     <div className="page-heading"><div><span className="eyebrow">RESEARCHED LEAD SUPPLY</span><h1>Lead Reserve</h1><p>ChatGPT researches and scores. SalesOS ranks and activates without inventing FX volumes.</p></div><div className="button-row"><button className="btn secondary" onClick={onDupeQueue}><Icon name="archive"/> Dupe Queue ({holdCount})</button><button className="btn secondary" onClick={onImport}><Icon name="upload"/> Import scored CSV</button></div></div>
+    <div className="panel industry-reserve-filter"><label className="field">Filter Lead Reserve by industry<select aria-label="Reserve industry filter" value={industryFilter} onChange={e=>setIndustryFilter(e.target.value)}><option value="all">All industries</option>{industryOptions(state).map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label><span className="hint">{industryFilter==='all'?'All available industries':`${industryLabel(state,industryFilter)} only`} · Select a filter to activate leads from that industry without changing your Focus preference.</span>{industryFilter!=='all'&&<small>{industrySupply(state,industryFilter).eligibleCallable} eligible callable companies · {industrySupply(state,industryFilter).researchNeeded} needing research</small>}</div>
     <div className="metrics-grid">
       <div className="metric"><span>Available reserve (not on CRM hold)</span><strong>{ranked.length}</strong><small>Not in active outreach</small></div>
       <div className="metric"><span>Ready at score ≥ {threshold}</span><strong>{eligible.length}</strong><small>Scored, permitted and contactable</small></div>
@@ -42,7 +46,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
     <section className="panel stack">
       <div className="section-between"><h2>Activate the best available prospects</h2><Badge tone="blue">{active} currently active</Badge></div>
       <p className="hint">Scores determine cold-lead activation order after an explicit Salesforce ownership check. Existing conversations, meetings and promised callbacks remain prioritised in Focus Mode. Opted-out or uncontactable leads are excluded.</p>
-      <div className="button-row"><button className="btn primary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,5).map(l=>l.id))}>Activate top 5</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,10).map(l=>l.id))}>Activate top 10</button><button className="btn quiet" onClick={onImport}>Upload refreshed research</button></div>
+      <div className="button-row"><button className="btn primary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,5).map(l=>l.id))}>Activate top 5</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,10).map(l=>l.id))}>Activate top 10</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>{if(window.confirm(`Activate up to 25 eligible ${industryFilter==='all'?'prospects':industryLabel(state,industryFilter)+' prospects'}?`))onActivate(eligible.slice(0,25).map(l=>l.id))}}>Activate top 25</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>{if(window.confirm(`Activate up to 50 eligible ${industryFilter==='all'?'prospects':industryLabel(state,industryFilter)+' prospects'}?`))onActivate(eligible.slice(0,50).map(l=>l.id))}}>Activate top 50</button><button className="btn quiet" onClick={onImport}>Upload refreshed research</button></div>
       <small>{supply.ready+supply.upcoming} tasks due in the configured {supply.days}-working-day supply window. No lead activates merely because it was imported unless you explicitly enable auto-replenishment below.</small>
     </section>
     <section className="panel stack">
