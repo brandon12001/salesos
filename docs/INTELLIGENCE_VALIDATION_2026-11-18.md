@@ -23,10 +23,12 @@ Cloud-local validation passed on `feature/intelligence-v1`, based on PR #3's mer
 
 The browser suite blocks external HTTP destinations. All emails stay in its localhost mailbox, all identities/companies are fictional, and the disposable stack is removed after each run. No authenticated user session or private prospect backup is copied into tests or repository files.
 
-A cloud-configured test bundle emits Vite's existing >500 kB chunk advisory (approximately 622 kB uncompressed, 178 kB gzip). This is not a build failure. The ordinary environment build is approximately 390 kB / 116 kB gzip. Navigation samples in the final local browser run were 295, 292, 298 and 292 ms; these are synthetic developer-environment observations, not a work-device performance guarantee.
+A cloud-configured test bundle emits Vite's existing >500 kB chunk advisory (approximately 622 kB uncompressed, 178 kB gzip). This is not a build failure. The ordinary environment build is approximately 390 kB / 116 kB gzip. Navigation samples in a successful local browser run were 295, 292, 298 and 292 ms; these are synthetic developer-environment observations, not a work-device performance guarantee.
 
 ## Corrections made during implementation
 
+- Checked eligibility at each projected session start, and kept speculative outreach estimates inside working hours while retaining explicit after-hours promises.
+- Aligned enhanced replenishment with the recommendation engine: only valid/unverified method states can activate; unfamiliar or do-not-call states cannot pass on phone format alone.
 - Prevented ordinary daily-target saves from reverting independently saved Intelligence settings.
 - Bound the exact permitted contact/method to the visible recommendation and revalidated it before logging; stale route/schedule changes require review.
 - Preserved cancellation timestamps/reasons when an explicit alternative supersedes a generic action.

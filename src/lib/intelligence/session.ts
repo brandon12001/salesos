@@ -2,6 +2,7 @@ import type {State} from '../../types';
 import type {Recommendation} from './types';
 import {evaluate} from './engine';
 import {intelligenceData,protectedTask,scheduledAt} from './evidence';
+import {taskRestriction} from './eligibility';
 
 export type SessionPlan={actions:Array<{recommendation:Recommendation;startsAt:string;endsAt:string}>;remainingMinutes:number;unusedMinutes:number;warnings:string[]};
 export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
@@ -13,7 +14,14 @@ export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
  let cursor=+now,lastType='';
  while(cursor<end){
   const nextPromise=future.find(t=>!used.has(t.id));
-  const available=ready.filter(r=>!used.has(r.task.id)&&(r.protected||!companies.has(r.leadId||r.id)));
+  const available=ready.filter(r=>{
+   if(used.has(r.task.id)||!r.protected&&companies.has(r.leadId||r.id)||taskRestriction(s,r.task,new Date(cursor)))return false;
+   if(!r.protected&&['call','email','linkedin_connect','linkedin_message'].includes(r.task.type)){
+    const close=new Date(cursor);close.setHours(0,0,0,0);close.setMinutes(s.settings.intelligenceWorkEnd??1050);
+    if(cursor+r.effortMinutes*60000>+close)return false;
+   }
+   return true;
+  });
   let r=available.find(r=>r.protected);
   if(!r&&nextPromise&&+scheduledAt(nextPromise)<=cursor){
    r=evaluate(s,new Date(cursor)).recommendations.find(r=>r.task.id===nextPromise.id);

@@ -560,7 +560,7 @@
   function intelligentReplenishReserve(s){
     const empty={activated:0,skipped:0,names:[]};
     const clearance=l=>l.crmClearance==='cleared'&&validPastDate(l.crmCheckedAt)&&daysBetween(today(),l.crmCheckedAt)<=30;
-    const valid=m=>usable(m)&&(['mobile','phone'].includes(m.kind)?/^\+?[1-9]\d{7,14}$/.test(phoneDial(m.value)):m.kind==='email'?/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.value):false);
+    const valid=m=>usable(m)&&['valid','unverified'].includes(m.status)&&(['mobile','phone'].includes(m.kind)?/^\+?[1-9]\d{7,14}$/.test(phoneDial(m.value)):m.kind==='email'?/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.value):false);
     const contactable=l=>l.contacts.some(c=>canContact(c)&&!isSuppressed(s,l,c)&&c.methods.some(valid));
     const available=pending(s).filter(t=>{
       if(!isDue(t))return false;const l=getLead(s,t.leadId);if(!l)return true;if(!clearance(l))return false;
