@@ -8,3 +8,19 @@
 @media(max-width:700px){.focus-toolbar>.btn.quiet{display:none}.focus-toolbar .sync-indicator{max-width:85px;overflow:hidden;text-overflow:ellipsis}.focus-brand{gap:6px}.focus-brand b{font-size:15px}.focus-toolbar .toolbar-spacer{min-width:0}}
 
 .call-mode-note{width:min(970px,100%);margin:0;color:#a8c9f1;font-size:12px;line-height:1.5}
+
+/* Focus review and history: navigation is separate from recording activity. */
+.focus-navigation{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+.focus-navigation details{margin-left:auto;max-width:100%}.focus-navigation select{max-width:100%;width:300px}
+.contact-channels{display:flex;flex-direction:column;gap:8px;margin:16px 0;padding:12px 0;border-bottom:1px solid #2e4564}
+.contact-channels>div{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}.contact-channels span{overflow-wrap:anywhere;min-width:0}.contact-channels button{flex-shrink:0}
+.prospect-workspace{margin:20px 0}.post-call-editor{border-top:1px solid #2e4564;padding-top:18px}.post-actions .button-row{margin-top:10px}
+.commitment-notice{border-left:3px solid #d69931;padding:10px 14px;margin:12px 0;background:#fff8e9;color:#62420a;overflow-wrap:anywhere}
+.history-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.activity-list{display:flex;flex-direction:column;gap:8px}
+.activity-row{display:flex;text-align:left;justify-content:space-between;align-items:flex-start;gap:12px;padding:14px;border:1px solid #2e4564;border-radius:8px;background:#142035;color:inherit;cursor:pointer;min-width:0}
+.activity-row>span:first-child{display:flex;flex-direction:column;gap:6px;min-width:0;overflow-wrap:anywhere}.activity-row small{color:var(--muted)}.activity-row>span>span{white-space:pre-wrap;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+@media(max-width:600px){.focus-navigation{align-items:stretch}.focus-navigation details{margin-left:0;width:100%}.focus-navigation button{white-space:normal}.history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.activity-row{flex-direction:column}.contact-channels>div{flex-wrap:wrap}.contact-channels span{flex:1 1 150px}.post-actions .button-row{align-items:stretch}.post-actions .btn{white-space:normal}.prospect-workspace .section-between{flex-wrap:wrap}.focus-navigation select{width:100%}}
+
+.focus-navigation{width:min(970px,100%)}.recorded-result{color:#7fe0b4}.history-filters select{width:100%;min-width:0}.activity-row:hover{border-color:#729ce0}
+
+.prospect-workspace,.post-call-editor{min-width:0;grid-template-columns:minmax(0,1fr)}.prospect-workspace .btn{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}.focus-primary-action strong{overflow-wrap:anywhere}

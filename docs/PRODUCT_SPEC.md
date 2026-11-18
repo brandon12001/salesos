@@ -145,3 +145,8 @@ Current build is **localStorage-first**, which means hosted Vercel UI does not e
 ## 14. What success feels like
 
 A high-volume day should be comfortable: user opens website, sees one relevant action, copies number into Teams, makes call, clicks No Answer and immediately gets next task. For a meaningful conversation, captures FX volume/currencies/provider/products and buyer evidence, confirms readiness/next milestone, schedules agreed follow-up and returns to Focus Mode. No morning planning spreadsheet, no forgotten callbacks, no activity theatre. Dashboards show where buyer progression and financial opportunity are genuinely improving.
+
+
+## Focus workflow v2 review candidate
+
+See [Focus workflow v2](FOCUS_WORKFLOW_V2.md) for Save & Stay/Next, historical review navigation, same-contact channels, accepted follow-up email, simple audited edits and Answered — No Conversation. Outcome corrections remain deferred; no automatic send or additional integration. This candidate requires explicit merge/deploy approval.

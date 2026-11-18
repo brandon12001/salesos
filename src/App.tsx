@@ -6,7 +6,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {core} from './lib/core';
 import {restoreLocal,persistLocal} from './lib/storage';
 import {importLusha,type ImportStats} from './lib/importer';
-import type {Lead,State,Task} from './types';
+import type {Activity,Lead,State,Task} from './types';
 import {Focus} from './components/Focus';
 import {FXQuickDialog} from './components/FXQuickDialog';
 import {Prospects} from './components/Prospects';
@@ -16,13 +16,17 @@ import {Insights,ValueDashboard,Pipeline,TaskQueue} from './components/Dashboard
 import {Settings} from './components/Settings';
 import {ConfirmReadiness,TaskDialog,SnoozeDialog,type TaskForm} from './components/Dialogs';
 import {Icon} from './components/UI';
+import {ActivityHistory,emptyHistoryFilters} from './components/ActivityHistory';
+import {ContactDetailsDialog,FollowUpEmailDialog,SchedulePostCallDialog,WorkflowDialog,type PostAction} from './components/PostCall';
+import {addRecordedContact,activityForTask,activityStamp,assertPendingAction,createFollowUpEmail,saveActivityDetails,saveContactDetails,schedulePostCall,type ActivityFields} from './lib/activityWorkflow';
+import {emptyTrail,finishVisit,nextVisit,previousVisit,visit,visitForActivity,type FocusVisit} from './lib/focusTrail';
 import {CommercialEvidenceDialog} from './components/Intelligence';
 import {prepareAction,recordActiveClearance,recordDecision,rejectRecommendation,saveCommercial} from './lib/intelligence/actions';
 import {endSession,startSession} from './lib/intelligence/session';
 import type {Recommendation} from './lib/intelligence/types';
-type Tab='focus'|'prospects'|'reserve'|'dupes'|'pipeline'|'tasks'|'resolution'|'insights'|'value'|'settings';
+type Tab='focus'|'prospects'|'reserve'|'dupes'|'pipeline'|'tasks'|'resolution'|'insights'|'value'|'settings'|'history';
 type Modal={task:Task;preset:string;recommendation?:Recommendation}|null;
-const NAV:[Tab,string,string][]=[['focus','Focus Mode','bolt'],['prospects','Prospects','users'],['reserve','Lead Reserve','target'],['dupes','Dupe Queue','archive'],['pipeline','Pipeline','chart'],['tasks','Task Queue','list'],['resolution','Contact Resolution','search'],['insights','Buyer Intelligence','target'],['value','Pipeline Value','chart'],['settings','Settings','settings']];
+const NAV:[Tab,string,string][]=[['focus','Focus Mode','bolt'],['prospects','Prospects','users'],['reserve','Lead Reserve','target'],['dupes','Dupe Queue','archive'],['pipeline','Pipeline','chart'],['tasks','Task Queue','list'],['history','Activity History','archive'],['resolution','Contact Resolution','search'],['insights','Buyer Intelligence','target'],['value','Pipeline Value','chart'],['settings','Settings','settings']];
 export default function App(){
  const auth=useCloudAuth();
  if(cloud&&(auth.loading||!auth.session))return <CloudSignIn loading={auth.loading}/>;
@@ -34,6 +38,13 @@ function Workspace({user}:{user?:User}){
  const state=workspace?.snapshot.document||localState,stateRef=useRef(state);
  stateRef.current=state;
  const [tab,setTab]=useState<Tab>('focus'),[menu,setMenu]=useState(false),[modal,setModal]=useState<Modal>(null),[snooze,setSnooze]=useState<Task|null>(null),[readinessLead,setReadinessLead]=useState<Lead|null>(null),[fxLead,setFxLead]=useState<Lead|null>(null),[toast,setToast]=useState(''),[focusLead,setFocusLead]=useState('');
+ const [trail,setTrail]=useState(emptyTrail),[historyFilters,setHistoryFilters]=useState(emptyHistoryFilters),[prospectFilters,setProspectFilters]=useState(emptyHistoryFilters);
+ const [historyScope,setHistoryScope]=useState<string|undefined>(undefined),[postModal,setPostModal]=useState<{kind:PostAction;leadId:string;contactId:string|null;activityId?:string}|null>(null);
+ const recommendedViewed=useCallback((task:Task)=>setTrail(t=>t.following?visit(t,{task:structuredClone(task)},true):t),[]);
+ const currentRecommended=useCallback(()=>setTrail(t=>({...t,following:true})),[]);
+ const showActivity=useCallback((activity:Activity)=>{setTrail(t=>visit(t,visitForActivity(stateRef.current,activity)));setHistoryScope(undefined);setTab('focus');setMenu(false)},[]);
+ const showTask=useCallback((task:Task)=>setTrail(t=>visit(t,{task:structuredClone(task)})),[]);
+ const completeView=useCallback((original:Task,result:FocusVisit,stay:boolean)=>{setTrail(t=>finishVisit(t,original.id,result,stay));setTab('focus');setMenu(false)},[]);
  const message=useCallback((x:string)=>setToast(x),[]);
  const [evidenceLead,setEvidenceLead]=useState<Lead|null>(null);
  const snoozeRecommendation=useRef<Recommendation|undefined>(undefined);
@@ -47,7 +58,7 @@ function Workspace({user}:{user?:User}){
    if(violations.length){throw new Error('Safety rule blocked save: '+violations.join('; '))}
    if(engine)engine.change(draft);else persistLocal(draft);stateRef.current=draft;setState(draft);return result;
  },[engine]);
- const updateState=useCallback((updated:State)=>{const parsed=core.normalize(updated);if(!parsed)throw new Error('Incompatible backup');if(engine)engine.change(parsed);else persistLocal(parsed);stateRef.current=parsed;setState(parsed);setTab('focus');message('SalesOS database restored.')},[message,engine]);
+ const updateState=useCallback((updated:State)=>{const parsed=core.normalize(updated);if(!parsed)throw new Error('Incompatible backup');if(engine)engine.change(parsed);else persistLocal(parsed);stateRef.current=parsed;setState(parsed);setTrail(emptyTrail());setPostModal(null);setHistoryScope(undefined);setTab('focus');message('SalesOS database restored.')},[message,engine]);
  const copy=useCallback(async(value:string)=>{try{await navigator.clipboard.writeText(value);message('Copied — paste into Teams, Outlook or your browser.')}catch{message('Clipboard not available here. Select and copy manually.')}},[message]);
  const doTask=useCallback((t:Task,preset='complete',recommendation?:Recommendation)=>{
    if(preset==='snooze'){
@@ -56,25 +67,26 @@ function Workspace({user}:{user?:User}){
     snoozeRecommendation.current=recommendation;setSnooze(t);return;
    }
    if(preset==='no_answer'||preset==='bad_number'){
-     try{commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);const r=core.logCall(s,task,{outcome:preset});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return r});message(preset==='no_answer'?'No answer logged · next action scheduled':'Invalid number flagged · contact repair created');}catch(err){message((err as Error).message)}return;
+     try{const saved=commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);assertPendingAction(s,task,new Date());const r=core.logCall(s,task,{outcome:preset});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return {...r,task:structuredClone(task),activityId:activityForTask(s,task)?.id}});completeView(t,saved,false);message(preset==='no_answer'?'No answer logged · next action scheduled':'Invalid number flagged · contact repair created');}catch(err){message((err as Error).message)}return;
    }
    if(preset==='complete'&&!['call','callback','deal','meeting','research'].includes(t.type)){
-     try{commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);const r=core.completeTask(s,task,{outcome:t.type==='email'?'Email sent (manually confirmed)':'Completed (manually confirmed)'});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return r});message('Task completed · next task ready');}catch(err){message((err as Error).message)}return;
+     try{const saved=commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);assertPendingAction(s,task,new Date());const r=core.completeTask(s,task,{outcome:t.type==='email'?'Email sent (manually confirmed)':'Completed (manually confirmed)'});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return {...r,task:structuredClone(task),activityId:activityForTask(s,task)?.id}});completeView(t,saved,t.origin==='post_call');message('Task completed · recorded once');}catch(err){message((err as Error).message)}return;
    }
    setModal({task:t,preset:preset==='complete'&&['call','callback'].includes(t.type)?'connected':preset,recommendation});
- },[commit,message]);
- const submitTask=(f:TaskForm):string|void=>{
+ },[commit,message,completeView]);
+ const submitTask=(f:TaskForm,disposition:'stay'|'next'):string|void=>{
   if(!modal)return 'Task missing.';let response:any;
   try{response=commit(s=>{
-    const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};
+    const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};assertPendingAction(s,t,new Date());
     let result;
     if(['call','callback'].includes(t.type))result=core.logCall(s,t,{outcome:f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:f.date,callbackTime:f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
     else if(t.type==='research')result=core.resolveContact(s,t,{mode:f.repairMode,contactId:t.contactId,kind:'mobile',value:f.repairPhone,name:f.repairName,title:f.repairTitle,email:f.repairEmail,nextDate:f.date,notes:f.notes});
     else result=core.completeTask(s,t,{notes:f.notes,newStage:f.newStage,nextDate:f.date,nextTime:f.time});
-    if(!result.error&&modal.recommendation)recordDecision(s,before,modal.recommendation,t,new Date());return result;
+    if(!result.error&&modal.recommendation)recordDecision(s,before,modal.recommendation,t,new Date());return {...result,task:structuredClone(t),activityId:activityForTask(s,t)?.id};
   });}catch(e){return (e as Error).message}
-  if(response?.error)return response.error;setModal(null);message('Saved · the next task is ready.');
+  if(response?.error)return response.error;completeView(modal.task,response,disposition==='stay');setModal(null);message(disposition==='stay'?'Recorded · continue working with this prospect.':'Saved · the next task is ready.');
  };
+ const editActivity=useCallback((id:string,patch:ActivityFields,expected:string):string|void=>{try{commit(s=>saveActivityDetails(s,id,patch,expected,new Date()),{replenish:false});message('Activity updated · no new call or XP.')}catch(e){return (e as Error).message}},[commit,message]);
  const submitReadiness=(level:number,evidence:string,barrier:string,milestone:string):string|void=>{
   if(!readinessLead)return 'No prospect';let result:any;
   try{result=commit(s=>core.setReadiness(s,core.getLead(s,readinessLead.id),level,evidence,{barrier,nextMilestone:milestone}));}catch(e){return (e as Error).message}
@@ -107,18 +119,26 @@ function Workspace({user}:{user?:User}){
  return <div className={`shell ${tab==='focus'?'is-focus':''} ${!menu?'is-collapsed':''}`}>
   <aside className={`sidebar ${menu?'visible':''}`} aria-label="Main navigation" inert={!menu}><div className="sidebar-heading"><div className="brand-mark">ϟ</div><div><strong>Sales<span>OS</span></strong><small>PROGRESSION FIRST</small></div><button className="icon-btn sidebar-close" aria-label="Close navigation" onClick={()=>setMenu(false)}><Icon name="x"/></button></div><nav>{NAV.map(([id,label,icon])=><button className={tab===id?'active':''} onClick={()=>openTab(id)} key={id}><Icon name={icon}/>{label}{id==='resolution'&&core.pending(state).filter((t:Task)=>t.type==='research').length>0&&<span className="nav-counter">{core.pending(state).filter((t:Task)=>t.type==='research').length}</span>}{id==='reserve'&&state.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance!=='hold'&&core.reserveReviewDue(l)<=core.today()).length>0&&<span className="nav-counter">{state.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance!=='hold'&&core.reserveReviewDue(l)<=core.today()).length}</span>}{id==='dupes'&&core.dupeQueue(state).some((l:Lead)=>core.dupeState(l)==='review-due')&&<span className="nav-counter">{core.dupeQueue(state).filter((l:Lead)=>core.dupeState(l)==='review-due').length}</span>}</button>)}</nav><div className="sidebar-footer"><strong>{user?'PRIVATE WORKSPACE':'BROWSER STORAGE'}</strong><span>Only fictional or approved data</span></div></aside>
   {menu&&<div className="sidebar-veil" onClick={()=>setMenu(false)} />}
-  <main className="main-app">{tab==='focus'?<Focus onColdCallMode={enabled=>{try{commit(s=>{s.settings.coldCallMode=enabled?1:0},{replenish:false})}catch(e){message((e as Error).message)}}} syncIndicator={syncIndicator} state={state} onFX={setFxLead} copy={copy} onAction={doTask} onToggleMenu={()=>setMenu(v=>!v)} onTab={t=>openTab(t as Tab)} onEvidence={setEvidenceLead} onFeedback={(r,reason)=>{try{commit(s=>rejectRecommendation(s,r,reason,new Date()));message('Feedback saved; recommendation deferred.');return true}catch(e){message((e as Error).message);return false}}} onStartSession={duration=>{try{commit(s=>startSession(s,duration,new Date()));message('Suggested work session started.')}catch(e){message((e as Error).message)}}} onEndSession={()=>{try{commit(endSession);message('Session ended.')}catch(e){message((e as Error).message)}}}/>:
+  <main className="main-app">{tab==='focus'?<Focus trail={trail} onRecommendedViewed={recommendedViewed} onPrevious={()=>setTrail(previousVisit)} onNext={candidate=>setTrail(t=>nextVisit(t,candidate))} onReturnRecommended={currentRecommended} onRecent={index=>setTrail(t=>({...t,index,following:false}))} onViewTask={showTask} onSaveActivity={editActivity} onTaskNote={(task,notes)=>{try{commit(s=>{const saved=core.getTask(s,task.id);if(!saved||saved.status==='pending')throw Error('Choose a historical task.');saved.reviewNotes=notes},{replenish:false});message('Review notes saved.')}catch(e){return (e as Error).message}}} onReadiness={setReadinessLead} onHistory={lead=>{setProspectFilters(emptyHistoryFilters());setHistoryScope(lead.id)}} onPostAction={(kind,lead,contact,activity)=>setPostModal({kind,leadId:lead.id,contactId:contact?.id||null,activityId:activity?.id})} draftScope={user?.id} onColdCallMode={enabled=>{try{commit(s=>{s.settings.coldCallMode=enabled?1:0},{replenish:false})}catch(e){message((e as Error).message)}}} syncIndicator={syncIndicator} state={state} onFX={setFxLead} copy={copy} onAction={doTask} onToggleMenu={()=>setMenu(v=>!v)} onTab={t=>openTab(t as Tab)} onEvidence={setEvidenceLead} onFeedback={(r,reason)=>{try{commit(s=>rejectRecommendation(s,r,reason,new Date()));message('Feedback saved; recommendation deferred.');return true}catch(e){message((e as Error).message);return false}}} onStartSession={duration=>{try{commit(s=>startSession(s,duration,new Date()));message('Suggested work session started.')}catch(e){message((e as Error).message)}}} onEndSession={()=>{try{commit(endSession);message('Session ended.')}catch(e){message((e as Error).message)}}}/>:
   <><div className="manage-toolbar"><button className="icon-btn" title="Show navigation" onClick={()=>setMenu(v=>!v)}><Icon name="menu"/></button><span className="brand-small">ϟ Sales<span>OS</span></span><small>MANAGEMENT</small>{syncIndicator}<span className="toolbar-spacer"/><button className="btn secondary small" onClick={()=>openTab('focus')}><Icon name="bolt"/> Back to Focus</button></div>
    {currentTab==='prospects'&&<Prospects state={state} openLeadId={focusLead} editReadiness={setReadinessLead} onUpdateFX={updateFX} onStage={stage} onStatus={status} onAddLead={addLead} onAddContact={(l,data)=>{try{const result=commit(s=>core.addContact(s,core.getLead(s,l.id),data));if(!result||result.duplicate){message(result?.duplicate?'Contact already exists.':'Enter a name or contact method.');return false}message('Contact saved.');return true}catch(e){message((e as Error).message);return false}}} onAddMethod={(l,id,kind,value)=>{try{const result=commit(s=>core.addMethod(s,core.getLead(s,l.id),core.getContact(core.getLead(s,l.id),id),kind,value));if(!result||result.duplicate){message(result?.duplicate?'Contact method already exists.':'Enter a contact method.');return false}message('Contact method saved.');return true}catch(e){message((e as Error).message);return false}}} onImport={()=>openTab('settings')}/>}
    {currentTab==='reserve'&&<LeadReserve state={state} onActivate={ids=>{try{const result=commit(s=>core.activateReserve(s,ids));message(`${result.activated} prospects activated · ${result.skipped} skipped.`)}catch(e){message((e as Error).message)}}} onSettings={settings=>{try{commit(s=>{s.settings={...s.settings,...settings}});message('Reserve rules saved.')}catch(e){message((e as Error).message)}}} onImport={()=>openTab('settings')} onDupeQueue={()=>openTab('dupes')} onReviewCRM={(id,clearance,note,lastActivityAt)=>{try{const result=commit(draft=>core.reviewReserveCRM(draft,id,clearance,note,{lastActivityAt}));if(result.error){message(result.error);return false}message('Salesforce check recorded.');return true}catch(e){message((e as Error).message);return false}}}/>}
    {currentTab==='dupes'&&<DupeQueue state={state} onReserve={()=>openTab('reserve')} onCRMCheck={(id,note,lastActivityAt)=>{try{const result=commit(s=>core.reviewReserveCRM(s,id,'hold',note,{lastActivityAt}));if(result.error){message(result.error);return false}message('CRM activity checked; reclaim date updated.');return true}catch(e){message((e as Error).message);return false}}} onRequest={(id,note)=>{try{const result=commit(s=>core.logReclaimRequest(s,id,note));if(result.error){message(result.error);return false}message('Reclaim request logged; still on hold until approved.');return true}catch(e){message((e as Error).message);return false}}} onDecision={(id,decision,note)=>{try{const result=commit(s=>core.recordReclaimDecision(s,id,decision,note));if(result.error){message(result.error);return false}message(decision==='approved'?'Approval recorded; company returned to available reserve.':'Decline recorded; company remains on hold.');return true}catch(e){message((e as Error).message);return false}}}/>}
+   {currentTab==='history'&&<ActivityHistory state={state} filters={historyFilters} onFilters={setHistoryFilters} onOpen={showActivity}/>}
    {currentTab==='pipeline'&&<Pipeline state={state} onProspect={openProspect}/>}
-   {currentTab==='tasks'&&<TaskQueue state={tab==='resolution'?{...state,tasks:state.tasks.filter(t=>t.type==='research')}:state} onTask={t=>doTask(t,t.type==='call'?'connected':'complete')}/>}
+   {currentTab==='tasks'&&<TaskQueue state={tab==='resolution'?{...state,tasks:state.tasks.filter(t=>t.type==='research')}:state} onTask={t=>{if(['call','callback','deal','meeting','research'].includes(t.type))doTask(t,t.type==='call'?'connected':'complete');else {showTask(t);openTab('focus')}}}/>}
    {currentTab==='insights'&&<Insights state={state} onProspect={openProspect}/>}
    {currentTab==='value'&&<ValueDashboard state={state} onProspect={openProspect}/>}
    {currentTab==='settings'&&<Settings onEvidence={setEvidenceLead} cloudPanel={workspace&&user?<CloudPanel user={user} engine={workspace.engine} snapshot={workspace.snapshot}/>:undefined} state={state} onRestore={updateState} onImport={handleImport} onDemo={demo} onTargets={targets=>{try{commit(s=>{s.settings={...s.settings,...targets}});message('Settings saved.')}catch(e){message((e as Error).message)}}} onSequence={sequence=>{try{commit(s=>{s.sequence=sequence});message('New sequence template saved.')}catch(e){message((e as Error).message)}}} notify={message}/>}
   </>}
   </main>
+  {historyScope!==undefined&&<WorkflowDialog label="Activity History" onClose={()=>setHistoryScope(undefined)}><div className="dialog-content"><ActivityHistory embedded state={state} filters={prospectFilters} onFilters={setProspectFilters} leadId={historyScope} onOpen={showActivity}/></div></WorkflowDialog>}
+  {postModal&&(()=>{const l=core.getLead(state,postModal.leadId) as Lead|undefined,c=l?.contacts.find(c=>c.id===postModal.contactId)||null,a=state.activities.find(a=>a.id===postModal.activityId);if(!l)return null;
+   if(postModal.kind==='contact')return <ContactDetailsDialog lead={l} contact={c} onClose={()=>setPostModal(null)} onSave={data=>{try{commit(s=>{if(c)saveContactDetails(s,l.id,c.id,data);else {const added=addRecordedContact(s,l.id,data);if(a){const activity=s.activities.find(x=>x.id===a.id)!;saveActivityDetails(s,a.id,{notes:activity.notes,durationMins:activity.durationMins,followUpNotes:activity.followUpNotes,contactId:added.id},activityStamp(activity),new Date())}}},{replenish:false});message('Contact details saved.')}catch(e){return (e as Error).message}}}/>;
+   if(!a)return null;
+   if(postModal.kind==='email')return <FollowUpEmailDialog activity={a} lead={l} contact={c} onClose={()=>setPostModal(null)} onSave={data=>{try{const t=commit(s=>createFollowUpEmail(s,a.id,data,new Date()),{replenish:false});showTask(t);message(t.status==='completed'?'This follow-up was already completed.':'Follow-up email task ready; send it manually.')}catch(e){return (e as Error).message}}}/>;
+   return <SchedulePostCallDialog kind={postModal.kind} lead={l} onClose={()=>setPostModal(null)} onSave={data=>{try{commit(s=>schedulePostCall(s,a.id,data,new Date()),{replenish:false});message('Agreed '+data.kind+' saved.')}catch(e){return (e as Error).message}}}/>;
+  })()}
   {evidenceLead&&<CommercialEvidenceDialog key={evidenceLead.id} state={state} lead={core.getLead(state,evidenceLead.id)||evidenceLead} onClose={()=>setEvidenceLead(null)} onSave={(facts,timing,crmNote)=>{try{commit(s=>{saveCommercial(s,evidenceLead.id,facts,timing,new Date());if(crmNote)recordActiveClearance(s,core.getLead(s,evidenceLead.id),crmNote,new Date())});message('Commercial evidence saved.')}catch(e){return (e as Error).message}}}/>}
   {modal&&<TaskDialog key={modal.task.id+'-'+modal.preset} task={modal.task} lead={modal.task.leadId?core.getLead(state,modal.task.leadId):null} preset={modal.preset} onClose={()=>setModal(null)} onSubmit={submitTask}/>}
   {snooze&&<SnoozeDialog task={snooze} onClose={()=>setSnooze(null)} onSubmit={(date,time)=>{try{commit(s=>{const before=structuredClone(s),task=core.getTask(s,snooze.id);if(date)core.snoozeTask(s,task,date,time);else core.skipTask(s,task);if(snoozeRecommendation.current)recordDecision(s,before,snoozeRecommendation.current,task,new Date())});setSnooze(null);message('Task rescheduled.')}catch(e){message((e as Error).message)}}}/>}

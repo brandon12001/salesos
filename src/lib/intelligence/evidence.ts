@@ -19,13 +19,13 @@ export function commercialFor(s:State,l:Lead):Commercial{
 export function attemptsSinceEngagement(s:State,l:Lead,now:Date):Activity[]{
  const facts=commercialFor(s,l),signals=[l.lastMeaningfulAt,l.lastProgressEvidence?l.lastProgressAt:'',...['problem','impact'].map(k=>{const f=facts[k as keyof Commercial];return f.status==='confirmed'&&validDate(f.observedAt||'')?f.observedAt+'T00:00:00':''})];
  const cutoff=Math.max(0,...signals.map(v=>Date.parse(v)).filter(v=>Number.isFinite(v)&&v<=+now));
- return s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['No answer','Gatekeeper'].includes(a.outcome)&&Date.parse(a.at)>cutoff&&(ageDays(a.at,now)??Infinity)>=0&&(ageDays(a.at,now)??Infinity)<=30);
+ return s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['No answer','Gatekeeper','Answered — No Conversation'].includes(a.outcome)&&Date.parse(a.at)>cutoff&&(ageDays(a.at,now)??Infinity)>=0&&(ageDays(a.at,now)??Infinity)<=30);
 }
 export function momentumFor(s:State,l:Lead,now:Date):Momentum{
  const promises=s.tasks.filter(t=>t.leadId===l.id&&protectedTask(t)&&isDue(t,now));
  if(promises.some(t=>t.dueTime?+now-+scheduledAt(t)>30*60000:t.dueAt<localDate(now)))return {state:'At risk',reasons:['An agreed action is overdue with no completion recorded.']};
  const attempts=attemptsSinceEngagement(s,l,now).length;
- if(attempts>=5)return {state:'At risk',reasons:[`${attempts} unanswered/gatekeeper attempts in 30 days without later meaningful engagement.`]};
+ if(attempts>=5)return {state:'At risk',reasons:[`${attempts} attempts without meaningful conversation in 30 days without later meaningful engagement.`]};
  if(attempts>=3)return {state:'Stalling',reasons:[`${attempts} attempts without later meaningful engagement; activity is not buyer progress.`]};
  const facts=commercialFor(s,l);
  if([facts.problem,facts.impact].some(f=>f.status==='confirmed'&&(dateAge(f.observedAt||'',now)??-1)>=0&&(dateAge(f.observedAt||'',now)??Infinity)<=14))return {state:'Progressing',reasons:['An explicitly dated buyer confirmation of an FX problem or impact is within 14 days; readiness remains independent.']};

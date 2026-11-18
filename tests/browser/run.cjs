@@ -11,7 +11,7 @@ const root=path.resolve(__dirname,'../..');let stack,app;
  app=cp.spawn(process.execPath,[vite,...(dev?[]:['preview','--outDir','.test-artifacts/build']),'--host','127.0.0.1','--port','5273','--strictPort'],{cwd:root,env,stdio:['ignore','pipe','pipe']});
  let startup='';app.stdout.on('data',x=>{startup+=x});app.stderr.on('data',x=>{startup+=x});
  await poll(async()=>{if(app.exitCode!==null)throw Error(startup);return (await fetch('http://127.0.0.1:5273')).ok});
- const result=await new Promise((resolve,reject)=>{const child=cp.spawn(process.execPath,[path.join(__dirname,'reliability.cjs')],{cwd:root,env,stdio:'inherit',timeout:240000});child.once('error',reject);child.once('exit',code=>resolve(code))});
+ const result=await new Promise((resolve,reject)=>{const child=cp.spawn(process.execPath,[path.join(__dirname,'reliability.cjs')],{cwd:root,env,stdio:'inherit',timeout:360000});child.once('error',reject);child.once('exit',code=>resolve(code))});
  if(result!==0)throw Error('Browser reliability suite failed; see .test-artifacts screenshots');
  console.log('PASS: '+(dev?'development Strict Mode':'production bundle')+' reliability suite');
 }catch(e){console.error(e.message);process.exitCode=1}finally{app?.kill();if(stack)await stack.close();else stop()}})();
