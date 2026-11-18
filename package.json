@@ -9,10 +9,11 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave",
+    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence",
     "test:reserve": "node tests/test_reserve.cjs",
     "test:autosave": "node tests/test_autosave.cjs",
-    "test:browser": "node tests/browser/run.cjs"
+    "test:browser": "node tests/browser/run.cjs",
+    "test:intelligence": "node tests/test_intelligence.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",

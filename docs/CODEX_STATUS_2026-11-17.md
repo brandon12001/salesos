@@ -1,6 +1,14 @@
 # SalesOS — current Codex handoff (17 November 2026)
 
-## Reliability phase — current instructions
+## Intelligence development — current branch, 18 November 2026
+
+The user supplied the “Build SalesOS Intelligence v1” request and authorised a feature branch plus tested draft PR only. Draft [PR #4](https://github.com/brandon12001/salesos/pull/4) is open for review. Work is on `feature/intelligence-v1`, based on PR #3's merge `2ff33ace`. See [Intelligence v1 configuration, behaviour and limits](INTELLIGENCE_V1.md). Do not merge, deploy, alter the live workspace, apply production migrations or enable production replenishment without new explicit approval. Fictional-only isolated tests are required; do not export/manipulate the ten real prospects for testing.
+
+The user subsequently requested an on/off Cold Call Mode. The draft adds a persisted Focus filter across legacy/shadow/enabled modes, leaving routine non-call work queued and protecting due promises. Preference-only saves do not run replenishment. This remains review-only and does not authorise deployment.
+
+PR #3 **was** approved, merged and deployed on 17 November 2026. Production client deployment `dpl_8SYBAzmf5xX69ZeWYEAJojaWdcp2` reached READY before reviewed migration `20261117163144_immediate_workspace_conflicts` was applied successfully. Recoverable backups were created before that rollout. Post-rollout comparison confirmed the unchanged revision-3 workspace: ten prospects, five active/five reserve, 17 activities and automatic replenishment OFF. The rollout record in [PR #3](https://github.com/brandon12001/salesos/pull/3) supersedes the pending/approval statements in the historical reliability sections below. Hosted authenticated UI/physical-device acceptance remains distinct from isolated browser CI.
+
+## Reliability phase — historical pre-rollout instructions
 
 The user has frozen their ten real prospects for testing and prohibited new production merges/deployments without approval. Reliability work is isolated on `reliability/daily-execution`, using fictional records, localhost Auth/Postgres/REST/mail containers and separate browser contexts. Production received only read-only metadata/advisor checks; revision 3 and its document fingerprint matched before and after the audit. Do not reuse the earlier production-intake authorisation for testing or deployment.
 

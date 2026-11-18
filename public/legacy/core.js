@@ -391,7 +391,7 @@
     if(taskTier(a)===5){const schedule=a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59');if(schedule)return schedule}
     return taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||'');
   })}
-  function nextTask(s,options={}){const d=due(s);if(d[0]&&taskTier(d[0])===5)return d[0];if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
+  function nextTask(s,options={}){const d=due(s);if(d[0]&&taskTier(d[0])===5)return d[0];if(options.callBlock)return d.find(t=>['call','callback'].includes(t.type))||null;return d[0]||null}
   function xpStats(s){let total=s.activities.reduce((sum,a)=>sum+num(a.xp),0);return {total,level:Math.floor(total/1000)+1,progress:total%1000}}
   // Rescheduling is audit history, not completed work. Preserve old backup formats.
   const isCompletionActivity=a=>a.taskId&&!['Snoozed','Skipped to next working day'].includes(a.outcome);
@@ -543,6 +543,7 @@
   }
   function autoReplenishReserve(s){
     if(!s.settings.reserveAutoActivate)return {activated:0,skipped:0,names:[]};
+    if(s.settings.reserveIntelligentRefill)return intelligentReplenishReserve(s);
     const floor=clamp(s.settings.reserveSupplyFloor,1,200);
     const horizon=businessAdd(today(),clamp(s.settings.supplyDays,2,20)-1);
     const supplied=pending(s).filter(t=>t.dueAt<=horizon).length;
@@ -553,6 +554,39 @@
     const minimum=clamp(s.settings.reserveMinScore,0,100);
     const ids=reserveRank(s).filter(l=>!reserveEligibility(s,l,minimum)).slice(0,slots).map(l=>l.id);
     return activateReserve(s,ids,{minScore:minimum});
+  }
+  // Opt-in refinement of the existing replenisher, not a parallel intake queue.
+  // Only currently available safe work counts; future cadence cannot hide a shortage.
+  function intelligentReplenishReserve(s){
+    const empty={activated:0,skipped:0,names:[]};
+    const clearance=l=>l.crmClearance==='cleared'&&validPastDate(l.crmCheckedAt)&&daysBetween(today(),l.crmCheckedAt)<=30;
+    const valid=m=>usable(m)&&['valid','unverified'].includes(m.status)&&(['mobile','phone'].includes(m.kind)?/^\+?[1-9]\d{7,14}$/.test(phoneDial(m.value)):m.kind==='email'?/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.value):false);
+    const contactable=l=>l.contacts.some(c=>canContact(c)&&!isSuppressed(s,l,c)&&c.methods.some(valid));
+    const available=pending(s).filter(t=>{
+      if(!isDue(t))return false;const l=getLead(s,t.leadId);if(!l)return true;if(!clearance(l))return false;
+      if(['call','callback','email'].includes(t.type)){
+        const cs=l.contacts.filter(c=>canContact(c)&&!isSuppressed(s,l,c)&&(!t.contactId||c.id===t.contactId));
+        return cs.some(c=>c.methods.some(m=>valid(m)&&(!t.methodId||m.id===t.methodId)&&(t.type==='email'?m.kind==='email':['mobile','phone'].includes(m.kind))));
+      }
+      return true;
+    }).length;
+    const floor=Math.round(clamp(s.settings.reserveSupplyFloor??40,1,200)),cap=Math.round(clamp(s.settings.reserveActiveCap,1,2000));
+    const count=s.leads.filter(active).length,slots=Math.min(Math.round(clamp(s.settings.reserveActivationBatch??10,1,25)),floor-available,cap-count);
+    if(slots<=0)return empty;
+    // One refill per actual completed-work change. Settings, feedback and FX edits
+    // cannot repeatedly refill a queue or activate the entire reserve in a loop.
+    const completed=s.activities.filter(isCompletionActivity).length;
+    const prior=s.meta.intelligentRefill;
+    if(prior&&prior.day===today()&&prior.completed===completed)return empty;
+    const minimum=clamp(s.settings.reserveMinScore??65,0,100);
+    const ids=reserveRank(s).filter(l=>!reserveEligibility(s,l,minimum)&&contactable(l)).slice(0,slots).map(l=>l.id);
+    const result=activateReserve(s,ids,{minScore:minimum});
+    s.meta.intelligentRefill={day:today(),completed};
+    if(result.activated){
+      const why=`Available safe tasks ${available} below floor ${floor}; score ≥ ${minimum}; recent manual CRM clearance; valid contact; batch ${slots}; active cap ${cap}.`;
+      log(s,null,'Reserve','Intelligent replenishment',why,0,{activatedNames:result.names,leadIds:ids});
+    }
+    return result;
   }
   function updateFX(s,l,data){if(!l||!data)return;let fx={...defaultFX(),...l.fx,...data};fx.products=Array.isArray(fx.products)?fx.products:[];fx.flows=Array.isArray(fx.flows)?fx.flows.filter(f=>num(f.amount)>0&&f.currency).map(f=>({...f,id:f.id||uid(),currency:String(f.currency).toUpperCase(),confidence:f.confidence==='confirmed'?'confirmed':'estimate'})):[];fx.updatedAt=new Date().toISOString();l.fx=fx;log(s,l,'Discovery','FX qualification updated',`${fx.flows.length} currency flow(s) saved`,0)}
   function migrateV2(old){const s=newState();s.meta={createdAt:new Date().toISOString(),source:'migrated-v2',demo:!!old?.meta?.demo,migratedAt:new Date().toISOString()};

@@ -16,8 +16,12 @@ import {Insights,ValueDashboard,Pipeline,TaskQueue} from './components/Dashboard
 import {Settings} from './components/Settings';
 import {ConfirmReadiness,TaskDialog,SnoozeDialog,type TaskForm} from './components/Dialogs';
 import {Icon} from './components/UI';
+import {CommercialEvidenceDialog} from './components/Intelligence';
+import {prepareAction,recordActiveClearance,recordDecision,rejectRecommendation,saveCommercial} from './lib/intelligence/actions';
+import {endSession,startSession} from './lib/intelligence/session';
+import type {Recommendation} from './lib/intelligence/types';
 type Tab='focus'|'prospects'|'reserve'|'dupes'|'pipeline'|'tasks'|'resolution'|'insights'|'value'|'settings';
-type Modal={task:Task;preset:string}|null;
+type Modal={task:Task;preset:string;recommendation?:Recommendation}|null;
 const NAV:[Tab,string,string][]=[['focus','Focus Mode','bolt'],['prospects','Prospects','users'],['reserve','Lead Reserve','target'],['dupes','Dupe Queue','archive'],['pipeline','Pipeline','chart'],['tasks','Task Queue','list'],['resolution','Contact Resolution','search'],['insights','Buyer Intelligence','target'],['value','Pipeline Value','chart'],['settings','Settings','settings']];
 export default function App(){
  const auth=useCloudAuth();
@@ -31,34 +35,43 @@ function Workspace({user}:{user?:User}){
  stateRef.current=state;
  const [tab,setTab]=useState<Tab>('focus'),[menu,setMenu]=useState(false),[modal,setModal]=useState<Modal>(null),[snooze,setSnooze]=useState<Task|null>(null),[readinessLead,setReadinessLead]=useState<Lead|null>(null),[fxLead,setFxLead]=useState<Lead|null>(null),[toast,setToast]=useState(''),[focusLead,setFocusLead]=useState('');
  const message=useCallback((x:string)=>setToast(x),[]);
+ const [evidenceLead,setEvidenceLead]=useState<Lead|null>(null);
+ const snoozeRecommendation=useRef<Recommendation|undefined>(undefined);
  useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(id)},[toast]);
- const commit=useCallback(<T,>(action:(draft:State)=>T):T=>{
+ const commit=useCallback(<T,>(action:(draft:State)=>T,options:{replenish?:boolean}={}):T=>{
    const draft=structuredClone(engine?engine.getSnapshot().document:stateRef.current);const result=action(draft);
+   if(result&&typeof result==='object'&&'error' in result&&result.error)throw new Error(String(result.error));
    // Opt-in replenishment runs only after a saved user action. New CSV imports stay
    // passive by default; no auto-activation happens until the user enables it.
-   core.autoReplenishReserve(draft);const violations=core.checkInvariants(draft) as string[];
+   if(options.replenish!==false)core.autoReplenishReserve(draft);const violations=core.checkInvariants(draft) as string[];
    if(violations.length){throw new Error('Safety rule blocked save: '+violations.join('; '))}
    if(engine)engine.change(draft);else persistLocal(draft);stateRef.current=draft;setState(draft);return result;
  },[engine]);
  const updateState=useCallback((updated:State)=>{const parsed=core.normalize(updated);if(!parsed)throw new Error('Incompatible backup');if(engine)engine.change(parsed);else persistLocal(parsed);stateRef.current=parsed;setState(parsed);setTab('focus');message('SalesOS database restored.')},[message,engine]);
  const copy=useCallback(async(value:string)=>{try{await navigator.clipboard.writeText(value);message('Copied — paste into Teams, Outlook or your browser.')}catch{message('Clipboard not available here. Select and copy manually.')}},[message]);
- const doTask=useCallback((t:Task,preset='complete')=>{
-   if(preset==='snooze'){setSnooze(t);return}
+ const doTask=useCallback((t:Task,preset='complete',recommendation?:Recommendation)=>{
+   if(preset==='snooze'){
+    // A virtual recommendation has no scheduled task to snooze yet. Feedback defers it without manufacturing activity.
+    if(recommendation?.generated){try{commit(s=>rejectRecommendation(s,recommendation,'Wrong time',new Date()));message('Recommendation deferred for 24 hours.')}catch(e){message((e as Error).message)}return}
+    snoozeRecommendation.current=recommendation;setSnooze(t);return;
+   }
    if(preset==='no_answer'||preset==='bad_number'){
-     try{const r=commit(s=>core.logCall(s,core.getTask(s,t.id),{outcome:preset}));if(r.error){message(r.error);return}message(preset==='no_answer'?'No answer logged · next action scheduled':'Invalid number flagged · contact repair created');}catch(err){message((err as Error).message)}return;
+     try{commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);const r=core.logCall(s,task,{outcome:preset});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return r});message(preset==='no_answer'?'No answer logged · next action scheduled':'Invalid number flagged · contact repair created');}catch(err){message((err as Error).message)}return;
    }
    if(preset==='complete'&&!['call','callback','deal','meeting','research'].includes(t.type)){
-     try{const r=commit(s=>core.completeTask(s,core.getTask(s,t.id),{outcome:t.type==='email'?'Email sent (manually confirmed)':'Completed (manually confirmed)'}));if(r.error){message(r.error);return}message('Task completed · next task ready');}catch(err){message((err as Error).message)}return;
+     try{commit(s=>{const before=structuredClone(s),task=recommendation?prepareAction(s,recommendation,new Date()):core.getTask(s,t.id);const r=core.completeTask(s,task,{outcome:t.type==='email'?'Email sent (manually confirmed)':'Completed (manually confirmed)'});if(!r.error&&recommendation)recordDecision(s,before,recommendation,task,new Date());return r});message('Task completed · next task ready');}catch(err){message((err as Error).message)}return;
    }
-   setModal({task:t,preset:preset==='complete'&&['call','callback'].includes(t.type)?'connected':preset});
+   setModal({task:t,preset:preset==='complete'&&['call','callback'].includes(t.type)?'connected':preset,recommendation});
  },[commit,message]);
  const submitTask=(f:TaskForm):string|void=>{
   if(!modal)return 'Task missing.';let response:any;
   try{response=commit(s=>{
-    const t=core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};
-    if(['call','callback'].includes(t.type))return core.logCall(s,t,{outcome:f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:f.date,callbackTime:f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
-    if(t.type==='research')return core.resolveContact(s,t,{mode:f.repairMode,contactId:t.contactId,kind:'mobile',value:f.repairPhone,name:f.repairName,title:f.repairTitle,email:f.repairEmail,nextDate:f.date,notes:f.notes});
-    return core.completeTask(s,t,{notes:f.notes,newStage:f.newStage,nextDate:f.date,nextTime:f.time});
+    const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};
+    let result;
+    if(['call','callback'].includes(t.type))result=core.logCall(s,t,{outcome:f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:f.date,callbackTime:f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
+    else if(t.type==='research')result=core.resolveContact(s,t,{mode:f.repairMode,contactId:t.contactId,kind:'mobile',value:f.repairPhone,name:f.repairName,title:f.repairTitle,email:f.repairEmail,nextDate:f.date,notes:f.notes});
+    else result=core.completeTask(s,t,{notes:f.notes,newStage:f.newStage,nextDate:f.date,nextTime:f.time});
+    if(!result.error&&modal.recommendation)recordDecision(s,before,modal.recommendation,t,new Date());return result;
   });}catch(e){return (e as Error).message}
   if(response?.error)return response.error;setModal(null);message('Saved · the next task is ready.');
  };
@@ -94,7 +107,7 @@ function Workspace({user}:{user?:User}){
  return <div className={`shell ${tab==='focus'?'is-focus':''} ${!menu?'is-collapsed':''}`}>
   <aside className={`sidebar ${menu?'visible':''}`} aria-label="Main navigation" inert={!menu}><div className="sidebar-heading"><div className="brand-mark">ϟ</div><div><strong>Sales<span>OS</span></strong><small>PROGRESSION FIRST</small></div><button className="icon-btn sidebar-close" aria-label="Close navigation" onClick={()=>setMenu(false)}><Icon name="x"/></button></div><nav>{NAV.map(([id,label,icon])=><button className={tab===id?'active':''} onClick={()=>openTab(id)} key={id}><Icon name={icon}/>{label}{id==='resolution'&&core.pending(state).filter((t:Task)=>t.type==='research').length>0&&<span className="nav-counter">{core.pending(state).filter((t:Task)=>t.type==='research').length}</span>}{id==='reserve'&&state.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance!=='hold'&&core.reserveReviewDue(l)<=core.today()).length>0&&<span className="nav-counter">{state.leads.filter(l=>l.leadPool==='reserve'&&l.crmClearance!=='hold'&&core.reserveReviewDue(l)<=core.today()).length}</span>}{id==='dupes'&&core.dupeQueue(state).some((l:Lead)=>core.dupeState(l)==='review-due')&&<span className="nav-counter">{core.dupeQueue(state).filter((l:Lead)=>core.dupeState(l)==='review-due').length}</span>}</button>)}</nav><div className="sidebar-footer"><strong>{user?'PRIVATE WORKSPACE':'BROWSER STORAGE'}</strong><span>Only fictional or approved data</span></div></aside>
   {menu&&<div className="sidebar-veil" onClick={()=>setMenu(false)} />}
-  <main className="main-app">{tab==='focus'?<Focus syncIndicator={syncIndicator} state={state} onFX={setFxLead} copy={copy} onAction={doTask} onToggleMenu={()=>setMenu(v=>!v)} onTab={t=>openTab(t as Tab)}/>:
+  <main className="main-app">{tab==='focus'?<Focus onColdCallMode={enabled=>{try{commit(s=>{s.settings.coldCallMode=enabled?1:0},{replenish:false})}catch(e){message((e as Error).message)}}} syncIndicator={syncIndicator} state={state} onFX={setFxLead} copy={copy} onAction={doTask} onToggleMenu={()=>setMenu(v=>!v)} onTab={t=>openTab(t as Tab)} onEvidence={setEvidenceLead} onFeedback={(r,reason)=>{try{commit(s=>rejectRecommendation(s,r,reason,new Date()));message('Feedback saved; recommendation deferred.');return true}catch(e){message((e as Error).message);return false}}} onStartSession={duration=>{try{commit(s=>startSession(s,duration,new Date()));message('Suggested work session started.')}catch(e){message((e as Error).message)}}} onEndSession={()=>{try{commit(endSession);message('Session ended.')}catch(e){message((e as Error).message)}}}/>:
   <><div className="manage-toolbar"><button className="icon-btn" title="Show navigation" onClick={()=>setMenu(v=>!v)}><Icon name="menu"/></button><span className="brand-small">ϟ Sales<span>OS</span></span><small>MANAGEMENT</small>{syncIndicator}<span className="toolbar-spacer"/><button className="btn secondary small" onClick={()=>openTab('focus')}><Icon name="bolt"/> Back to Focus</button></div>
    {currentTab==='prospects'&&<Prospects state={state} openLeadId={focusLead} editReadiness={setReadinessLead} onUpdateFX={updateFX} onStage={stage} onStatus={status} onAddLead={addLead} onAddContact={(l,data)=>{try{const result=commit(s=>core.addContact(s,core.getLead(s,l.id),data));if(!result||result.duplicate){message(result?.duplicate?'Contact already exists.':'Enter a name or contact method.');return false}message('Contact saved.');return true}catch(e){message((e as Error).message);return false}}} onAddMethod={(l,id,kind,value)=>{try{const result=commit(s=>core.addMethod(s,core.getLead(s,l.id),core.getContact(core.getLead(s,l.id),id),kind,value));if(!result||result.duplicate){message(result?.duplicate?'Contact method already exists.':'Enter a contact method.');return false}message('Contact method saved.');return true}catch(e){message((e as Error).message);return false}}} onImport={()=>openTab('settings')}/>}
    {currentTab==='reserve'&&<LeadReserve state={state} onActivate={ids=>{try{const result=commit(s=>core.activateReserve(s,ids));message(`${result.activated} prospects activated · ${result.skipped} skipped.`)}catch(e){message((e as Error).message)}}} onSettings={settings=>{try{commit(s=>{s.settings={...s.settings,...settings}});message('Reserve rules saved.')}catch(e){message((e as Error).message)}}} onImport={()=>openTab('settings')} onDupeQueue={()=>openTab('dupes')} onReviewCRM={(id,clearance,note,lastActivityAt)=>{try{const result=commit(draft=>core.reviewReserveCRM(draft,id,clearance,note,{lastActivityAt}));if(result.error){message(result.error);return false}message('Salesforce check recorded.');return true}catch(e){message((e as Error).message);return false}}}/>}
@@ -103,11 +116,12 @@ function Workspace({user}:{user?:User}){
    {currentTab==='tasks'&&<TaskQueue state={tab==='resolution'?{...state,tasks:state.tasks.filter(t=>t.type==='research')}:state} onTask={t=>doTask(t,t.type==='call'?'connected':'complete')}/>}
    {currentTab==='insights'&&<Insights state={state} onProspect={openProspect}/>}
    {currentTab==='value'&&<ValueDashboard state={state} onProspect={openProspect}/>}
-   {currentTab==='settings'&&<Settings cloudPanel={workspace&&user?<CloudPanel user={user} engine={workspace.engine} snapshot={workspace.snapshot}/>:undefined} state={state} onRestore={updateState} onImport={handleImport} onDemo={demo} onTargets={targets=>{try{commit(s=>{s.settings={...s.settings,...targets}});message('Settings saved.')}catch(e){message((e as Error).message)}}} onSequence={sequence=>{try{commit(s=>{s.sequence=sequence});message('New sequence template saved.')}catch(e){message((e as Error).message)}}} notify={message}/>}
+   {currentTab==='settings'&&<Settings onEvidence={setEvidenceLead} cloudPanel={workspace&&user?<CloudPanel user={user} engine={workspace.engine} snapshot={workspace.snapshot}/>:undefined} state={state} onRestore={updateState} onImport={handleImport} onDemo={demo} onTargets={targets=>{try{commit(s=>{s.settings={...s.settings,...targets}});message('Settings saved.')}catch(e){message((e as Error).message)}}} onSequence={sequence=>{try{commit(s=>{s.sequence=sequence});message('New sequence template saved.')}catch(e){message((e as Error).message)}}} notify={message}/>}
   </>}
   </main>
+  {evidenceLead&&<CommercialEvidenceDialog key={evidenceLead.id} state={state} lead={core.getLead(state,evidenceLead.id)||evidenceLead} onClose={()=>setEvidenceLead(null)} onSave={(facts,timing,crmNote)=>{try{commit(s=>{saveCommercial(s,evidenceLead.id,facts,timing,new Date());if(crmNote)recordActiveClearance(s,core.getLead(s,evidenceLead.id),crmNote,new Date())});message('Commercial evidence saved.')}catch(e){return (e as Error).message}}}/>}
   {modal&&<TaskDialog key={modal.task.id+'-'+modal.preset} task={modal.task} lead={modal.task.leadId?core.getLead(state,modal.task.leadId):null} preset={modal.preset} onClose={()=>setModal(null)} onSubmit={submitTask}/>}
-  {snooze&&<SnoozeDialog task={snooze} onClose={()=>setSnooze(null)} onSubmit={(date,time)=>{try{if(date)commit(s=>core.snoozeTask(s,core.getTask(s,snooze.id),date,time));else commit(s=>core.skipTask(s,core.getTask(s,snooze.id)));setSnooze(null);message('Task rescheduled.')}catch(e){message((e as Error).message)}}}/>}
+  {snooze&&<SnoozeDialog task={snooze} onClose={()=>setSnooze(null)} onSubmit={(date,time)=>{try{commit(s=>{const before=structuredClone(s),task=core.getTask(s,snooze.id);if(date)core.snoozeTask(s,task,date,time);else core.skipTask(s,task);if(snoozeRecommendation.current)recordDecision(s,before,snoozeRecommendation.current,task,new Date())});setSnooze(null);message('Task rescheduled.')}catch(e){message((e as Error).message)}}}/>}
   {fxLead&&<FXQuickDialog draftScope={user?.id} lead={core.getLead(state,fxLead.id)||fxLead} onClose={()=>setFxLead(null)} onSave={fx=>{const saved=updateFX(fxLead,fx);if(saved)setFxLead(null);return saved}}/>}
   {readinessLead&&<ConfirmReadiness lead={core.getLead(state,readinessLead.id)||readinessLead} onClose={()=>setReadinessLead(null)} onSubmit={submitReadiness}/>}
   {toast&&<div className="toast" role="status">{toast}</div>}

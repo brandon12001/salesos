@@ -4,13 +4,19 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const core=require('../core.cjs');const {poll,jwt}=require('./stack.cjs');
 const origin='http://127.0.0.1:5273',api='http://127.0.0.1:55421',mail='http://127.0.0.1:55424';
 const artifacts=path.resolve('.test-artifacts');fs.mkdirSync(artifacts,{recursive:true});
-const errors=[];let browser;
+const errors=[],lastFixtureEmail=new Map();let browser;
 async function context(){const c=await browser.newContext({permissions:['clipboard-read','clipboard-write'],viewport:{width:1440,height:1000}});await c.route('**/*',route=>{const u=new URL(route.request().url());if(u.protocol.startsWith('http')&&u.hostname!=='127.0.0.1')throw Error('External network forbidden in reliability suite');return route.continue()});return c}
 async function page(c){const p=await c.newPage();p.setDefaultTimeout(12000);p.on('pageerror',e=>errors.push(e.message));return p}
 async function saved(p){await p.getByRole('button',{name:'Saved to cloud',exact:true}).waitFor({timeout:25000})}
 async function signin(p,box){
  const prior=await fetch(mail+'/api/v1/mailbox/'+box).then(r=>r.json());const known=new Set(prior.map(m=>m.id));
- await p.goto(origin);await p.getByLabel('Sign-in email').fill(box+'@salesos.example');await p.getByRole('button',{name:'Email sign-in link',exact:true}).click();
+ await p.goto(origin);await p.getByLabel('Sign-in email').fill(box+'@salesos.example');
+ // The local Auth fixture intentionally limits repeated email requests to 1s.
+ // Faster CI browsers can reopen the same account sooner; respect that policy.
+ const remaining=1200-(Date.now()-(lastFixtureEmail.get(box)||0));if(remaining>0)await new Promise(r=>setTimeout(r,remaining));
+ const response=p.waitForResponse(r=>r.url().startsWith(api+'/auth/v1/otp')&&r.request().method()==='POST');
+ await p.getByRole('button',{name:'Email sign-in link',exact:true}).click();const otp=await response;
+ assert.equal(otp.status(),200,'Local fixture sign-in request must succeed');lastFixtureEmail.set(box,Date.now());
  await p.getByRole('status').filter({hasText:'Check your email'}).waitFor();
  const message=await poll(async()=>{const messages=await fetch(mail+'/api/v1/mailbox/'+box).then(r=>r.json());return messages.find(m=>!known.has(m.id))});
  const data=await fetch(mail+'/api/v1/mailbox/'+box+'/'+message.id).then(r=>r.json());
@@ -74,6 +80,8 @@ async function recoveryDownload(p,button,file){const pending=p.waitForEvent('dow
  console.log('PASS: five reserve entries passive, auto-off, unknown/hold activation blocked, dated reclaim and explicit approval');
  await nav(a,'Settings');const exported=await recoveryDownload(a,'Export full JSON backup','full-backup.json');assert.deepEqual(exported,await state(a));await restore(other,exported);assert.deepEqual(await state(other),JSON.parse(JSON.stringify(core.normalize(exported))));
  console.log('PASS: full JSON export and restore into a separate fictional account');
+ await require('./intelligence.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,openNew,add,recoveryDownload});
+ await require('./cold_call.cjs')({a,other,saved,state,restore,nav,core,artifacts});
  await restore(a,calling('Fictional Mobile Layout With A Long Company Name Ltd'));
  const timings=[];for(const width of [320,390,768,1440]){await a.setViewportSize({width,height:844});await nav(a,'Focus Mode');const overflow=await a.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth}));assert.ok(overflow.width<=overflow.viewport,`Focus overflows at ${width}: ${overflow.width}`);await a.screenshot({path:path.join(artifacts,'focus-'+width+'.png'),fullPage:true,animations:'disabled'});const start=Date.now();await nav(a,'Prospects');await a.getByRole('heading',{name:'Prospects',exact:true}).waitFor();timings.push(Date.now()-start);await nav(a,'Focus Mode')}
  assert.equal(errors.length,0,errors.join('\n'));console.log('PASS: 320/390/768/1440px Focus layout; navigation samples ms '+timings.join(','));

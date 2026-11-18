@@ -3,13 +3,14 @@ import type {Lead,State} from '../types';
 import {core} from '../lib/core';
 import {Badge,Empty,Icon,day} from './UI';
 
-type ReserveSettings={reserveAutoActivate:number;reserveSupplyFloor:number;reserveActivationBatch:number;reserveMinScore:number;reserveActiveCap:number};
+type ReserveSettings={reserveAutoActivate:number;reserveSupplyFloor:number;reserveActivationBatch:number;reserveMinScore:number;reserveActiveCap:number;reserveIntelligentRefill:number};
 const settingsFrom=(s:State):ReserveSettings=>({
   reserveAutoActivate:s.settings.reserveAutoActivate??0,
   reserveSupplyFloor:s.settings.reserveSupplyFloor??20,
   reserveActivationBatch:s.settings.reserveActivationBatch??5,
   reserveMinScore:s.settings.reserveMinScore??60,
-  reserveActiveCap:s.settings.reserveActiveCap??150
+  reserveActiveCap:s.settings.reserveActiveCap??150,
+  reserveIntelligentRefill:s.settings.reserveIntelligentRefill??0
 });
 export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void}){
   const ranked=useMemo(()=>(core.reserveRank(state) as Lead[]).filter(l=>l.crmClearance!=='hold'),[state]);
@@ -47,12 +48,16 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
     <section className="panel stack">
       <div className="section-between"><h2>Controlled automatic replenishment</h2><Badge tone={state.settings.reserveAutoActivate?'green':'muted'}>{state.settings.reserveAutoActivate?'Enabled':'Disabled by default'}</Badge></div>
       <label className="check-row"><input type="checkbox" checked={!!settings.reserveAutoActivate} onChange={e=>update('reserveAutoActivate',e.target.checked?1:0)}/> Activate top eligible prospects when upcoming work drops below the floor</label>
+      <label className="check-row"><input type="checkbox" checked={!!settings.reserveIntelligentRefill} onChange={e=>update('reserveIntelligentRefill',e.target.checked?1:0)}/> Use intelligent replenishment: count currently due safe work, with a refill-loop guard</label>
+      <button className="btn secondary small" onClick={()=>setSettings(s=>({...s,reserveIntelligentRefill:1,reserveSupplyFloor:40,reserveActivationBatch:10,reserveMinScore:65}))}>Use suggested 40 / 10 / 65 rules</button>
+      <p className="hint">Suggested rules do not enable automation. Auto-activation remains OFF until you explicitly enable it and save. In intelligent mode, settings/feedback changes cannot trigger repeated batches; a new completion or working day permits the next refill.</p>
       <div className="three-fields">
         <label className="field">Minimum opportunity score<input aria-label="Minimum opportunity score" type="number" min="0" max="100" value={settings.reserveMinScore} onChange={e=>update('reserveMinScore',Number(e.target.value))}/></label>
         <label className="field">Task supply floor<input aria-label="Task supply floor" type="number" min="1" max="200" value={settings.reserveSupplyFloor} onChange={e=>update('reserveSupplyFloor',Number(e.target.value))}/></label>
         <label className="field">Maximum leads per replenishment<input aria-label="Maximum leads per replenishment" type="number" min="1" max="25" value={settings.reserveActivationBatch} onChange={e=>update('reserveActivationBatch',Number(e.target.value))}/></label>
       </div>
       <label className="field">Maximum active prospects<input aria-label="Maximum active prospects" type="number" min="1" max="2000" value={settings.reserveActiveCap} onChange={e=>update('reserveActiveCap',Number(e.target.value))}/></label>
+      <details><summary>Recent automatic activations and reasons</summary>{state.activities.filter(a=>a.type==='Reserve'&&a.outcome==='Intelligent replenishment').slice(-5).reverse().map(a=><div key={a.id}><p>{a.at}: {(a as typeof a&{activatedNames?:string[]}).activatedNames?.join(', ')}</p><small>{a.notes}</small></div>)}</details>
       <p className="hint">Activation only runs after an actual saved action. It is limited by the score, batch size, task supply and active-prospect cap. No external AI or search API is called.</p>
       <button className="btn secondary" onClick={save}>Save activation rules</button>
     </section>
