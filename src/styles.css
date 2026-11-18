@@ -63,3 +63,19 @@
 
 .execution-feedback.calls.is-confirmed { border-color: #80c9f0; }
 .execution-feedback.calls.is-confirmed .execution-mark { font-size: 30px; }
+
+/* Industry Focus: always legible in dense, high-volume calling sessions. */
+.focus-toolbar { flex-wrap: wrap; row-gap: 8px; }
+.industry-focus-select { color: inherit; background: #15253d; border: 1px solid #375071; border-radius: 8px; padding: 7px 9px; min-width: 155px; max-width: 250px; }
+.industry-focus-select:disabled { opacity: .5; }
+.industry-focus-banner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 9px 12px; margin-bottom: 10px; background: #172c46; border: 1px solid #385a75; border-radius: 10px; font-size: 13px; }
+.industry-focus-banner strong { color: #a9cefa; }
+.industry-focus-banner span { flex: 1; min-width: 180px; color: #abc4d7; }
+.industry-tag { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; margin: 8px 0; font-size: 13px; }
+.industry-tag strong { color: #e4eeff; }
+.industry-tag small { color: #9db5ca; }
+.commitment-outside { color: #ffc870; font-weight: 600; }
+.industry-reserve-filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.industry-reserve-filter .field { min-width: 200px; flex: 0 1 290px; margin: 0; }
+.industry-reserve-filter .hint { flex: 1; }
+@media(max-width:700px) { .industry-focus-select { flex: 1; min-width: 140px; } .industry-focus-banner { align-items: flex-start; } }
