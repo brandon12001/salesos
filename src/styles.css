@@ -24,3 +24,11 @@
 .focus-navigation{width:min(970px,100%)}.recorded-result{color:#7fe0b4}.history-filters select{width:100%;min-width:0}.activity-row:hover{border-color:#729ce0}
 
 .prospect-workspace,.post-call-editor{min-width:0;grid-template-columns:minmax(0,1fr)}.prospect-workspace .btn{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}.focus-primary-action strong{overflow-wrap:anywhere}
+
+/* Manual Salesforce contact administration stays outside the sales-task queue. */
+.sf-focus-actions{flex-wrap:wrap;justify-content:flex-start!important}.sf-focus-actions .badge{margin-right:auto}
+.sf-copy-fields{display:grid;gap:10px;min-width:0}.sf-copy-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:end;min-width:0}.sf-copy-row .field{margin:0}.sf-copy-row .field span{font-size:11px;color:#a9bed9}.sf-copy-row input{width:100%;min-width:0}
+.sf-dialog-actions{flex-wrap:wrap}.sf-dialog-actions .btn,.sf-quick-add .btn{white-space:normal;max-width:100%;overflow-wrap:anywhere}.sf-quick-add{grid-template-columns:minmax(0,1fr)}.sf-quick-add p,.sf-queue-row{overflow-wrap:anywhere}.success-message{color:#91e6ba;font-size:13px}
+.sf-summary{display:flex;gap:10px;flex-wrap:wrap}.sf-summary .btn[aria-pressed=true]{border-color:#83aafa}.sf-filters{grid-template-columns:2fr 1fr 1fr}.sf-queue-list{display:grid;gap:12px}.sf-queue-row p{margin:7px 0}.sf-queue-row .section-between{flex-wrap:wrap}
+@media(max-width:600px){.sf-copy-row{gap:7px;grid-template-columns:minmax(0,1fr) 110px}.sf-copy-row button{padding:9px 6px}.sf-filters{grid-template-columns:minmax(0,1fr)}.sf-dialog-actions{display:grid;grid-template-columns:minmax(0,1fr)}.sf-summary .btn{white-space:normal}.sf-queue-row .check-row{align-items:start}.sf-focus-actions .btn{white-space:normal}}
+@media(max-width:700px){.manage-toolbar{height:auto;min-height:60px;flex-wrap:wrap;gap:8px;padding:10px 12px}.manage-toolbar small{display:none}.manage-toolbar .brand-small{white-space:nowrap}.manage-toolbar .toolbar-spacer{display:none}.manage-toolbar .sync-indicator{margin-left:auto;max-width:90px;overflow:hidden;text-overflow:ellipsis}.manage-toolbar>.btn{margin-left:auto}}

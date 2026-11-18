@@ -82,6 +82,8 @@ async function recoveryDownload(p,button,file){const pending=p.waitForEvent('dow
  console.log('PASS: full JSON export and restore into a separate fictional account');
  await require('./intelligence.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,openNew,add,recoveryDownload});
  await require('./focus_workflow.cjs')({a,b,other,saved,state,restore,nav,core,artifacts});
+ await require('./salesforce_lead_urls.cjs')({a,saved,state,restore,nav,core,artifacts});
+ await require('./salesforce_contacts.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,signin,recoveryDownload});
  await require('./cold_call.cjs')({a,other,saved,state,restore,nav,core,artifacts});
  await restore(a,calling('Fictional Mobile Layout With A Long Company Name Ltd'));
  const timings=[];for(const width of [320,390,768,1440]){await a.setViewportSize({width,height:844});await nav(a,'Focus Mode');const overflow=await a.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth}));assert.ok(overflow.width<=overflow.viewport,`Focus overflows at ${width}: ${overflow.width}`);await a.screenshot({path:path.join(artifacts,'focus-'+width+'.png'),fullPage:true,animations:'disabled'});const start=Date.now();await nav(a,'Prospects');await a.getByRole('heading',{name:'Prospects',exact:true}).waitFor();timings.push(Date.now()-start);await nav(a,'Focus Mode')}
