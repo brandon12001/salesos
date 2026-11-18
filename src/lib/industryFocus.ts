@@ -50,6 +50,8 @@ export function inferredIndustry(sector:string):string {
  if(/\b(recruit(?:ment|ing|er|ers)?|staffing|staff(?:ing)? agencies|executive search|headhunt(?:ing|ers?)?|employment agencies|employment placement|personnel recruitment)\b/i.test(value))return 'recruitment';
  if(/\b(machinery|machine tools?|industrial equipment|agricultural equipment|construction equipment|heavy equipment|plant machinery|equipment distribution|equipment importers?)\b/i.test(value))return 'machinery';
  if(/\b(manufactur(?:e|er|ers|ing)|fabricat(?:e|ion|or|ors|ing)|metalworking|precision engineering)\b/i.test(value))return 'manufacturing';
+ // Only clearly named alternative sectors enter Other; broad/ambiguous labels remain unclassified.
+ if(/\b(logistics|freight|transportation|transport services|banking|insurance|financial services|consulting|real estate|property services|software|it services|education|hospitality|hotel|healthcare|pharmaceutical|retail|advertising|marketing|legal services|accounting|utilities|agriculture|tourism|travel services|charities|not-for-profit)\b/i.test(value))return 'other';
  return 'unclassified';
 }
 export function industryForLead(s:State,l:Lead):string {
