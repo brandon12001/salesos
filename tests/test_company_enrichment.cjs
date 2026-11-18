@@ -27,7 +27,7 @@ const csv=[headers,csvRow(recruiter),csvRow(recruiter),csvRow(machinery),csvRow(
  const plan=planCompanyEnrichment(s,csv,{replaceResearchCopy:false});
  assert.equal(plan.totalRows,4);assert.equal(plan.companies,3);assert.equal(plan.matched,2);assert.equal(plan.changed,2);assert.equal(plan.unmatched,1);assert.equal(plan.conflicts,0);
  assert.equal(plan.samples[0].after,recruiter[4]);
- assert.equal(recruit.businessDescription,undefined,'preview must be pure');
+ assert.equal(recruit.businessDescription,'','preview must be pure');
  assert.equal(applyCompanyEnrichment(s,plan),2);
  assert.equal(recruit.businessDescription,recruiter[4]);
  assert.equal(machine.businessDescription,machinery[4]);
@@ -81,7 +81,7 @@ const csv=[headers,csvRow(recruiter),csvRow(recruiter),csvRow(machinery),csvRow(
  const plan=planCompanyEnrichment(s,csv,{replaceResearchCopy:false});
  recruit.researchRationale='Concurrent research change';
  assert.throws(()=>applyCompanyEnrichment(s,plan),/changed since preview/);
- assert.equal(machine.businessDescription,undefined,'conflicted transaction changes nothing');
+ assert.equal(machine.businessDescription,'','conflicted transaction changes nothing');
  const badReg=csv.replace('"00001234"','"99999999"');
  assert.equal(planCompanyEnrichment(s,badReg).conflicts,1,'identity conflict reported, not merged');
  const badDomain=csv.replace('"fictional-penta.example"','"other-subsidiary.example"').replace('"00001234"','""');
