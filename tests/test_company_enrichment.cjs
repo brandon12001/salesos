@@ -72,6 +72,8 @@ const csv=[headers,csvRow(recruiter),csvRow(recruiter),csvRow(machinery),csvRow(
  assert.equal(plan.manualDescriptionsProtected,1);
  applyCompanyEnrichment(s,plan);
  assert.equal(recruit.businessDescription,'Personally checked recruitment company profile.');
+ assert.match(recruit.descriptionVerification,/Manually edited/,'CSV must not claim it verified a manual rewrite');
+ assert.equal(recruit.descriptionSources,'','old sources should not be falsely attached to new text');
  assert.equal(recruit.standardisedIndustry,'Recruitment & Staffing','other fields can still be enriched');
  assert.equal(industryForLead(s,recruit),'recruitment');
  console.log('PASS: user descriptions protected from CSV reimports');
