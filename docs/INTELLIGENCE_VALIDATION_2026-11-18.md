@@ -43,3 +43,9 @@ A cloud-configured test bundle emits Vite's existing >500 kB chunk advisory (app
 Hosted end-to-end acceptance using a separate fictional-only account, a physical second device and work-browser clipboard permissions are not covered by the localhost suite. They remain release checks. Weights, thresholds and effort estimates have not been empirically calibrated; the app does not claim causal attribution, optimal calling windows, switching probabilities or proven conversion improvement.
 
 This draft adds no production migration and does not merge/deploy or enable production automation. The feature branch's Vercel Git deployment is explicitly disabled. Review [the configuration and implementation guide](INTELLIGENCE_V1.md) before an approval-dependent release.
+
+## Cold Call Mode follow-up — 18 November 2026
+
+The user requested a visible on/off calling filter. The former Call block preference is now a persisted **Cold call mode** switch. Legacy, shadow and enabled Intelligence modes filter to eligible due calls/callbacks, stop at an explanatory empty state rather than falling back to non-call work, and resume ordinary work when switched off. Due promised actions and meetings remain protected, with a visible explanation. Power Hour and alternative actions use the same filter.
+
+`npm test`, `npm run build` and the full compiled `npm run test:browser` passed after this change. New fictional-only tests cover keyboard switching, navigation/reload, unchanged non-call tasks and activity history, original future cadence, protected promises, account-scoped preferences, JSON compatibility, no reserve activation on preference changes, and 320/390/768/1440px toolbar layouts. No production workspace was accessed or changed; this remains in draft PR #4, with branch deployments disabled.

@@ -14,6 +14,14 @@ Working hours and days use the browser's local timezone. Defaults are Monday–F
 
 Daily call/task/meeting targets, dial accounting, call-duration/KPI minutes and XP rules retain their existing definitions. Recommendation estimates and elapsed session time do not add activity or KPI minutes.
 
+## Cold Call Mode
+
+The Focus toolbar has an explicit **Cold call mode** switch, OFF by default. ON filters Focus to eligible due calls and callbacks in legacy, shadow and enabled Intelligence modes. It does not fall back to email, LinkedIn, research or other routine work when calls run out. Instead, “No eligible calls due” explains that other work is still queued and offers a one-click way to turn the mode off.
+
+Due promised actions and meetings remain the explicit exception: they stay first so a calling session cannot hide a commitment. Alternatives and Power Hour use the same filter. No future call is pulled forward, no email is converted into a call, and eligibility/suppression rules remain in place.
+
+The optional numeric setting `coldCallMode` is saved through the existing account workspace, survives navigation/reload and JSON backup, and is independent of the Intelligence enable setting. Changing this view preference logs no activity, changes no tasks and does not invoke reserve replenishment. OFF restores normal prioritisation. It is part of draft PR #4 and is not deployed without approval.
+
 ## Five-step decision pipeline
 
 ### A. Eligibility
@@ -30,7 +38,7 @@ Existing due actions are considered alongside a small set of generated suggestio
 
 A future pending schedule prevents speculative extra tasks for that prospect. New suggestions for an active prospect without work are virtual: viewing, copying or cancelling a dialog creates no task. Explicit outcome submission creates the task and logs its outcome atomically through the existing local/cloud save boundary. A chosen alternative may cancel only its directly superseded non-promised sequence/follow-up; other history and commitments remain intact.
 
-Due protected actions sort ahead of every numerical score, in deadline order. Call block and alternative selection cannot displace them. Results use stable IDs/tie-breaks and a caller-supplied clock.
+Due protected actions sort ahead of every numerical score, in deadline order. Cold Call Mode and alternative selection cannot displace them. Results use stable IDs/tie-breaks and a caller-supplied clock.
 
 ### C. Scoring and explanations
 

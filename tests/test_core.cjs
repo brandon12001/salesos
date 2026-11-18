@@ -112,3 +112,24 @@ for(const outcome of ['no_answer','gatekeeper','wrong_person','bad_number','left
  C.logCall(staleDialog,C.nextTask(staleDialog),{outcome,readiness:5,evidence:'Stale hidden conversation evidence'});
  assert.equal(staleLead.readiness,1,outcome+' is not buyer progression');assert.equal(staleDialog.readinessHistory.length,0);
 }
+
+// Cold Call Mode filters routine work without completing or rescheduling it.
+const callsOnly=C.newState();
+const callLead=C.createLead(callsOnly,{company:'Fictional Cold Call Filter',contact:'Taylor Example',mobile:'07700900711',email:'taylor@example.invalid'});
+const callingTask=C.nextTask(callsOnly);
+const ordinaryEmail=C.addTask(callsOnly,callLead,'email','Fictional queued email',C.today(),{origin:'manual',contactId:callLead.contacts[0].id});
+const ordinaryResearch=C.addTask(callsOnly,callLead,'research','Fictional queued research',C.today());
+assert.equal(C.nextTask(callsOnly,{callBlock:true}).id,callingTask.id);
+callingTask.status='completed';
+const unchanged=JSON.stringify(callsOnly);
+assert.equal(C.nextTask(callsOnly,{callBlock:true}),null,'never fall back to email or research when calls run out');
+assert.equal(JSON.stringify(callsOnly),unchanged,'filtering cannot change task or activity history');
+assert.ok(C.nextTask(callsOnly),'switching off resumes ordinary work');
+assert.equal(ordinaryEmail.status,'pending');assert.equal(ordinaryResearch.status,'pending');
+const protectedEmail=C.addTask(callsOnly,callLead,'email','Fictional promised information',C.today(),{isCommitment:true,contactId:callLead.contacts[0].id});
+assert.equal(C.nextTask(callsOnly,{callBlock:true}).id,protectedEmail.id,'due non-call promises remain protected');
+protectedEmail.status='completed';
+const futureCall=C.addTask(callsOnly,callLead,'call','Fictional future call',C.addDays(C.today(),1),{contactId:callLead.contacts[0].id});
+assert.equal(C.nextTask(callsOnly,{callBlock:true}),null,'mode does not pull future calls forward');
+assert.equal(futureCall.dueAt,C.addDays(C.today(),1));
+console.log('COLD CALL MODE PASS: strict filtering, empty queue, due promises and unchanged schedules/history');

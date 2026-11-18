@@ -91,5 +91,6 @@ export function evaluate(s:State,now:Date):Decision{
 }
 export function selectRecommendation(d:Decision,{callBlock=false,preferredId=''}={}){
  if(d.recommendations[0]?.protected)return d.recommendations[0];
- return d.recommendations.find(r=>r.id===preferredId)||(callBlock?d.recommendations.find(r=>['call','callback'].includes(r.task.type)):null)||d.recommendations[0]||null;
+ const candidates=callBlock?d.recommendations.filter(r=>['call','callback'].includes(r.task.type)):d.recommendations;
+ return candidates.find(r=>r.id===preferredId)||candidates[0]||null;
 }

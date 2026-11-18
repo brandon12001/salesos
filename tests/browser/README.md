@@ -28,3 +28,5 @@ Local authentication does not certify hosted email delivery/redirect policy, a p
 ## Intelligence v1 coverage
 
 `intelligence.cjs` also exercises shadow/enable/off settings, optional structured buyer evidence, keyboard focus/Escape, exact route/copy accounting, virtual-action execution, explicit alternative feedback and cancellation audit, session duration/end reload, enhanced refill opt-in and method/status gates. Intelligence data is round-tripped through real local Auth/DB reload, offline/reconnect, competing saves with recovery exports and a different fictional account's JSON restore. The same external-network block and disposable-data restrictions apply.
+
+`cold_call.cjs` checks the calls filter in all three recommendation modes, keyboard on/off, navigation/reload, unchanged non-call work, no premature future calls, protected meetings/callbacks, mobile toolbar widths, account-scoped preferences and no activation side effect from toggling.

@@ -21,7 +21,7 @@ One task displayed in Focus Mode at a time. Management screens exist, but are se
 - Call outcomes should include No Answer, Connected, Wrong Person, Bad Number and quick access to appropriate outcomes (callback, meeting, disqualified, negative nurture, closed lost, take off list).
 - **No Answer must be near one click**, log attempt and advance sequence without a questionnaire. Connected/engaged reveals an *optional*, fast FX qualification panel plus readiness and next-milestone update. Unknown fields may stay blank.
 - Quick shortcuts already envisaged: `M` toggle menu, `C` copy number, `N` no answer, `G` connected/log, `W` wrong person, `B` bad number, `S` skip/snooze. Do not capture shortcuts while a text input, select or textarea is active.
-- Call block mode may focus on calls without overriding urgent commitments. Snooze/skip must not falsely count tasks as completed.
+- Cold Call Mode is an on/off Focus toggle: show eligible due calls and callbacks, with no fallback to routine non-call tasks. Due promised actions and meetings retain priority. Other work stays queued unchanged; the preference survives navigation and reload. Snooze/skip must not falsely count tasks as completed.
 - Expandable context sections show history, buyer readiness, barrier, commercial facts and notes; collapse by default.
 - For manual email task: provide **copyable suggested subject and body**; user pastes into Outlook and explicitly clicks Sent. This may be incomplete in current code (currently primary email action copies address only). LinkedIn connection/message opens the user's profile and the user marks actual completion manually; do not auto-connect or auto-message.
 

@@ -10,7 +10,7 @@ export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
  const result:SessionPlan={actions:[],remainingMinutes,unusedMinutes:remainingMinutes,warnings};if(!remainingMinutes)return result;
  // Only known commitments reserve time. No external calendar or calling-window assumptions.
  const future=s.tasks.filter(t=>t.status==='pending'&&protectedTask(t)&&+scheduledAt(t)>+now&&+scheduledAt(t)<=end).sort((a,b)=>+scheduledAt(a)-+scheduledAt(b));
- const ready=[...evaluate(s,now).recommendations],used=new Set<string>(),companies=new Set<string>();
+ const ready=evaluate(s,now).recommendations.filter(r=>s.settings.coldCallMode!==1||r.protected||['call','callback'].includes(r.task.type)),used=new Set<string>(),companies=new Set<string>();
  let cursor=+now,lastType='';
  while(cursor<end){
   const nextPromise=future.find(t=>!used.has(t.id));

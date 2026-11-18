@@ -391,7 +391,7 @@
     if(taskTier(a)===5){const schedule=a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59');if(schedule)return schedule}
     return taskScore(s,b)-taskScore(s,a)||a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'').localeCompare(b.dueTime||'');
   })}
-  function nextTask(s,options={}){const d=due(s);if(d[0]&&taskTier(d[0])===5)return d[0];if(options.callBlock){let calls=d.filter(t=>['call','callback'].includes(t.type)||t.isCommitment);return calls[0]||d[0]||null}return d[0]||null}
+  function nextTask(s,options={}){const d=due(s);if(d[0]&&taskTier(d[0])===5)return d[0];if(options.callBlock)return d.find(t=>['call','callback'].includes(t.type))||null;return d[0]||null}
   function xpStats(s){let total=s.activities.reduce((sum,a)=>sum+num(a.xp),0);return {total,level:Math.floor(total/1000)+1,progress:total%1000}}
   // Rescheduling is audit history, not completed work. Preserve old backup formats.
   const isCompletionActivity=a=>a.taskId&&!['Snoozed','Skipped to next working day'].includes(a.outcome);
