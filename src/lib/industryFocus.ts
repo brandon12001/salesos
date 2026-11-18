@@ -75,7 +75,9 @@ export function isProtectedIndustryTask(t:Task){
 }
 export function industryAllowsTask(s:State,t:Task){
  const c=industryFocusConfig(s);
- if(!c.enabled||isProtectedIndustryTask(t)||!t.leadId)return true;
+ if(!c.enabled||isProtectedIndustryTask(t))return true;
+ // A generic lead-generation/admin suggestion has no attributable industry. It must not silently break a focused prospecting session.
+ if(!t.leadId)return false;
  const lead=s.leads.find(l=>l.id===t.leadId);
  return !!lead&&industryForLead(s,lead)===c.category;
 }
