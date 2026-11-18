@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {core} from '../lib/core';
-import {filterIndustryDecision,filteredIndustryTasks,industryAllowsTask,industryFocusConfig,industryLabel,industryLegacyNext,industryOptions,industrySupply,industryForLead,isProtectedIndustryTask} from '../lib/industryFocus';
+import {filterIndustryDecision,filteredIndustryTasks,industryFocusConfig,industryLabel,industryLegacyNext,industryOptions,industrySupply,industryForLead,isProtectedIndustryTask} from '../lib/industryFocus';
 import {salesforceStatus,SF_STATUSES} from '../lib/salesforceContacts';
 import {contactFor,dialFor,emailFor,linkedInFor,latestActivity} from '../lib/helpers';
 import type {Activity,Contact,State,Task,Lead} from '../types';
