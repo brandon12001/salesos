@@ -4,5 +4,10 @@
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "git": {"deploymentEnabled": {"feature/intelligence-v1": false}}
+  "git": {
+    "deploymentEnabled": {
+      "feature/intelligence-v1": false,
+      "feature/focus-workflow-v2": false
+    }
+  }
 }

@@ -245,15 +245,18 @@
     if(outcome==='callback'&&!opts.callbackDate)return {error:'Choose the promised callback date.'};
     if(['negative_nurture','disqualified','closed_lost','optout'].includes(outcome)&&!String(opts.reason||'').trim())return {error:'Please record the reason.'};
     if(readinessOutcome&&opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness&&!String(opts.evidence||'').trim())return {error:'Readiness changes need supporting evidence.'};
-    const names={no_answer:'No answer',gatekeeper:'Gatekeeper',connected:'Meaningful conversation',callback:'Callback requested',meeting_booked:'Meeting booked',wrong_person:'Wrong person / not responsible',bad_number:'Bad or invalid number',left_company:'Contact left company',negative_nurture:'Negative nurture',disqualified:'Disqualified',closed_lost:'Closed lost',optout:'Take Me Off the List'};
+    const names={no_answer:'No answer',gatekeeper:'Gatekeeper',answered_no_conversation:'Answered — No Conversation',connected:'Meaningful conversation',callback:'Callback requested',meeting_booked:'Meeting booked',wrong_person:'Wrong person / not responsible',bad_number:'Bad or invalid number',left_company:'Contact left company',negative_nurture:'Negative nurture',disqualified:'Disqualified',closed_lost:'Closed lost',optout:'Take Me Off the List'};
     const connected=['connected','callback','meeting_booked','negative_nurture','closed_lost','disqualified'].includes(outcome);
-    const xp=outcome==='meeting_booked'?20:connected?15:outcome==='no_answer'||outcome==='gatekeeper'?2:0;
-    markCompleted(s,t,'Call',names[outcome]||outcome,opts.notes||'',xp,{durationMins:clamp(opts.minutes??0,0,240)});
+    const xp=outcome==='meeting_booked'?20:connected?15:outcome==='no_answer'||outcome==='gatekeeper'||outcome==='answered_no_conversation'?2:0;
+    markCompleted(s,t,'Call',names[outcome]||outcome,opts.notes||'',xp,{durationMins:clamp(opts.minutes??0,0,240),contactId:c?.id||t.contactId||null,callOutcome:outcome,roleAtCall:connected&&opts.decisionMakerConfirmed?'decision_maker':c?.roleStatus||'unknown',...(['no_answer','answered_no_conversation','gatekeeper','connected','callback','meeting_booked','wrong_person','negative_nurture','closed_lost','disqualified','optout'].includes(outcome)?{answered:outcome!=='no_answer'}:{}),...(outcome==='answered_no_conversation'?{answerReason:String(opts.reason||'')}: {})});
     if(connected){l.lastMeaningfulAt=new Date().toISOString();if(c)c.lastMeaningfulAt=l.lastMeaningfulAt}
     if(connected&&opts.decisionMakerConfirmed&&c){c.roleStatus='decision_maker';const milestoneXP=reward(s,l,'decision-maker-engaged',40,'Decision-maker engagement confirmed during a call');if(milestoneXP)log(s,l,'Milestone','Decision-maker engaged',opts.notes||'Confirmed decision-maker',milestoneXP)}
     if(readinessOutcome&&opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness){setReadiness(s,l,Number(opts.readiness),opts.evidence,{barrier:opts.barrier,nextMilestone:opts.nextMilestone})}
     else if(connected){if(opts.barrier!==undefined)l.barrier=String(opts.barrier||'');if(opts.nextMilestone)l.nextMilestone=String(opts.nextMilestone)}
-    if(outcome==='no_answer'||outcome==='gatekeeper'){
+    if(outcome==='answered_no_conversation'&&opts.reason==='Declined to speak'){
+      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&['sequence','followup'].includes(x.origin),'Review respectful approach after declined conversation');
+      if(active(l))addTask(s,l,'review','Review whether a further approach is appropriate',businessAdd(today(),5),{origin:'answered_review',description:'The contact declined to speak; this is not an opt-out. Review timing and relevance before further outreach.',dedupeKey:`answered_review:${l.id}:${t.id}`});
+    }else if(outcome==='no_answer'||outcome==='gatekeeper'||outcome==='answered_no_conversation'){
       if(t.origin==='sequence')nextSequence(s,l,t);
       else if(active(l))addTask(s,l,'call','Retry contact — vary call time',businessAdd(today(),2),{origin:'followup',contactId:c?.id||null,objective:'Establish contact',dedupeKey:`retry:${l.id}:${t.id}`});
     }else if(outcome==='wrong_person'||outcome==='left_company'){
@@ -266,13 +269,13 @@
       if(alternative){let m=anyPhone(alternative);addTask(s,l,'call','Try alternative verified contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
       else addRepair(s,l,'Find a new valid number, email-only route, or a different finance decision-maker.',today(),c?.id);
     }else if(outcome==='callback'){
-      l.sequenceState='paused';cancelTasks(s,l,x=>x.origin==='sequence'||x.origin==='followup','Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
+      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&(x.origin==='sequence'||x.origin==='followup'),'Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
     }else if(outcome==='meeting_booked'){
       l.sequenceState='paused';
       if(stageIndex(l.stage)<stageIndex('Meeting Booked'))advanceStage(s,l,'Meeting Booked',opts.notes||'Meeting booked',opts.callbackDate||'',opts.callbackTime||'');
       else if(opts.callbackDate)addTask(s,l,'meeting','Attend follow-up meeting',opts.callbackDate,{origin:'commitment',dueTime:opts.callbackTime||'',isCommitment:true,description:opts.notes||'',dedupeKey:`meeting:${l.id}:${opts.callbackDate}:${opts.callbackTime||''}`});
     }else if(outcome==='connected'){
-      l.sequenceState='paused';cancelTasks(s,l,x=>x.origin==='sequence'||x.origin==='followup','Meaningful conversation');
+      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&(x.origin==='sequence'||x.origin==='followup'),'Meaningful conversation');
       if(opts.callbackDate)scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
       if(active(l)&&!s.tasks.some(x=>x.leadId===l.id&&x.status==='pending'&&(x.isCommitment||x.origin==='stage'))){
         let due=opts.callbackDate||businessAdd(today(),2);

@@ -1,3 +1,15 @@
+# Current update — 18 November 2026: Focus Mode 2.0 review candidate
+
+This section supersedes older release states below. PR #4 (Intelligence v1 / Cold call mode) was approved, merged and deployed. Current production main is `b2c388c0fda805cb614c9aaebc5a5f0c4fe23cea`; immutable deployment https://salesos-i13a9nlsl-up-next7.vercel.app and canonical https://salesos-up-next7.vercel.app. Earlier draft/unmerged statements below are historical.
+
+New work is on `feature/focus-workflow-v2`, based on that main. The user requested **draft PR only; no merge, deployment, production migration or real workspace changes**. Vercel deployment is disabled for the feature branch. Implementation and synthetic tests are described in [Focus workflow v2](FOCUS_WORKFLOW_V2.md).
+
+Implemented: Save & Stay/Next, session task navigation/review, same-contact channels, accepted/deduplicated manual follow-up email, searchable persisted history and audited simple edits, Answered — No Conversation. **Outcome-changing correction/reconciliation is deferred to a separate PR**, as explicitly permitted by the request; this release keeps outcomes read-only.
+
+Production data has progressed beyond the initial ten prospects. Never restore an old ten-record snapshot or use production records as test fixtures. This phase uses disposable local Auth/Postgres and fictional browser accounts only. No new migration or infrastructure is introduced. `npm test`, `npm run build` and the full production-bundle `npm run test:browser` all pass locally. See [validation and limits](FOCUS_WORKFLOW_V2_VALIDATION.md). Await explicit approval after review before publishing to production.
+
+---
+
 # SalesOS — current Codex handoff (17 November 2026)
 
 ## Intelligence development — current branch, 18 November 2026

@@ -2,7 +2,8 @@ import type {Lead,Task,Contact} from '../types';
 import {core} from './core';
 export function contactFor(lead:Lead|null|undefined,task?:Task|null):Contact|null{
   if(!lead)return null;
-  return (task?.contactId&&core.getContact(lead,task.contactId))||core.preferredContact(lead,task?.type==='callback'?'call':task?.type||'call')||lead.contacts[0]||null;
+  if(task?.contactId)return core.getContact(lead,task.contactId);
+  return core.preferredContact(lead,task?.type==='callback'?'call':task?.type||'call')||lead.contacts[0]||null;
 }
 export function dialFor(contact:Contact|null,task?:Task|null):string{
   if(!contact)return '';
