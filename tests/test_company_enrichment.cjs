@@ -42,10 +42,10 @@ const csv=[headers,csvRow(recruiter),csvRow(recruiter),csvRow(machinery),csvRow(
  assert.equal(recruit.crmClearance,snapshot.lead.crmClearance,'CSV Hold must not change clearance');
  assert.equal(recruit.opportunityScore,92,'CSV score ignored');
  assert.equal(recruit.researchDate,snapshot.lead.researchDate);
- assert.deepEqual(s.tasks,snapshot.tasks);
- assert.deepEqual(s.activities,snapshot.activities);
- assert.deepEqual(s.leads.map(l=>l.contacts),snapshot.contacts);
- assert.deepEqual(s.settings,snapshot.settings);
+ assert.equal(JSON.stringify(s.tasks),JSON.stringify(snapshot.tasks));
+ assert.equal(JSON.stringify(s.activities),JSON.stringify(snapshot.activities));
+ assert.equal(JSON.stringify(s.leads.map(l=>l.contacts)),JSON.stringify(snapshot.contacts));
+ assert.equal(JSON.stringify(s.settings),JSON.stringify(snapshot.settings));
  assert.equal(s.leads.length,2,'enrichment never creates new companies');
  assert.equal(planCompanyEnrichment(s,csv,{replaceResearchCopy:false}).changed,0,'repeat import idempotent');
  const normalized=core.normalize(JSON.parse(JSON.stringify(s)));
