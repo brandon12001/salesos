@@ -150,3 +150,8 @@ A high-volume day should be comfortable: user opens website, sees one relevant a
 ## Focus workflow v2 review candidate
 
 See [Focus workflow v2](FOCUS_WORKFLOW_V2.md) for Save & Stay/Next, historical review navigation, same-contact channels, accepted follow-up email, simple audited edits and Answered — No Conversation. Outcome corrections remain deferred; no automatic send or additional integration. This candidate requires explicit merge/deploy approval.
+
+
+## Manual Salesforce contact administration review candidate
+
+See [Salesforce Contacts](SALESFORCE_CONTACTS.md) for independent per-person Not Checked / Needs Adding / Added status, Focus Quick Add and the separate administration queue. This introduces manual copying and confirmation only, no integration or new sales tasks. Company ownership, suppression and sales progression remain independent. New approval is required before merge/deployment.

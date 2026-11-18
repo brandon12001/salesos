@@ -78,6 +78,9 @@
   function buildContact(data={}){let out={id:data.id||uid(),name:String(data.name||data.contact||'').trim(),title:String(data.title||'').trim(),roleStatus:data.roleStatus||'unknown',active:data.active!==false,optedOut:!!data.optedOut,linkedinConnected:!!data.linkedinConnected,methods:[],notes:String(data.notes||'').trim()};
     if(Array.isArray(data.methods)){out.methods=data.methods.filter(x=>x&&x.value&&['mobile','phone','email','linkedin'].includes(x.kind)).map(x=>({...x,id:x.id||uid(),status:x.status||'unverified'}))}
     else for(let kind of ['mobile','phone','email','linkedin']) if(data[kind])out.methods.push(method(kind,data[kind]));
+    out.salesforceStatus=['not_checked','needs_adding','added'].includes(data.salesforceStatus)?data.salesforceStatus:'not_checked';
+    out.salesforceStatusUpdatedAt=String(data.salesforceStatusUpdatedAt||'');out.salesforceVerificationNote=String(data.salesforceVerificationNote||'');
+    for(const key of ['firstName','lastName','lastMeaningfulAt'])if(typeof data[key]==='string')out[key]=data[key];
     return out;
   }
   const defaultFX=()=>({provider:'',products:[],currentPricing:'',hedgePct:'',hedgeTenor:'',paymentTiming:'',budgetRate:'',notes:'',flows:[],updatedAt:''});

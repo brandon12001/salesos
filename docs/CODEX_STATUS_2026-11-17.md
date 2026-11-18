@@ -1,3 +1,13 @@
+# Current update — 18 November 2026: manual Salesforce contact administration
+
+This section supersedes older release statements below. The user approved PR #5 with “Deploy it”. It was merged as `e9705a7ba1e5de2791e999e4447636aaafbeb2d1` and released READY in Vercel deployment `dpl_EybRtFNkDJXFi9RDBxacNdXj8MZs`, https://salesos-n3t0l19rc-up-next7.vercel.app, canonical https://salesos-up-next7.vercel.app/. The production tree exactly matched tested PR head `d015676`. No database migration or workspace write was performed. Live authenticated acceptance remains a manual user check; deployment assets returned HTTP 200.
+
+The next user request is **Salesforce Contact Queue & Focus Mode Quick Add**, implemented on `feature/salesforce-contact-queue` from released main. This means manual copy/confirmation only, never a Salesforce integration. Contact creation status is independent of company ownership. See [workflow and limits](SALESFORCE_CONTACTS.md) and [validation](SALESFORCE_CONTACTS_VALIDATION.md). All seven unit/regression suites, strict production build and the full isolated production-bundle browser suite pass locally, including 350-contact queue, clipboard fallback and status sign-out/sign-in.
+
+This phase is **draft PR only**: do not merge, deploy, run production migrations or alter real prospects without new approval. The earlier PR #5 deployment approval does not cover this work. Feature-branch deployment is disabled in `vercel.json`. There are no open competing PRs at branch creation; old manual-email/Lusha branches were inspected, and their changes already exist in main. Preserve Focus Mode 2.0 and its independent seven stages/eight readiness levels. Use synthetic accounts only; never reset production to the original ten-record fixture.
+
+---
+
 # Current update — 18 November 2026: Focus Mode 2.0 review candidate
 
 This section supersedes older release states below. PR #4 (Intelligence v1 / Cold call mode) was approved, merged and deployed. Current production main is `b2c388c0fda805cb614c9aaebc5a5f0c4fe23cea`; immutable deployment https://salesos-i13a9nlsl-up-next7.vercel.app and canonical https://salesos-up-next7.vercel.app. Earlier draft/unmerged statements below are historical.
