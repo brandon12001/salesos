@@ -51,7 +51,8 @@ export function saveManualBusinessDescription(s:State,id:string,value:string,exp
  l.businessDescription=cleaned;
  l.businessDescriptionEditedAt=new Date().toISOString();
  l.descriptionVerification='Manually edited in SalesOS; source not independently checked';
- l.researchReviewFlag=l.researchReviewFlag||'Verify the description against the company website';
+ l.descriptionSources=''; // Prior imported sources may no longer support the manually changed wording.
+ l.researchReviewFlag='Verify the manually edited description against the company website';
  return l;
 }
 export function planCompanyEnrichment(s:State,text:string,options:EnrichmentOptions={replaceResearchCopy:false}):EnrichmentPlan {
@@ -102,7 +103,10 @@ export function planCompanyEnrichment(s:State,text:string,options:EnrichmentOpti
   const patch:EnrichmentPatch={};
   for(const [key,val] of Object.entries(item.fields) as [EnrichmentField,string][]){
    if(!val)continue; // Missing CSV evidence must not blank existing facts or notes.
-   if(key==='businessDescription'&&match.businessDescriptionEditedAt){plan.manualDescriptionsProtected++;continue;}
+   if(match.businessDescriptionEditedAt&&['businessDescription','descriptionVerification','descriptionSources','researchReviewFlag'].includes(key)){
+    if(key==='businessDescription')plan.manualDescriptionsProtected++;
+    continue;
+   }
    if(val!==(match[key]||''))patch[key]=val;
   }
   if(!Object.keys(patch).length){plan.unchanged++;continue;}
