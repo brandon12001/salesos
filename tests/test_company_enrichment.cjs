@@ -86,8 +86,8 @@ const csv=[headers,csvRow(recruiter),csvRow(recruiter),csvRow(machinery),csvRow(
  assert.equal(planCompanyEnrichment(s,badReg).conflicts,1,'identity conflict reported, not merged');
  const badDomain=csv.replace('"fictional-penta.example"','"other-subsidiary.example"').replace('"00001234"','""');
  assert.ok(planCompanyEnrichment(s,badDomain).conflicts>=1,'name-only domain disagreement blocked');
- const ambiguous=core.createLead(s,{company:'Fictional Penta Recruitment Ltd',companyNumber:'88888888',contact:'Different Person',mobile:'07700900125'});
- assert.ok(ambiguous);
+ // Synthetic duplicate store record: normal UI correctly prevents creating this collision.
+ s.leads.push({...structuredClone(recruit),id:'fictional-duplicate-company',companyNumber:'88888888'});
  assert.equal(planCompanyEnrichment(s,csv).ambiguous,1,'duplicate company name blocked');
  assert.throws(()=>importLusha(s,csv),/Business Clarity CSV/,'regular importer refuses this file');
  console.log('PASS: stale snapshot atomic rejection, legal ID/domain collisions, ambiguity and safe importer route');
