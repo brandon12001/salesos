@@ -33,7 +33,6 @@ const columns:ReadonlyArray<readonly [string,EnrichmentField]>=[
  ['Original Research Hypothesis','researchHypothesis']
 ];
 const CORE_FIELDS:EnrichmentField[]=['businessDescription','standardisedIndustry','countriesMentioned','currenciesConfirmed','potentialCurrencyPairs','internationalActivityEvidence','descriptionVerification','researchReviewFlag','descriptionSources'];
-const RESEARCH_FIELDS:EnrichmentField[]=['researchRationale','callObjective','researchHypothesis'];
 const LIMITS:Partial<Record<EnrichmentField,number>>={businessDescription:500,standardisedIndustry:120,countriesMentioned:600,currenciesConfirmed:300,potentialCurrencyPairs:300,internationalActivityEvidence:1200,descriptionVerification:250,researchReviewFlag:500,descriptionSources:15000,researchRationale:2000,callObjective:1000,researchHypothesis:1500};
 function rowFingerprint(record:{name:string;number:string;domain:string;fields:EnrichmentPatch}){
  return JSON.stringify([record.name,record.number,record.domain,record.fields]);
