@@ -15,6 +15,7 @@ module.exports=async function({a,saved,state,restore,nav,core}){
  await upload();await a.getByText('Enrichment preview — nothing saved yet',{exact:true}).waitFor();
  await a.getByRole('button',{name:'Update 2 matched company profiles'}).waitFor();
  assert.equal((await state(a)).leads[0].businessDescription,'','upload preview must not save data');
+ a.once('dialog',dialog=>void dialog.accept());
  await a.getByRole('button',{name:'Update 2 matched company profiles'}).click();await saved(a);
  let updated=await state(a);
  assert.equal(updated.leads[0].businessDescription,recruiter[4]);
