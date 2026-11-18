@@ -2,7 +2,7 @@
 
 This section supersedes older release states below. PR #4 (Intelligence v1 / Cold call mode) was approved, merged and deployed. Current production main is `b2c388c0fda805cb614c9aaebc5a5f0c4fe23cea`; immutable deployment https://salesos-i13a9nlsl-up-next7.vercel.app and canonical https://salesos-up-next7.vercel.app. Earlier draft/unmerged statements below are historical.
 
-New work is on `feature/focus-workflow-v2`, based on that main, in **[draft PR #5](https://github.com/brandon12001/salesos/pull/5)**. Tested implementation commit: `057dfb641daed5d4f1e547935bd553ac09866972`. The user requested **draft PR only; no merge, deployment, production migration or real workspace changes**. Vercel deployment is disabled for the feature branch. Implementation and synthetic tests are described in [Focus workflow v2](FOCUS_WORKFLOW_V2.md).
+New work is on `feature/focus-workflow-v2`, based on that main, in **[draft PR #5](https://github.com/brandon12001/salesos/pull/5)**. Initial workflow implementation commit: `057dfb641daed5d4f1e547935bd553ac09866972`. The user requested **draft PR only; no merge, deployment, production migration or real workspace changes**. Vercel deployment is disabled for the feature branch. Implementation and synthetic tests are described in [Focus workflow v2](FOCUS_WORKFLOW_V2.md).
 
 Implemented: Save & Stay/Next, session task navigation/review, same-contact channels, accepted/deduplicated manual follow-up email, searchable persisted history and audited simple edits, Answered — No Conversation. **Outcome-changing correction/reconciliation is deferred to a separate PR**, as explicitly permitted by the request; this release keeps outcomes read-only.
 

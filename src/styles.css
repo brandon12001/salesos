@@ -22,3 +22,5 @@
 @media(max-width:600px){.focus-navigation{align-items:stretch}.focus-navigation details{margin-left:0;width:100%}.focus-navigation button{white-space:normal}.history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.activity-row{flex-direction:column}.contact-channels>div{flex-wrap:wrap}.contact-channels span{flex:1 1 150px}.post-actions .button-row{align-items:stretch}.post-actions .btn{white-space:normal}.prospect-workspace .section-between{flex-wrap:wrap}.focus-navigation select{width:100%}}
 
 .focus-navigation{width:min(970px,100%)}.recorded-result{color:#7fe0b4}.history-filters select{width:100%;min-width:0}.activity-row:hover{border-color:#729ce0}
+
+.prospect-workspace,.post-call-editor{min-width:0;grid-template-columns:minmax(0,1fr)}.prospect-workspace .btn{min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}.focus-primary-action strong{overflow-wrap:anywhere}

@@ -1,6 +1,6 @@
 # Focus Mode 2.0 validation — 18 November 2026
 
-**Local result:** all commands below exited 0 on 18 November 2026. History navigation plus search took 357 ms with the large synthetic fixture; final Focus navigation samples were 298–316 ms in this cloud browser. These are observations, not latency guarantees.
+**Local result:** all commands below exited 0 on 18 November 2026. History navigation plus search took 330–357 ms with the large synthetic fixture; Focus navigation samples were 298–419 ms in this cloud browser. The final rerun also passed with Playwright Chromium 159 (the CI browser), after the mobile-wrap correction. These are observations, not latency guarantees.
 
 Candidate branch: `feature/focus-workflow-v2`. Base: released main `b2c388c`. Review only; production and its workspace were not changed. No migration, additional dependency or integration is introduced.
 
@@ -35,6 +35,7 @@ Candidate branch: `feature/focus-workflow-v2`. Base: released main `b2c388c`. Re
 - There was no accepted, linked and deduplicated post-call email action.
 - Task Queue **Open** could immediately complete email/other simple tasks. It now opens those in Focus and requires explicit completion. A browser regression reproduced the old behavior and covers the fix.
 - Some generic call-cadence cancellation predicates did not exempt explicit promises; connected/callback outcomes now retain those commitments.
+- CI caught a 320 px post-call overflow under its Chromium build. Review grids now allow shrinking and long controls wrap; layout failures report overflowing element geometry. CI screenshot upload now explicitly includes the hidden test-artifact directory.
 - Answered calls without conversations could only be misclassified; the new outcome separates answered and meaningful-conversation statistics.
 
 ## Remaining limits and manual review
