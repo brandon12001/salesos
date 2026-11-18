@@ -74,6 +74,7 @@ async function recoveryDownload(p,button,file){const pending=p.waitForEvent('dow
  console.log('PASS: five reserve entries passive, auto-off, unknown/hold activation blocked, dated reclaim and explicit approval');
  await nav(a,'Settings');const exported=await recoveryDownload(a,'Export full JSON backup','full-backup.json');assert.deepEqual(exported,await state(a));await restore(other,exported);assert.deepEqual(await state(other),JSON.parse(JSON.stringify(core.normalize(exported))));
  console.log('PASS: full JSON export and restore into a separate fictional account');
+ await require('./intelligence.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,openNew,add,recoveryDownload});
  await restore(a,calling('Fictional Mobile Layout With A Long Company Name Ltd'));
  const timings=[];for(const width of [320,390,768,1440]){await a.setViewportSize({width,height:844});await nav(a,'Focus Mode');const overflow=await a.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth}));assert.ok(overflow.width<=overflow.viewport,`Focus overflows at ${width}: ${overflow.width}`);await a.screenshot({path:path.join(artifacts,'focus-'+width+'.png'),fullPage:true,animations:'disabled'});const start=Date.now();await nav(a,'Prospects');await a.getByRole('heading',{name:'Prospects',exact:true}).waitFor();timings.push(Date.now()-start);await nav(a,'Focus Mode')}
  assert.equal(errors.length,0,errors.join('\n'));console.log('PASS: 320/390/768/1440px Focus layout; navigation samples ms '+timings.join(','));
