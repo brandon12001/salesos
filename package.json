@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues",
+    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues && npm run test:kpi-first",
     "test:reserve": "node tests/test_reserve.cjs",
     "test:autosave": "node tests/test_autosave.cjs",
     "test:browser": "node tests/browser/run.cjs",
@@ -20,7 +20,8 @@
     "test:industry": "node tests/test_industry_focus.cjs",
     "test:company-enrichment": "node tests/test_company_enrichment.cjs",
     "test:call-preparation": "node tests/test_call_preparation.cjs",
-    "test:work-queues": "node tests/test_work_queues.cjs"
+    "test:work-queues": "node tests/test_work_queues.cjs",
+    "test:kpi-first": "node tests/test_kpi_first.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",
