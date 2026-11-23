@@ -6,6 +6,12 @@
 
 The priority order is: **(1) move viable prospects towards becoming customers; (2) increase meaningful sales activity and consistency; (3) improve organisation, eliminate missed follow-ups.** Every task should answer: who, why now, what is known, what to achieve, and what counts as meaningful progress. The default experience is one actionable task at a time in distraction-free Focus Mode, not a busy CRM dashboard.
 
+## Standing release authorisation — 23 November 2026
+
+The user explicitly instructed: **“auto deploy from now on dont ask me as it's not needed”.** Routine SalesOS development releases are authorised: after the requested change is complete, tested and reviewable, commit/push, merge and deploy automatically without another release confirmation. This supersedes older per-release approval/draft-only notes in this repository. Keep PRs and exact test/deployment results for traceability.
+
+Preserve production workspace/history, take a recoverable backup before a release, verify the intended repository/team/project/commit, and check deployment success before releasing a dependent client. Existing constraints on destructive changes, production-data testing, paid services and forbidden integrations remain. Stop and report a failed deployment or migration; do not reset or replace the workspace as recovery. Signed-in production tests remain separate from isolated fictional-data tests; the user previously chose to verify live sign-in manually.
+
 ## Historical first engineering task — already addressed in CI; see current handoff
 
 1. Inspect the existing source and run `npm install`, `npm run build`, and `npm test` inside your own **cloud** development environment. Fix any build/runtime failures. Do not ask the user to install software, open a terminal on their work laptop, or run a local server.

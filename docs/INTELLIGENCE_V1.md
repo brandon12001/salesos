@@ -1,3 +1,5 @@
+> **23 November update (draft commercial work queues):** Focus and Power Hour now apply the shared commercial queue/industry filters. Legacy/Off preserves legacy scoring and optional out-of-hours work, while the same ownership, suppression, due-time and contact-date gates now apply in selection and at outcome submission. This closes the older Off-mode eligibility exception described below. See [commercial queues](OPPORTUNITY_QUEUES.md). This change is not deployed.
+
 # SalesOS Intelligence v1 — review build
 
 This feature branch builds on merged PR #3 (`2ff33ace`). It does not authorise a production release. The seven acquisition stages, eight independent Buyer Readiness levels, statuses, suppression, manual communications, historical tasks and cloud revision checks remain in place. No AI, paid APIs, new packages, database schema or production migration are required.

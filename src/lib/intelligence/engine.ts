@@ -1,4 +1,5 @@
 import {coldPreparation} from '../callPreparation';
+import {commercialPurpose} from '../workQueues';
 // Pure decision functions: no clock reads, storage, network, IDs or mutations.
 import type {Lead,State,Task} from '../../types';
 import type {Decision,Recommendation} from './types';
@@ -17,6 +18,7 @@ function purpose(s:State,l:Lead,t:Task,now:Date){
  if(protectedTask(t))return {rule:'promise',title:t.title,objective:t.objective||'Deliver the agreed action before proposing another step',success:t.successCriteria||'The promise is delivered and the buyer confirms the next step',reason:'This agreed action is due; its schedule takes precedence over every speculative opportunity.'};
  if(t.origin==='repair'||t.type==='research')return {rule:'contact-repair',title:t.title,objective:'Identify the relevant finance decision-maker and verify a permitted channel',success:'A usable channel and the correct responsibility are established',reason:'Contact information needs repair before further outreach.'};
  if(['manual','progression','commitment','post_call'].includes(t.origin)&&(t.objective||t.description))return {rule:'recorded-next-step',title:t.title,objective:t.objective||t.description,success:t.successCriteria||'Deliver the recorded step and confirm the next buyer milestone',reason:'A specific next step is already recorded; it takes precedence over a generic approach.'};
+ const work=commercialPurpose(s,l,t,now);if(work&&(l.readiness||0)<=2)return work;
  if(l.stage==='Account Open')return {rule:'first-trade',title:'Identify the next payment and secure the first trade',objective:'Confirm a real upcoming payment, currency pair, value date and remaining execution requirements',success:'An actionable payment and an agreed next step towards execution are documented',reason:'The account is open; the next commercial milestone is an actual first transaction.'};
  if(l.stage==='Onboarding')return {rule:'onboarding',title:'Resolve the next onboarding obstacle',objective:e.facts.barrier.status==='confirmed'?e.facts.barrier.value:l.barrier||'Identify the outstanding requirement, owner and agreed completion date',success:'A specific onboarding obstacle is resolved or an owner and deadline are agreed',reason:'The recorded onboarding stage calls for removing an operational barrier.'};
  if(l.stage==='Meeting Booked')return {rule:'meeting-preparation',title:'Prepare for the agreed meeting',objective:'Confirm the meeting details, decision-makers and the commercial decision the meeting should enable',success:'The agreed meeting is prepared and its intended buyer outcome is clear',reason:'A meeting is recorded as booked; preparation takes precedence over a generic cold approach.'};

@@ -1,6 +1,6 @@
 import type {Activity,Contact,MethodKind,State,Task} from '../types';
 import {core} from './core';
-import {channel,contactAllowed,leadRestriction,usableMethod} from './intelligence/eligibility';
+import {channel,contactAllowed,leadRestriction,taskRestriction,usableMethod} from './intelligence/eligibility';
 import {localDate,validDate} from './intelligence/evidence';
 
 export const CONVERSATION_OUTCOMES=['Meaningful conversation','Callback requested','Meeting booked'];
@@ -90,6 +90,7 @@ export function saveContactDetails(s:State,leadId:string,contactId:string,data:{
 export function assertPendingAction(s:State,t:Task|undefined,now:Date){
  if(!t||t.status!=='pending')throw Error('This is a historical task, not a new activity to complete.');
  if(!core.isEligibleTask(s,t))throw Error('This task is no longer permitted.');
+ const restriction=taskRestriction(s,t,now,false,s.settings.intelligenceMode===1);if(restriction)throw Error(restriction);
  if(t.contactId&&['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type)){const l=s.leads.find(l=>l.id===t.leadId);if(!l||!channel(s,l,t.type,t.contactId,t.methodId))throw Error('The associated contact route is no longer permitted.');}
  if(t.origin==='post_call'){const l=s.leads.find(l=>l.id===t.leadId);if(!l)throw Error('Prospect missing.');const reason=leadRestriction(s,l,now);if(reason)throw Error(reason);const timing=s.intelligence?.timing[l.id];if(timing&&(timing.notBefore&&localDate(now)<timing.notBefore||timing.notAfter&&localDate(now)>timing.notAfter))throw Error('Outside the explicitly recorded contact date constraints.');if(!channel(s,l,'email',t.contactId,t.methodId))throw Error('The recorded email route is no longer permitted.');}
 }
