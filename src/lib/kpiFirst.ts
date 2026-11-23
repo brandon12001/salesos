@@ -4,7 +4,7 @@ import {channel,taskRestriction} from './intelligence/eligibility';
 import {isDue,localDate,protectedTask} from './intelligence/evidence';
 
 export const DAILY_CALL_TARGET=100;
-export const CALL_SUPPLY_FLOOR=40;
+export const CALL_SUPPLY_FLOOR=120;
 export const RESERVE_REFILL_BATCH=25;
 
 // A call is counted once after the outbound attempt is actually logged.
@@ -45,7 +45,10 @@ export function replenishCallSupply(s:State,now:Date,explicit=false):CallRefill{
  const remainingReserve=candidates.length;
  const floor=CALL_SUPPLY_FLOOR;
  const needed=Math.max(0,floor-available);
- const amount=Math.min(RESERVE_REFILL_BATCH,candidates.length,explicit?Math.max(needed,1):needed);
+ const cap=Math.min(2000,Math.max(1,s.settings.reserveActiveCap??150));
+ const active=s.leads.filter(l=>l.leadPool!=='reserve'&&l.status==='Active'&&l.stage!=='First Trade').length;
+ const slots=Math.max(0,cap-active);
+ const amount=Math.min(RESERVE_REFILL_BATCH,candidates.length,slots,explicit?Math.max(needed,1):needed);
  if(!amount)return {activated:0,skipped:0,names:[],available,remainingReserve};
  const result=core.activateReserve(s,candidates.slice(0,amount).map(l=>l.id),{minScore:60}) as {activated:number;skipped:number;names:string[]};
  return {...result,available,remainingReserve};
