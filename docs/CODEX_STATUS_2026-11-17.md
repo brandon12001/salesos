@@ -1,3 +1,15 @@
+# Release update — 23 November 2026: standing automatic releases
+
+The user now authorises routine tested SalesOS releases automatically, with no further merge/deploy confirmation. This supersedes the older draft-only approval notes below; the production-data protection constraints remain. See AGENTS.md for the exact standing instruction.
+
+PR #10 is merged at `595a6a985b12bffb6c8f7715ff8834263e907885` and deployed READY as `dpl_JAG16kngxcXX5xQR9aWnPnfbXnSG` (`salesos-7s1l7pnow-up-next7.vercel.app`), assigned to the existing production aliases. No database migration is required. The canonical application is https://salesos-up-next7.vercel.app/ and remains Vercel-authentication protected.
+
+PR #11 has been retargeted to main and incorporates the released dependency. Re-run its final-head checks before the authorised automatic release. Its application/test source was verified at `7feb4b3`; subsequent changes in this release step record authorisation/status only. Track [PR #11](https://github.com/brandon12001/salesos/pull/11) for its final merge SHA, deployment ID and verification receipt. Do not rerelease from the old industry worktree.
+
+A fresh direct app-restorable JSON backup of the user's current workspace, revision 122, was saved privately before release at `/workspace/work/private-release-2026-11-23/SalesOS_before_PR10_PR11.json`, SHA-256 `66e90950598a30845b57f6797998842981b390b0aa1dce23e6887395b5f94d97`. It includes 442 companies, 508 contacts, 195 tasks, 784 activities and all 437 call-preparation records. Production verification is read-only; do not restore this or an older backup over later user work. Hosted signed-in/physical-device acceptance remains the user's manual check; isolated Auth/Postgres browser checks do not establish live account sign-in.
+
+---
+
 # Current update — 23 November 2026: commercial work queues (first increment)
 
 The user approved the recommended first implementation of the Opportunity Intelligence idea: four Focus work queues using existing evidence and human-approved research. Work is on `feature/opportunity-queues` in `/workspace/salesos-opportunity-queues`, **stacked on draft PR #10**, head `3fd3fae71b333cf3c8b120de75adafec0f861f0d`. Production main remains `e19f5b2`; neither branch has merge/deploy approval. Release #10 first, then retarget this PR and recheck before release. Preserve the separately backed-up older industry attempt in `/workspace/salesos`.

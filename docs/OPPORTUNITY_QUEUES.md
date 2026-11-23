@@ -1,6 +1,6 @@
 # Commercial work queues — first increment
 
-The user approved the recommended first step from the Opportunity Intelligence proposal: use existing evidence and reviewed research to prioritise daily work before adding automated research. This branch is stacked on PR #10 (`feature/call-ready-preparation`). Both remain separate release approvals. No paid API, automated research, n8n, contact enrichment, scheduled research job or production data operation is included.
+The user approved the recommended first step from the Opportunity Intelligence proposal: use existing evidence and reviewed research to prioritise daily work before adding automated research. This branch is stacked on PR #10 (`feature/call-ready-preparation`). The user subsequently authorised routine automatic releases on 23 November; AGENTS.md records this standing instruction. PR #10 has now been deployed and this PR retargeted to main. No paid API, automated research, n8n, contact enrichment, scheduled research job or production data operation is included.
 
 ## Daily execution
 
@@ -39,6 +39,6 @@ Queue preference/evidence changes use the existing atomic workspace commit with 
 
 Use fictional data only. Unit tests cover derived/manual classification, precedence, promises, correction baselines, source/freshness gates, record preservation, both selection modes, action-time safety, Power Hour and metadata/JSON compatibility. Browser tests cover honest counts, explicit approval and attestation, saved filters, industry/call-mode interactions, cross-account JSON recovery, quota draft preservation, competing classification edits and mobile layouts.
 
-No production workspace has been modified for this feature. Feature-branch Vercel deployment is disabled. Obtain the user's release approval, release PR #10 first, then retarget this PR onto main and release it after fresh checks. Hosted sign-in, physical second-device behaviour and work-browser acceptance remain release checks; isolated localhost results do not establish them.
+No production workspace has been modified for this feature. Feature-branch Vercel deployment is disabled. PR #10 was released first. This PR is now retargeted to main and authorised for automatic release after fresh final-head checks. Hosted sign-in, physical second-device behaviour and work-browser acceptance remain release checks; isolated localhost results do not establish them.
 
 Automated candidate investigation, dossiers beyond the existing sourced upload workflow, research budgets/jobs, paid enrichment and conversion-effectiveness reporting are later increments, not implemented integrations in this release.

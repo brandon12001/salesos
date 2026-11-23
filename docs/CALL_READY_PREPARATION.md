@@ -26,7 +26,7 @@ The user explicitly asked to upload with these recommendations. A fresh recovera
 
 Cloud readback matched the prepared document exactly. All contacts, tasks, activity/history, settings and original scoring research were preserved, and every reserve-eligibility result was unchanged. Backup, preparation, SQL guard and readback receipt are under `/workspace/work/private-call-ready-import-2026-11-23`, outside the repository. This was a scoped authorised data operation, not a test fixture or a production reset.
 
-**The code/UI is a separate draft PR. Do not merge or deploy without the user's approval.** Until that client is approved/released, the new metadata is stored but the existing Focus screen still uses its legacy display. No database migration, authentication change, new service or paid API is needed.
+**Release update, 23 November:** The user authorised routine automatic releases. PR #10 is now merged and deployed READY at `595a6a9`; the production client includes this display/importer. Earlier draft-only instructions are historical and superseded by AGENTS.md's standing authorisation. No database migration, authentication change, new service or paid API is needed.
 
 ## Validation and limits
 
