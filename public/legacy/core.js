@@ -269,7 +269,7 @@
     }else if(outcome==='bad_number'){
       if(c){const m=c.methods.find(x=>x.id===(opts.methodId||t.methodId))||anyPhone(c);if(m)invalidateMethod(s,l,c,m.id,'Failed call: bad or incorrect number')}
       l.sequenceState='blocked';const alternative=preferredContact(l,'call');
-      if(alternative){let m=anyPhone(alternative);addTask(s,l,'call','Try alternative verified contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
+      if(alternative){let m=anyPhone(alternative);addTask(s,l,'call','Try alternative contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
       else addRepair(s,l,'Find a new valid number, email-only route, or a different finance decision-maker.',today(),c?.id);
     }else if(outcome==='callback'){
       l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&(x.origin==='sequence'||x.origin==='followup'),'Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);

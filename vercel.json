@@ -14,7 +14,8 @@
       "feature/opportunity-queues": false,
       "fix/focus-call-controls": false,
       "fix/pinned-phone-copy": false,
-      "fix/compact-focus-screen": false
+      "fix/compact-focus-screen": false,
+      "fix/call-task-clarity": false
     }
   }
 }
