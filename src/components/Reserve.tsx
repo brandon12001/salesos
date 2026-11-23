@@ -13,7 +13,7 @@ const settingsFrom=(s:State):ReserveSettings=>({
   reserveActiveCap:s.settings.reserveActiveCap??150,
   reserveIntelligentRefill:s.settings.reserveIntelligentRefill??0
 });
-export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void}){
+export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue,onResearch}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void;onResearch:()=>void}){
   const focus=industryFocusConfig(state);
   const [industryFilter,setIndustryFilter]=useState(()=>focus.enabled?focus.category:'all');
   const ranked=useMemo(()=>(core.reserveRank(state) as Lead[]).filter(l=>l.crmClearance!=='hold'&&(industryFilter==='all'||industryForLead(state,l)===industryFilter)),[state,industryFilter]);
@@ -35,7 +35,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
     onSettings(settings);
   };
   return <div className="page-content">
-    <div className="page-heading"><div><span className="eyebrow">RESEARCHED LEAD SUPPLY</span><h1>Lead Reserve</h1><p>ChatGPT researches and scores. SalesOS ranks and activates without inventing FX volumes.</p></div><div className="button-row"><button className="btn secondary" onClick={onDupeQueue}><Icon name="archive"/> Dupe Queue ({holdCount})</button><button className="btn secondary" onClick={onImport}><Icon name="upload"/> Import scored CSV</button></div></div>
+    <div className="page-heading"><div><span className="eyebrow">RESEARCHED LEAD SUPPLY</span><h1>Lead Reserve</h1><p>Cleared companies enter here from Lead Research. They still need real contact details, reliable FX evidence and activation checks before calling.</p></div><div className="button-row"><button className="btn primary" onClick={onResearch}><Icon name="search"/> Find new companies</button><button className="btn secondary" onClick={onDupeQueue}><Icon name="archive"/> Dupe Queue ({holdCount})</button><button className="btn secondary" onClick={onImport}><Icon name="upload"/> Import scored CSV</button></div></div>
     <div className="panel industry-reserve-filter"><label className="field">Filter Lead Reserve by industry<select aria-label="Reserve industry filter" value={industryFilter} onChange={e=>setIndustryFilter(e.target.value)}><option value="all">All industries</option>{industryOptions(state).map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label><span className="hint">{industryFilter==='all'?'All available industries':`${industryLabel(state,industryFilter)} only`} · Select a filter to activate leads from that industry without changing your Focus preference.</span>{industryFilter!=='all'&&<small>{industrySupply(state,industryFilter).eligibleCallable} eligible callable companies · {industrySupply(state,industryFilter).researchNeeded} needing research</small>}</div>
     <div className="metrics-grid">
       <div className="metric"><span>Available reserve (not on CRM hold)</span><strong>{ranked.length}</strong><small>Not in active outreach</small></div>
