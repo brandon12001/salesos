@@ -65,7 +65,7 @@
 .execution-feedback.calls.is-confirmed .execution-mark { font-size: 30px; }
 
 /* Industry Focus: always legible in dense, high-volume calling sessions. */
-.focus-toolbar { flex-wrap: wrap; row-gap: 8px; }
+.focus-toolbar { flex-wrap: wrap; row-gap: 8px; height: auto; min-height: 60px; padding-top: 10px; padding-bottom: 10px; flex-shrink: 0; }
 .industry-focus-select { color: inherit; background: #15253d; border: 1px solid #375071; border-radius: 8px; padding: 7px 9px; min-width: 155px; max-width: 250px; }
 .industry-focus-select:disabled { opacity: .5; }
 .industry-focus-banner { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 9px 12px; margin-bottom: 10px; background: #172c46; border: 1px solid #385a75; border-radius: 10px; font-size: 13px; }
@@ -100,3 +100,16 @@
 .clarity-example small { display: block; font-size: 11px; opacity: .85; line-height: 1.5; overflow-wrap: anywhere; }
 .clarity-example p { margin: 6px 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
 @media (max-width: 700px) { .company-identity { padding: 11px; } .company-identity-description { font-size: 16px; } .company-identity-chips { display: grid; gap: 3px; } }
+
+/* Working queues are views of eligible actions, independent of stages/readiness. */
+.work-queues { width: min(970px,100%); margin: 0 0 18px; }
+.work-queue-buttons { display: flex; flex-wrap: wrap; gap: 7px; }
+.work-queue-buttons .btn { min-height: 38px; }
+.work-queue-buttons .btn span { border-radius: 12px; padding: 1px 6px; background: #ffffff18; font-variant-numeric: tabular-nums; }
+.work-queues .hint { margin: 8px 0 0; }
+.work-queue-summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 14px; font-size: 13px; }
+.work-queue-summary span { min-width: 0; }
+.work-queue-summary small { display: block; margin-top: 4px; color: #a9c1d8; overflow-wrap: anywhere; }
+.queue-review-overlay { z-index: 120; }
+.queue-review-overlay a { color: #9ac2ff; overflow-wrap: anywhere; }
+@media (max-width: 600px) { .work-queue-summary { align-items: flex-start; flex-direction: column; } .work-queue-buttons .btn { flex: 1 1 auto; } }

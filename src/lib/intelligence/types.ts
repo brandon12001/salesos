@@ -1,6 +1,6 @@
 import type {Task} from '../../types';
 
-export const RULE_VERSION='intelligence-v1.0';
+export const RULE_VERSION='intelligence-v1.1-work-queues';
 export const FEEDBACK_REASONS=['Wrong person','Wrong time','Irrelevant action','Better action available','Insufficient information','Other reason'] as const;
 export type FeedbackReason=typeof FEEDBACK_REASONS[number];
 export type Fact={status:'confirmed'|'hypothesised'|'unknown';value:string;at:string;observedAt?:string};

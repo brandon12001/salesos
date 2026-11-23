@@ -1,3 +1,13 @@
+# Current update — 23 November 2026: commercial work queues (first increment)
+
+The user approved the recommended first implementation of the Opportunity Intelligence idea: four Focus work queues using existing evidence and human-approved research. Work is on `feature/opportunity-queues` in `/workspace/salesos-opportunity-queues`, **stacked on draft PR #10**, head `3fd3fae71b333cf3c8b120de75adafec0f861f0d`. Production main remains `e19f5b2`; neither branch has merge/deploy approval. Release #10 first, then retarget this PR and recheck before release. Preserve the separately backed-up older industry attempt in `/workspace/salesos`.
+
+Implemented: Opportunities > Qualified > explicitly approved Gold > Standard, one-click filters/counts, global due-commitment priority, shared Industry/Cold Call/Power Hour filtering, conservative existing-evidence derivation and reasoned manual review/corrections. Original research, readiness, lifecycle, pipeline, contacts, tasks and sales history are preserved. The audit also closed missing ownership-clearance checks in legacy Focus and at outcome submission. Optional compatible metadata only; no migration, production data changes, paid research API, enrichment or new infrastructure. All feature-branch deployments are disabled.
+
+See [work-queue rules, evidence requirements, verification and deferred scope](OPPORTUNITY_QUEUES.md). The 437-company cleaned-workbook intake below is already saved; do not rerun it or replace the workspace with a CSV. Production rollout and hosted work-browser acceptance remain separately approved work.
+
+---
+
 # Current update — 23 November 2026: cleaned call preparation
 
 Actual released main is `e19f5b273a7ae444461edb4b98e40ad8a948b3f0`: PR #8 Industry Focus and PR #9 Business Clarity were merged and deployed after PRs #6/#7. Current production deployment is `dpl_CMfnRGH41PuvLM9rokAb37K2be83`, canonical https://salesos-up-next7.vercel.app/. Earlier review/draft statements below are historical. There were no open PRs when this work started.

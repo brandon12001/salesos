@@ -3,6 +3,7 @@ import type {Recommendation} from './types';
 import {evaluate} from './engine';
 import {intelligenceData,protectedTask,scheduledAt} from './evidence';
 import {taskRestriction} from './eligibility';
+import {focusDecision,queueClassifications} from '../workQueues';
 
 export type SessionPlan={actions:Array<{recommendation:Recommendation;startsAt:string;endsAt:string}>;remainingMinutes:number;unusedMinutes:number;warnings:string[]};
 export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
@@ -10,7 +11,7 @@ export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
  const result:SessionPlan={actions:[],remainingMinutes,unusedMinutes:remainingMinutes,warnings};if(!remainingMinutes)return result;
  // Only known commitments reserve time. No external calendar or calling-window assumptions.
  const future=s.tasks.filter(t=>t.status==='pending'&&protectedTask(t)&&+scheduledAt(t)>+now&&+scheduledAt(t)<=end).sort((a,b)=>+scheduledAt(a)-+scheduledAt(b));
- const ready=evaluate(s,now).recommendations.filter(r=>s.settings.coldCallMode!==1||r.protected||['call','callback'].includes(r.task.type)),used=new Set<string>(),companies=new Set<string>();
+ const classes=queueClassifications(s,now),ready=focusDecision(s,evaluate(s,now),now,classes).recommendations,used=new Set<string>(),companies=new Set<string>();
  let cursor=+now,lastType='';
  while(cursor<end){
   const nextPromise=future.find(t=>!used.has(t.id));
@@ -31,7 +32,7 @@ export function planSession(s:State,now:Date,endsAt:Date):SessionPlan{
    const boundary=Math.min(end,nextPromise?+scheduledAt(nextPromise):end);
    const fitting=available.filter(r=>cursor+r.effortMinutes*60000<=boundary);
    // Group only similarly ranked non-urgent actions; never move a promise or jump a large score gap.
-   r=fitting.find(r=>r.task.type===lastType&&r.priority>=(fitting[0]?.priority||0)-5)||fitting[0];
+   r=fitting.find(r=>r.task.type===lastType&&classes.get(r.leadId||'')?.category===classes.get(fitting[0]?.leadId||'')?.category&&r.priority>=(fitting[0]?.priority||0)-5)||fitting[0];
    if(!r){if(nextPromise){cursor=+scheduledAt(nextPromise);continue}break;}
   }
   if(cursor+r.effortMinutes*60000>end){warnings.push(`The agreed action “${r.task.title}” needs more time than remains. It stays due in Focus.`);used.add(r.task.id);if(r.protected)break;continue;}

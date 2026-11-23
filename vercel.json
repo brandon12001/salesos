@@ -10,7 +10,8 @@
       "feature/focus-workflow-v2": false,
       "feature/salesforce-contact-queue": false,
       "feature/company-research-feedback": false,
-      "feature/call-ready-preparation": false
+      "feature/call-ready-preparation": false,
+      "feature/opportunity-queues": false
     }
   }
 }

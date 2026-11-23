@@ -35,7 +35,7 @@ export function leadRestriction(s:State,l:Lead,now:Date,task?:Task){
  if(l.crmClearance!=='cleared'||age===null||age<0||age>30)return 'Record a verified Salesforce clearance from the last 30 days before using Intelligence.';
  return '';
 }
-export function taskRestriction(s:State,t:Task,now:Date,includeFuture=false){
+export function taskRestriction(s:State,t:Task,now:Date,includeFuture=false,respectWorkingHours=true){
  if(t.status!=='pending')return 'Task is no longer pending.';
  if(!includeFuture&&!isDue(t,now))return 'The action is scheduled for later.';
  if(!t.leadId)return '';
@@ -49,7 +49,7 @@ export function taskRestriction(s:State,t:Task,now:Date,includeFuture=false){
  const timing=intelligenceData(s).timing[l.id];
  if(outreach&&timing&&(timing.notBefore&&localDate(now)<timing.notBefore||timing.notAfter&&localDate(now)>timing.notAfter))return 'Outside the explicitly recorded contact date constraints.';
  // A promise is not moved by generic working-hour preferences.
- if(outreach&&!protectedTask(t)){
+ if(outreach&&respectWorkingHours&&!protectedTask(t)){
   const mins=now.getHours()*60+now.getMinutes(),start=s.settings.intelligenceWorkStart??540,end=s.settings.intelligenceWorkEnd??1050;
   if(!((s.settings.intelligenceWorkDays??62)&(1<<now.getDay()))||mins<start||mins>=end)return 'Outside configured working hours (browser local time).';
  }
