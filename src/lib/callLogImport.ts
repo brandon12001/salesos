@@ -145,7 +145,6 @@ export function minuteKpi(s:State,now:Date){
    +unlogged.reduce((sum,r)=>sum+r.durationSeconds,0);
  const dialCreditSeconds=calls*60,totalSeconds=dialCreditSeconds+recordedSeconds;
  const remainingSeconds=Math.max(0,KPI_MINUTES_TARGET*60-totalSeconds);
- const dialTargetRemaining=Math.max(0,100-calls);
  const dialsForMinutes=Math.ceil(remainingSeconds/60);
- return {calls,manualCalls:unique.size,importedUnlogged:unlogged.length,recordedSeconds,dialCreditSeconds,totalSeconds,totalMinutes:totalSeconds/60,minutesRemaining:remainingSeconds/60,dialsForMinutes,dialTargetRemaining,dialsForBoth:Math.max(dialsForMinutes,dialTargetRemaining),remainingSeconds,matchedImported:matchedIds.size};
+ return {calls,manualCalls:unique.size,importedUnlogged:unlogged.length,recordedSeconds,dialCreditSeconds,totalSeconds,totalMinutes:totalSeconds/60,minutesRemaining:remainingSeconds/60,dialsForMinutes,remainingSeconds,matchedImported:matchedIds.size};
 }
