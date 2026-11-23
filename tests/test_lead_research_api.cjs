@@ -18,7 +18,7 @@ global.fetch=async(url,options)=>{
   {company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},
   {company_name:'Dissolved Agency Ltd',company_number:'12000999',company_status:'dissolved',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},
   {company_name:'Active LLP',company_number:'SC123456',company_status:'active',company_type:'llp',sic_codes:['78200'],date_of_creation:'2018-01-01'}
- ])};
+ ]})};
 };
 (async()=>{
  try{
