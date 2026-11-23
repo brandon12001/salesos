@@ -1,3 +1,4 @@
+import {coldPreparation} from '../callPreparation';
 // Pure decision functions: no clock reads, storage, network, IDs or mutations.
 import type {Lead,State,Task} from '../../types';
 import type {Decision,Recommendation} from './types';
@@ -28,7 +29,7 @@ function purpose(s:State,l:Lead,t:Task,now:Date){
  if((l.readiness||0)>=3&&!e.annual)return {rule:'qualify-volume',title:'Qualify the recurring FX exposure',objective:'Establish volume, denomination, payment frequency and locally addressable exposure without guessing',success:'A confirmed FX flow or a clear qualification gap is recorded',reason:'Interest is recorded but recurring FX volume is still unconfirmed.'};
  if((l.readiness||0)>=3&&e.facts.problem.status!=='confirmed')return {rule:'discover-problem',title:'Discover whether an FX problem warrants change',objective:'Ask which FX issue matters and distinguish a hypothesis from a buyer-confirmed problem',success:'A confirmed problem or evidence that there is no meaningful issue',reason:'Recorded interest and FX context do not yet establish a problem worth solving.'};
  if(l.stage==='Successful Meeting')return {rule:'commercial-next-step',title:'Progress the agreed commercial next step',objective:l.nextMilestone||'Confirm the agreed evaluation step and decision owner',success:'The agreed step is delivered and the buyer confirms the next milestone',reason:'A successful meeting is recorded; follow the agreed buyer objective.'};
- return {rule:'establish-relevance',title:t.title,objective:l.callObjective||'Reach the relevant finance decision-maker and establish whether an FX discussion is useful',success:'Confirm responsibility and relevance, then agree an appropriate next step; a dial alone is not progression',reason:'There is no recorded buyer engagement supporting a later-stage sales assumption.'};
+ return {rule:'establish-relevance',title:t.title,objective:coldPreparation(s,l,t)?.question||l.callObjective||'Reach the relevant finance decision-maker and establish whether an FX discussion is useful',success:'Confirm responsibility and relevance, then agree an appropriate next step; a dial alone is not progression',reason:'There is no recorded buyer engagement supporting a later-stage sales assumption.'};
 }
 function recommend(s:State,l:Lead|null,t:Task,now:Date,generated=false,sourceTaskId:string|null=t.id):Recommendation{
  const p=l?purpose(s,l,t,now):{rule:'existing-work',title:t.title,objective:t.objective,success:t.successCriteria,reason:'An eligible existing task is due.'};

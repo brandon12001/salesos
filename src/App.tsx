@@ -1,3 +1,4 @@
+import {applyCallPreparation} from './lib/callPreparation';
 import type {User} from '@supabase/supabase-js';
 import {cloud} from './lib/cloud';
 import {useCloudWorkspace} from './hooks/useCloudWorkspace';
@@ -151,7 +152,7 @@ function Workspace({user}:{user?:User}){
    {currentTab==='tasks'&&<TaskQueue state={tab==='resolution'?{...state,tasks:state.tasks.filter(t=>t.type==='research')}:state} onTask={t=>{if(['call','callback','deal','meeting','research'].includes(t.type))doTask(t,t.type==='call'?'connected':'complete');else {showTask(t);openTab('focus')}}}/>}
    {currentTab==='insights'&&<Insights state={state} onProspect={openProspect}/>}
    {currentTab==='value'&&<ValueDashboard state={state} onProspect={openProspect}/>}
-   {currentTab==='settings'&&<Settings onEvidence={setEvidenceLead} cloudPanel={workspace&&user?<CloudPanel user={user} engine={workspace.engine} snapshot={workspace.snapshot}/>:undefined} state={state} onRestore={updateState} onImport={handleImport} onEnrichmentImport={handleEnrichment} onDemo={demo} onTargets={targets=>{try{commit(s=>{s.settings={...s.settings,...targets}},{replenish:false});message('Settings saved.')}catch(e){message((e as Error).message)}}} onSequence={sequence=>{try{commit(s=>{s.sequence=sequence});message('New sequence template saved.')}catch(e){message((e as Error).message)}}} notify={message}/>}
+   {currentTab==='settings'&&<Settings onApplyCallPrep={plan=>{try{commit(s=>applyCallPreparation(s,plan,new Date()),{replenish:false})}catch(e){return (e as Error).message}}} onEvidence={setEvidenceLead} cloudPanel={workspace&&user?<CloudPanel user={user} engine={workspace.engine} snapshot={workspace.snapshot}/>:undefined} state={state} onRestore={updateState} onImport={handleImport} onEnrichmentImport={handleEnrichment} onDemo={demo} onTargets={targets=>{try{commit(s=>{s.settings={...s.settings,...targets}},{replenish:false});message('Settings saved.')}catch(e){message((e as Error).message)}}} onSequence={sequence=>{try{commit(s=>{s.sequence=sequence});message('New sequence template saved.')}catch(e){message((e as Error).message)}}} notify={message}/>}
   </>}
   </main>
   {sfContact&&<SalesforceQuickAdd onSaveWebsite={onSaveWebsite} key={sfContact.leadId+':'+sfContact.contactId} state={state} contactRef={sfContact} onClose={()=>setSFContact(null)} onStatus={setSFStatus} onSave={saveSFCopy}/>}

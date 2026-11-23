@@ -1,3 +1,15 @@
+# Current update — 23 November 2026: cleaned call preparation
+
+Actual released main is `e19f5b273a7ae444461edb4b98e40ad8a948b3f0`: PR #8 Industry Focus and PR #9 Business Clarity were merged and deployed after PRs #6/#7. Current production deployment is `dpl_CMfnRGH41PuvLM9rokAb37K2be83`, canonical https://salesos-up-next7.vercel.app/. Earlier review/draft statements below are historical. There were no open PRs when this work started.
+
+New work is `feature/call-ready-preparation`, based on that current main in `/workspace/salesos-current-review`. The older uncommitted industry attempt in `/workspace/salesos` is preserved separately and must not overwrite the shipped recovery branch.
+
+The user authorised uploading the cleaned workbook **with the recommendation to preserve original scoring evidence and keep call preparation separate**. The 23 Nov data intake is completed: 437 matched company call-preparation records, including the previously skipped missing-domain group, with 102 specific clues / 335 intentional blanks. Original scoring research and all contacts/tasks/history/settings/CRM fields remain intact; the missing company description was also populated through existing guarded enrichment. Fresh backup and exact readback receipt are in private `/workspace/work/private-call-ready-import-2026-11-23`. Do not restore the older ten-prospect fixture or replace the current workspace from an old source CSV.
+
+The corresponding UI/importer changes are **draft review only; no merge/deploy approval**. Upload permission is not code-release permission. Metadata storage is compatible with old v3 clients; the new Focus display requires the approved client release. See [design, import mapping, evidence preservation and validation](CALL_READY_PREPARATION.md). Feature-branch Vercel deployments are disabled. No migration or new dependency/API is required.
+
+---
+
 # Current update — 18 November 2026: company research and execution feedback
 
 The user requested one-click Companies House / website research and professional Focus completion feedback, with draft PR only. Work is on `feature/company-research-feedback`, **stacked on PR #6** at `1b9cbd2`. PR #6 is still draft/unmerged; production main remains PR #5's `e9705a7`. Merge the dependency first and retarget this branch to main after explicit approval; do not duplicate/revert its Salesforce Lead work. New feature-branch Vercel deployments are disabled.

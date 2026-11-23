@@ -9,7 +9,8 @@
       "feature/intelligence-v1": false,
       "feature/focus-workflow-v2": false,
       "feature/salesforce-contact-queue": false,
-      "feature/company-research-feedback": false
+      "feature/company-research-feedback": false,
+      "feature/call-ready-preparation": false
     }
   }
 }

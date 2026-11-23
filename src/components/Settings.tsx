@@ -1,3 +1,5 @@
+import {CallPreparationImport} from './CallPreparation';
+import type {CallPrepPlan} from '../lib/callPreparation';
 import {useEffect,useMemo,useState,type ChangeEvent,type ReactNode} from 'react';
 import type {State} from '../types';
 import {core} from '../lib/core';
@@ -7,7 +9,7 @@ import {planCompanyEnrichment,type EnrichmentPlan} from '../lib/companyEnrichmen
 import {cloud,pullSnapshot,pushSnapshot} from '../lib/cloud';
 import {Badge,Icon} from './UI';
 import {IntelligenceSettings} from './Intelligence';
-export function Settings({cloudPanel,state,onRestore,onImport,onEnrichmentImport,onDemo,onTargets,onSequence,notify,onEvidence}:{cloudPanel?:ReactNode;state:State;onRestore:(s:State)=>void;onImport:(text:string)=>ImportStats|null;onEnrichmentImport:(plan:EnrichmentPlan)=>boolean;onDemo:()=>void;onTargets:(x:Record<string,number>)=>void;onSequence:(steps:State['sequence'])=>void;notify:(message:string)=>void;onEvidence:(l:State['leads'][number])=>void}){
+export function Settings({onApplyCallPrep,cloudPanel,state,onRestore,onImport,onEnrichmentImport,onDemo,onTargets,onSequence,notify,onEvidence}:{onApplyCallPrep:(plan:CallPrepPlan)=>string|void;cloudPanel?:ReactNode;state:State;onRestore:(s:State)=>void;onImport:(text:string)=>ImportStats|null;onEnrichmentImport:(plan:EnrichmentPlan)=>boolean;onDemo:()=>void;onTargets:(x:Record<string,number>)=>void;onSequence:(steps:State['sequence'])=>void;notify:(message:string)=>void;onEvidence:(l:State['leads'][number])=>void}){
  const [clarityCsv,setClarityCsv]=useState(''),[clarityFilename,setClarityFilename]=useState(''),[replaceResearchCopy,setReplaceResearchCopy]=useState(false);
  const [csv,setCsv]=useState(''),[filename,setFilename]=useState(''),[targets,setTargets]=useState({...state.settings}),[seq,setSeq]=useState(state.sequence.map(s=>({...s})));
  const [email,setEmail]=useState(''),[cloudEmail,setCloudEmail]=useState(''),[cloudBusy,setCloudBusy]=useState(false);
@@ -23,6 +25,7 @@ export function Settings({cloudPanel,state,onRestore,onImport,onEnrichmentImport
  const cloudAction=async(action:'push'|'pull'|'login')=>{const client=cloud;if(!client)return;setCloudBusy(true);try{if(action==='login'){if(!email.trim())throw new Error('Enter your email first.');const {error}=await client.auth.signInWithOtp({email});if(error)throw error;notify('Check your inbox for the sign-in link.')}else if(action==='push'){if(!confirm('Upload your current browser database to Supabase? Only do this with approved data.'))return;await pushSnapshot(state);notify('Cloud snapshot uploaded.')}else{if(!confirm('Restore your cloud snapshot and replace local records? Download a JSON backup first.'))return;onRestore(await pullSnapshot());notify('Cloud snapshot restored.')}}catch(e){notify((e as Error).message)}finally{setCloudBusy(false)}};
  return <div className="page-content"><div className="page-heading"><div><span className="eyebrow">MANAGE YOUR WORKSPACE</span><h1>Settings & data</h1><p>CSV imports, backups and rule settings. No Salesforce, Teams or Outlook connection.</p></div><Badge tone="blue">v4 React foundation</Badge></div>
  {cloudPanel}
+ <CallPreparationImport state={state} onApply={onApplyCallPrep}/>
  <section className="panel stack"><h2>Execution feedback</h2><label className="check-row"><input type="checkbox" checked={state.settings.celebrationEffects!==0} onChange={e=>onTargets({celebrationEffects:e.target.checked?1:0})}/> Celebratory milestone effects</label><label className="check-row"><input type="checkbox" checked={state.settings.callMilestoneFeedback===1} onChange={e=>onTargets({callMilestoneFeedback:e.target.checked?1:0})}/> Daily call milestones (25, 50, 100, 200)</label><p className="hint">Basic completion confirmation stays visible. Reduced-motion preferences disable movement. Call milestones do not change XP or buyer progression.</p></section>
  <IntelligenceSettings state={state} onSettings={onTargets} onEvidence={onEvidence}/>
  <section className="panel stack" aria-label="Company clarity enrichment">
