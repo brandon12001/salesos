@@ -5,7 +5,7 @@ import {core} from './core';
 // Strictly company-level enrichment: never creates contacts, tasks or CRM/FX facts.
 // All data comes from an explicitly selected local CSV. No external service receives it.
 export type EnrichmentOptions={replaceResearchCopy:boolean};
-type EnrichmentField= 'businessDescription'|'standardisedIndustry'|'countriesMentioned'|'currenciesConfirmed'|'potentialCurrencyPairs'|'internationalActivityEvidence'|'descriptionVerification'|'researchReviewFlag'|'descriptionSources'|'researchRationale'|'callObjective'|'researchHypothesis';
+type EnrichmentField= 'businessDescription'|'companyBriefing'|'standardisedIndustry'|'countriesMentioned'|'currenciesConfirmed'|'potentialCurrencyPairs'|'internationalActivityEvidence'|'descriptionVerification'|'researchReviewFlag'|'descriptionSources'|'researchRationale'|'callObjective'|'researchHypothesis';
 export type EnrichmentPatch=Partial<Pick<Lead,EnrichmentField>>;
 export type EnrichmentUpdate={id:string;expected:string;fields:EnrichmentPatch};
 export type EnrichmentIssue={company:string;reason:string};
@@ -33,6 +33,7 @@ export function matchExistingCompany(s:State,item:{name:string;number:string;dom
 }
 const columns:ReadonlyArray<readonly [string,EnrichmentField]>=[
  ['Business Description','businessDescription'],
+ ['Company Briefing','companyBriefing'],
  ['Standardised Industry','standardisedIndustry'],
  ['Countries Mentioned','countriesMentioned'],
  ['Currencies Confirmed','currenciesConfirmed'],
@@ -45,13 +46,13 @@ const columns:ReadonlyArray<readonly [string,EnrichmentField]>=[
  ['Original Call Objective','callObjective'],
  ['Original Research Hypothesis','researchHypothesis']
 ];
-const CORE_FIELDS:EnrichmentField[]=['businessDescription','standardisedIndustry','countriesMentioned','currenciesConfirmed','potentialCurrencyPairs','internationalActivityEvidence','descriptionVerification','researchReviewFlag','descriptionSources'];
-const LIMITS:Partial<Record<EnrichmentField,number>>={businessDescription:500,standardisedIndustry:120,countriesMentioned:600,currenciesConfirmed:300,potentialCurrencyPairs:300,internationalActivityEvidence:1200,descriptionVerification:250,researchReviewFlag:500,descriptionSources:15000,researchRationale:2000,callObjective:1000,researchHypothesis:1500};
+const CORE_FIELDS:EnrichmentField[]=['companyBriefing','businessDescription','standardisedIndustry','countriesMentioned','currenciesConfirmed','potentialCurrencyPairs','internationalActivityEvidence','descriptionVerification','researchReviewFlag','descriptionSources'];
+const LIMITS:Partial<Record<EnrichmentField,number>>={businessDescription:500,companyBriefing:1400,standardisedIndustry:120,countriesMentioned:600,currenciesConfirmed:300,potentialCurrencyPairs:300,internationalActivityEvidence:1200,descriptionVerification:250,researchReviewFlag:500,descriptionSources:15000,researchRationale:2000,callObjective:1000,researchHypothesis:1500};
 function rowFingerprint(record:{name:string;number:string;domain:string;fields:EnrichmentPatch}){
  return JSON.stringify([record.name,record.number,record.domain,record.fields]);
 }
 function leadFingerprint(l:Lead){
- return JSON.stringify([l.id,l.company,l.companyNumber,l.companyDomain,l.industryCategory,l.businessDescriptionEditedAt,...columns.map(([,key])=>l[key]||'')]);
+ return JSON.stringify([l.id,l.company,l.companyNumber,l.companyDomain,l.industryCategory,l.businessDescriptionEditedAt,l.companyBriefingEditedAt,...columns.map(([,key])=>l[key]||'')]);
 }
 export function descriptionStamp(l:Lead){return JSON.stringify([l.businessDescription||'',l.businessDescriptionEditedAt||'',l.descriptionVerification||'',l.researchReviewFlag||''])}
 export function saveManualBusinessDescription(s:State,id:string,value:string,expected:string){
@@ -110,6 +111,7 @@ export function planCompanyEnrichment(s:State,text:string,options:EnrichmentOpti
     if(key==='businessDescription')plan.manualDescriptionsProtected++;
     continue;
    }
+   if(key==='companyBriefing'&&match.companyBriefingEditedAt)continue; // Preserve seller-authored background on later CSV uploads.
    if(val!==(match[key]||''))patch[key]=val;
   }
   if(!Object.keys(patch).length){plan.unchanged++;continue;}
