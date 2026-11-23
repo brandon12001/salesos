@@ -16,7 +16,7 @@ export function ActivityEditor({activity:a,state,onSave,onNext,draftScope='brows
  const lead=state.leads.find(l=>l.id===a.leadId);
  return <section className="post-call-editor stack" aria-label="Activity details">
   <div className="section-between"><h3>{a.type==='Call'?'Conversation notes':'Activity notes'}</h3><Badge tone={draft.dirty?'amber':'green'}>{draft.dirty?'Unsaved draft':'Recorded'}</Badge></div>
-  <p className="hint">{a.type} · {a.outcome} · {new Date(a.at).toLocaleString('en-GB')}</p>
+  <p className="hint">{a.type} · {a.outcome} · Logged {new Date(a.at).toLocaleString('en-GB')}{a.phoneCallLocalTime?` · Phone call ${a.phoneCallLocalTime.slice(11)} (${a.phoneCallLocalTime.slice(0,10)})`:null}</p>
   <Field label={a.type==='Call'?'Saved call notes':'Saved activity notes'} multiline value={draft.values.notes} onChange={v=>change('notes',v)}/>
   <details><summary>Correct time, contact or follow-up information</summary>
    {a.type==='Call'&&<Field label="Recorded talk time (minutes)" type="number" value={draft.values.minutes} onChange={v=>change('minutes',v)}/>}
