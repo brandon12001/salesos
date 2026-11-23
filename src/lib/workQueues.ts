@@ -5,6 +5,7 @@ import {commercialFor,dateAge,isDue,protectedTask} from './intelligence/evidence
 import {contactAllowed,taskRestriction,usableMethod} from './intelligence/eligibility';
 import {filteredIndustryTasks,filterIndustryDecision} from './industryFocus';
 import {callPreparation} from './callPreparation';
+import {callKpi} from './kpiFirst';
 
 export const WORK_QUEUES=[{id:'opportunity',label:'Opportunities'},{id:'qualified',label:'Qualified'},{id:'gold',label:'Gold'},{id:'standard',label:'Standard'}] as const;
 export type WorkCategory=typeof WORK_QUEUES[number]['id'];
@@ -95,18 +96,19 @@ export function commercialPurpose(s:State,l:Lead,t:Task,now:Date,classification=
  return null;
 }
 function rank(id:WorkCategory){return WORK_QUEUES.findIndex(q=>q.id===id);}
-function viewTasks(s:State,tasks:Task[],classes:Map<string,WorkClassification>){
+function viewTasks(s:State,tasks:Task[],classes:Map<string,WorkClassification>,now:Date){
  const selected=selectedQueue(s),seen=new Set<string>();
+ const phase=callKpi(s,now),callsOnly=phase.enabled?phase.active:s.settings.coldCallMode===1;
  return filteredIndustryTasks(s,tasks).filter(t=>{
   if(seen.has(t.id))return false;seen.add(t.id);
   if(protectedTask(t))return true;
-  return (s.settings.coldCallMode!==1||['call','callback'].includes(t.type))&&(selected==='recommended'||(classes.get(t.leadId||'')?.category||'standard')===selected);
+  return (!callsOnly||['call','callback'].includes(t.type))&&(selected==='recommended'||(classes.get(t.leadId||'')?.category||'standard')===selected);
  }).sort((a,b)=>Number(protectedTask(b))-Number(protectedTask(a))||(protectedTask(a)?a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59'):rank(classes.get(a.leadId||'')?.category||'standard')-rank(classes.get(b.leadId||'')?.category||'standard')));
 }
 export function legacyActionableTasks(s:State,now:Date){return (core.due(s,now) as Task[]).filter(t=>!taskRestriction(s,t,now,false,false));}
-export function legacyWorkTasks(s:State,now:Date,classes=queueClassifications(s,now)){return viewTasks(s,legacyActionableTasks(s,now),classes);}
+export function legacyWorkTasks(s:State,now:Date,classes=queueClassifications(s,now)){return viewTasks(s,legacyActionableTasks(s,now),classes,now);}
 export function focusDecision(s:State,d:Decision,now:Date,classes=queueClassifications(s,now)):Decision{
- const industry=filterIndustryDecision(s,d),ids=viewTasks(s,industry.recommendations.map(r=>r.task),classes).map(t=>t.id),order=new Map(ids.map((id,i)=>[id,i]));
+ const industry=filterIndustryDecision(s,d),ids=viewTasks(s,industry.recommendations.map(r=>r.task),classes,now).map(t=>t.id),order=new Map(ids.map((id,i)=>[id,i]));
  return {...industry,recommendations:industry.recommendations.filter(r=>order.has(r.task.id)).sort((a,b)=>order.get(a.task.id)!-order.get(b.task.id)!)};
 }
 export function queueCounts(s:State,tasks:Task[],classes:Map<string,WorkClassification>,now:Date){
@@ -114,7 +116,7 @@ export function queueCounts(s:State,tasks:Task[],classes:Map<string,WorkClassifi
  for(const t of filteredIndustryTasks(s,tasks)){
   if(seen.has(t.id)||!isDue(t,now)||taskRestriction(s,t,now,false,s.settings.intelligenceMode===1))continue;seen.add(t.id);
   if(protectedTask(t)){commitments++;continue;}
-  if(s.settings.coldCallMode===1&&!['call','callback'].includes(t.type))continue;
+  if((callKpi(s,now).enabled?callKpi(s,now).active:s.settings.coldCallMode===1)&&!['call','callback'].includes(t.type))continue;
   counts[classes.get(t.leadId||'')?.category||'standard']++;
  }
  return {counts,commitments,total:Object.values(counts).reduce((n,c)=>n+c,0)+commitments};
