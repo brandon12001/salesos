@@ -1,3 +1,11 @@
+# Current update — 23 November 2026: copy and log from the same pinned bar
+
+PR #13's call outcome bar is deployed on main `bde567c4a8674bf89a1950ec7fe3662d52616298`. The user reported that copying the number still required scrolling. The follow-up `fix/pinned-phone-copy` in `/workspace/salesos-phone-copy` moves the active call's number and single Copy number button into that persistent bar, keeping current contact/company identity and all six outcomes together. Historical/non-call copying retains its existing inline placement. Existing task/contact/method binding and clipboard action are reused; copying never logs outreach.
+
+Automatic release remains authorised in AGENTS.md. The regression checks that copying and logging are simultaneously visible/hit-testable without scrolling on desktop/mobile/landscape, correct clipboard values after task changes and explicit alternative-number selection, no duplicate active Copy button, and no sales-data mutation from copying. All other existing unit/build/browser checks remain required. No database migration or data write is needed. See [call controls](FOCUS_CALL_CONTROLS.md); keep the separate company-briefing PR #12 untouched. Track this follow-up PR for release details.
+
+---
+
 # Current update — 23 November 2026: call outcomes without scrolling
 
 Production main is `558fe970840d2514cec333df20e43b30ec10172c` (PRs #10/#11 merged and deployed). The user's standing automatic-release instruction in AGENTS.md remains active. The current fix is `fix/focus-call-controls` in `/workspace/salesos-call-controls`, based on this main. A separate expandable company briefing PR #12 was already open; preserve its independent work and do not replace main from its older base.

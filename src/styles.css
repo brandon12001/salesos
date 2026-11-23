@@ -173,3 +173,10 @@
 .phone-log-prospect-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #29415a;font-size:12px;}
 .phone-log-prospect-row>div{display:grid;gap:3px;}
 .phone-log-prospect-row small{font-size:11px;color:#a4b6ca;}
+/* Keep copying and recording together in the persistent call bar. */
+.focus-call-header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.focus-call-header .focus-call-identity { flex: 1; min-width: 0; margin-bottom: 0; }
+.focus-call-number { display: flex; align-items: center; gap: 12px; }
+.focus-call-number strong { font-size: 16px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.focus-call-number .btn { min-height: 44px; flex-shrink: 0; }
+@media(max-width:700px) { .focus-call-header { flex-direction: column; align-items: stretch; gap: 6px; } .focus-call-number { justify-content: space-between; } .focus-call-number strong { font-size: 15px; } .focus-call-number .btn { padding: 9px 10px; font-size: 12px; } }
