@@ -166,3 +166,10 @@
 .phone-log-confirm input{margin-top:3px;}
 .phone-log-outcome{display:grid;gap:5px;color:#b4cae4;font-size:12px;}
 @media(max-width:720px){.kpi-minute-grid{grid-template-columns:1fr;}.phone-log-totals{grid-template-columns:repeat(2,minmax(0,1fr));}}
+
+.phone-log-prospect{border-top:1px solid #344c67;padding:9px 0;margin:3px 0 9px;}
+.phone-log-prospect>summary{cursor:pointer;font-weight:650;color:#b5d7fc;font-size:12px;}
+.phone-log-prospect-list{margin:9px 0 0;padding:0 0 0 12px;max-width:710px;display:grid;gap:3px;}
+.phone-log-prospect-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #29415a;font-size:12px;}
+.phone-log-prospect-row>div{display:grid;gap:3px;}
+.phone-log-prospect-row small{font-size:11px;color:#a4b6ca;}
