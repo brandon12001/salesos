@@ -61,9 +61,7 @@ try{
  assert.equal(minutes.recordedSeconds,181);
  assert.equal(minutes.totalSeconds,301);
  assert.equal(minutes.dialsForMinutes,95);
- assert.equal(minutes.dialTargetRemaining,98);
- assert.equal(minutes.dialsForBoth,98);
- assert.equal(k.callKpi(clean,now).calls,2);
+  assert.equal(k.callKpi(clean,now).calls,2);
  assert.equal(imp.importPhoneLog(clean,parsed.rows,choices,now).added,0,'repeat paste is idempotent');
  assert.equal(imp.minuteKpi(clean,now).calls,2,'same paste never adds extra dials');
  const round=core.normalize(clone(clean));assert.equal(imp.minuteKpi(round,now).totalSeconds,301,'JSON/cloud normalize preserves imports');
@@ -77,6 +75,6 @@ try{
  assert.equal(imp.minuteKpi(noDuration,now).recordedSeconds,90);
  const fake=core.newState();fake.settings.kpiFirstMode=1;
  for(let i=0;i<40;i++)fake.activities.push({id:'manual-'+i,taskId:'t'+i,type:'Call',callOutcome:'no_answer',outcome:'No answer',at:'2026-11-23T09:00:00Z',durationMins:1.5});
- const f=imp.minuteKpi(fake,now);assert.equal(f.calls,40);assert.equal(f.totalMinutes,100);assert.equal(f.dialsForMinutes,0);assert.equal(f.dialsForBoth,60,'100 calls still mandatory even when 100 minutes met');
- console.log('PASS: no-duration preservation and two independent 100-target requirements');
+ const f=imp.minuteKpi(fake,now);assert.equal(f.calls,40);assert.equal(f.totalMinutes,100);assert.equal(f.dialsForMinutes,0);assert.equal(k.callKpi(fake,now).complete,true,'100 minutes unlocks regardless of call count');
+ console.log('PASS: no-duration preservation and single 100-minute target independent of call count');
 }catch(err){console.error(err);process.exitCode=1}
