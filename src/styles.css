@@ -129,3 +129,15 @@
 .is-focus:has(.focus-call-dock) .toast { bottom: calc(var(--focus-bottom-height,240px) + 12px); pointer-events: none; }
 @media(max-width:1000px) { .focus-call-buttons { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 @media(max-width:600px) { .focus-call-buttons { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; } .focus-call-dock { padding-top: 8px; padding-bottom: 8px; } .focus-call-buttons .btn { font-size: 12px; padding: 8px; } }
+
+/* KPI-first: a small, readable call-target strip above the next task. */
+.kpi-toolbar-marker { padding: 6px 10px; font-size: 12px; font-weight: 700; border: 1px solid #416b9c; border-radius: 8px; color: #c4ddff; background: #132945; white-space: nowrap; }
+.kpi-first-status { border: 1px solid #315178; border-radius: 11px; margin: 12px 0 14px; padding: 12px 14px; background: #14263d; display: grid; gap: 6px; }
+.kpi-first-status strong { color: #f0f6ff; font-size: 13px; }
+.kpi-first-status .section-between span { color: #c5ddfb; font-weight: 700; font-size: 13px; }
+.kpi-first-status progress { width: 100%; height: 9px; border: none; border-radius: 8px; background: #253b54; overflow: hidden; accent-color: #337aff; }
+.kpi-first-status progress::-webkit-progress-bar { background: #253b54; border-radius: 8px; }
+.kpi-first-status progress::-webkit-progress-value { background: #3b82f6; border-radius: 8px; }
+.kpi-first-status progress::-moz-progress-bar { background: #3b82f6; border-radius: 8px; }
+.kpi-first-status small { color: #a6c2e0; font-size: 12px; }
+@media(max-width:700px) { .kpi-toolbar-marker { font-size: 11px; padding: 4px 7px; } .kpi-first-status { padding: 10px; } }
