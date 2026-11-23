@@ -49,7 +49,7 @@ function Workspace({user}:{user?:User}){
  const [localState,setState]=useState<State>(restoreLocal);
  const state=workspace?.snapshot.document||localState,stateRef=useRef(state);
  stateRef.current=state;
- const [tab,setTab]=useState<Tab>('focus'),[menu,setMenu]=useState(false),[modal,setModal]=useState<Modal>(null),[snooze,setSnooze]=useState<Task|null>(null),[readinessLead,setReadinessLead]=useState<Lead|null>(null),[fxLead,setFxLead]=useState<Lead|null>(null),[toast,setToast]=useState(''),[focusLead,setFocusLead]=useState('');
+ const [tab,setTab]=useState<Tab>('focus'),[menu,setMenu]=useState(false),[modal,setModal]=useState<Modal>(null),[snooze,setSnooze]=useState<Task|null>(null),[readinessLead,setReadinessLead]=useState<Lead|null>(null),[fxLead,setFxLead]=useState<Lead|null>(null),[toast,setToast]=useState<{text:string}|null>(null),[focusLead,setFocusLead]=useState('');
  const [feedback,setFeedback]=useState<(Feedback&{confirmed?:boolean})|null>(null);
  useEffect(()=>{if(!feedback)return;const timer=setTimeout(()=>setFeedback(null),5000);return()=>clearTimeout(timer)},[feedback?.id]);
  const syncStatus=workspace?.snapshot.status;
@@ -64,10 +64,10 @@ function Workspace({user}:{user?:User}){
  const showActivity=useCallback((activity:Activity)=>{setTrail(t=>visit(t,visitForActivity(stateRef.current,activity)));setHistoryScope(undefined);setTab('focus');setMenu(false)},[]);
  const showTask=useCallback((task:Task)=>setTrail(t=>visit(t,{task:structuredClone(task)})),[]);
  const completeView=useCallback((original:Task,result:FocusVisit,stay:boolean)=>{setTrail(t=>finishVisit(t,original.id,result,stay));setTab('focus');setMenu(false)},[]);
- const message=useCallback((x:string)=>setToast(x),[]);
+ const message=useCallback((text:string)=>setToast({text}),[]);
  const [evidenceLead,setEvidenceLead]=useState<Lead|null>(null);
  const snoozeRecommendation=useRef<Recommendation|undefined>(undefined);
- useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(''),4000);return()=>clearTimeout(id)},[toast]);
+ useEffect(()=>{if(!toast)return;const id=setTimeout(()=>setToast(null),4000);return()=>clearTimeout(id)},[toast]);
  const commit=useCallback(<T,>(action:(draft:State)=>T,options:{replenish?:boolean;feedback?:boolean}={}):T=>{
    if(options.feedback)setFeedback(null);
    const before=engine?engine.getSnapshot().document:stateRef.current;const draft=structuredClone(before);const result=action(draft);
@@ -176,6 +176,6 @@ function Workspace({user}:{user?:User}){
   {fxLead&&<FXQuickDialog draftScope={user?.id} lead={core.getLead(state,fxLead.id)||fxLead} onClose={()=>setFxLead(null)} onSave={fx=>{const saved=updateFX(fxLead,fx);if(saved)setFxLead(null);return saved}}/>}
   {queueLead&&state.leads.some(l=>l.id===queueLead)&&<WorkQueueReview key={queueLead} state={state} lead={state.leads.find(l=>l.id===queueLead)!} onClose={()=>setQueueLead(null)} onSave={(value,expected)=>{try{commit(s=>recordQueueEvidence(s,queueLead,value,expected,new Date()),{replenish:false});setQueueLead(null);message('Queue evidence saved · readiness and schedules unchanged.')}catch(e){return (e as Error).message}}}/>}
   {readinessLead&&<ConfirmReadiness lead={core.getLead(state,readinessLead.id)||readinessLead} onClose={()=>setReadinessLead(null)} onSubmit={submitReadiness}/>}
-  {toast&&<div className="toast" role="status">{toast}</div>}
+  {toast&&<div className="toast" role="status">{toast.text}</div>}
  </div>;
 }

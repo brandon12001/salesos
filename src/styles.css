@@ -173,3 +173,59 @@
 .phone-log-prospect-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #29415a;font-size:12px;}
 .phone-log-prospect-row>div{display:grid;gap:3px;}
 .phone-log-prospect-row small{font-size:11px;color:#a4b6ca;}
+/* Keep copying and recording together in the persistent call bar. */
+.focus-call-header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+.focus-call-header .focus-call-identity { flex: 1; min-width: 0; margin-bottom: 0; }
+.focus-call-number { display: flex; align-items: center; gap: 12px; }
+.focus-call-number strong { font-size: 16px; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.focus-call-number .btn { min-height: 44px; flex-shrink: 0; }
+@media(max-width:700px) { .focus-call-header { flex-direction: column; align-items: stretch; gap: 6px; } .focus-call-number { justify-content: space-between; } .focus-call-number strong { font-size: 15px; } .focus-call-number .btn { padding: 9px 10px; font-size: 12px; } }
+
+/* Daily execution: show the prospect before optional session administration. */
+.focus-main { padding-top: 14px; gap: 9px; }
+.focus-controls,.focus-session-tools { width: min(970px,100%); min-width: 0; }
+.focus-controls .work-queues { width: 100%; margin: 0 0 8px; }
+.focus-controls .work-queue-buttons { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 2px; }
+.focus-controls .work-queue-buttons .btn { flex: 0 0 auto; min-height: 34px; }
+.focus-controls .focus-navigation { margin: 0; width: 100%; }
+.focus-session-tools { color: #a9c1dc; font-size: 12px; }
+.focus-session-tools>summary { cursor: pointer; padding: 5px 0; }
+.focus-session-tools[open] { border: 1px solid #2e4564; padding: 10px 12px; border-radius: 10px; }
+.focus-session-tools .kpi-first-status { margin: 8px 0; }
+.focus-session-tools select { max-width: 100%; }
+.focus-main .focus-card { padding: 20px 24px; }
+.focus-heading { padding-bottom: 10px; gap: 12px; }
+.focus-heading h1 { font-size: clamp(23px,2.6vw,29px); margin: 5px 0; }
+.focus-loaded { margin: 0 0 7px; font-size: 11px; }
+.focus-card .company-identity { margin: 8px 0 10px; padding: 10px 13px; }
+.focus-card .company-identity-description { font-size: 16px; margin: 5px 0 7px; }
+.focus-card .company-identity-fx { margin: 6px 0; }
+.focus-card .focus-purpose { padding: 11px 13px; gap: 8px 20px; margin-bottom: 12px; }
+.focus-card .focus-purpose .micro-label { margin-bottom: 4px; }
+@media(max-width:700px) {
+ .focus-main { padding-top: 10px; gap: 7px; }
+ .focus-main .focus-card { padding: 15px; }
+ .focus-heading { flex-direction: row; }
+ .focus-heading-right { flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+ .focus-controls .focus-navigation { flex-wrap: nowrap; gap: 5px; }
+ .focus-controls .focus-navigation .btn { padding: 8px; font-size: 11px; min-width: 0; }
+ .focus-controls .focus-navigation .btn:last-of-type { flex: 1; }
+ .focus-card .company-identity { padding: 10px; }
+ .focus-session-tools .section-between { flex-wrap: wrap; gap: 8px; }
+}
+@media(min-width:1001px) {
+ .focus-controls { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 12px; }
+ .focus-controls .work-queues { grid-column: 1/-1; }
+ .focus-controls .focus-session-tools { width: auto; }
+ .focus-controls .focus-session-tools[open] { grid-column: 1/-1; width: 100%; margin-top: 8px; }
+}
+/* Keep long industry statistics from making the fixed strip taller on phones. */
+.focus-bottom-stack .focus-bottom { overflow-x: auto; }
+.focus-bottom-stack .focus-bottom>div { flex-shrink: 0; }
+.focus-bottom-stack .focus-bottom :is(span,small) { white-space: nowrap; }
+@media(max-width:1300px) { .focus-bottom-stack .focus-bottom { justify-content: flex-start; } }
+@media(max-width:700px) {
+ .focus-heading>div:first-child { min-width: 0; overflow-wrap: anywhere; }
+ .focus-heading-right { max-width: 45%; }
+ .focus-heading-right .badge { white-space: normal; text-align: center; overflow-wrap: anywhere; }
+}
