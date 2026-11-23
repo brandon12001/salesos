@@ -122,7 +122,7 @@ export function importPhoneLog(s:State,rows:PhoneCallRow[],selections:ImportSele
   if(!matches.activities.some(a=>a.activityId===choice))throw Error('The matching activity changed for '+row.number+' at '+row.time+'. Reopen the preview.');
   const a=s.activities.find(a=>a.id===choice)!;
   // Preserve the call outcome, buyer readiness, notes, follow-ups, and task history.
-  saveActivityDetails(s,a.id,{...fieldsFor(a),durationMins:row.durationSeconds/60},activityStamp(a),now);
+  if(row.hasDuration)saveActivityDetails(s,a.id,{...fieldsFor(a),durationMins:row.durationSeconds/60},activityStamp(a),now);
   a.phoneCallLocalTime=row.date+' '+row.time;
   base.activityId=a.id;base.leadId=a.leadId||undefined;base.contactId=a.contactId||undefined;
   used.add(choice);entries.push(base);linked++;
@@ -141,7 +141,7 @@ export function minuteKpi(s:State,now:Date){
  const unlogged=imports.filter(r=>!r.activityId);
  const calls=unique.size+unlogged.length;
  const importedByActivity=new Map(imports.filter(r=>r.activityId).map(r=>[r.activityId,r]));
- const recordedSeconds=[...unique.values()].reduce((sum,a)=>sum+(importedByActivity.get(a.id)?.durationSeconds??Math.round((a.durationMins||0)*60)),0)
+ const recordedSeconds=[...unique.values()].reduce((sum,a)=>sum+(importedByActivity.get(a.id)?.hasDuration?importedByActivity.get(a.id)!.durationSeconds:Math.round((a.durationMins||0)*60)),0)
    +unlogged.reduce((sum,r)=>sum+r.durationSeconds,0);
  const dialCreditSeconds=calls*60,totalSeconds=dialCreditSeconds+recordedSeconds;
  const remainingSeconds=Math.max(0,KPI_MINUTES_TARGET*60-totalSeconds);
