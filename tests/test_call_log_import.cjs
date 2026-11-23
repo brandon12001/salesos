@@ -49,7 +49,7 @@ try{
  const choices={[parsed.rows[0].key]:act.id,[parsed.rows[1].key]:'unlogged',[parsed.rows[2].key]:'skip'};
  const before=clone(clean),r=imp.importPhoneLog(clean,parsed.rows,choices,now);
  assert.deepEqual({...r},{linked:1,unlogged:1,skipped:1,added:2});
- assert.equal(clean.activities.length,1,'matched updates do not create new sales activities');
+ assert.equal(clean.activities.length,before.activities.length,'matched updates do not create new sales activities');
  assert.equal(clean.activities[0].durationMins,160/60);assert.equal(clean.activities[0].phoneCallLocalTime,'2026-11-23 13:31');
  assert.equal(clean.activities[0].outcome,'No answer');assert.equal(clean.activities[0].notes,'Already logged in Focus Mode');
  assert.equal(clean.activities[0].editHistory.length,1,'time edit is audited');
