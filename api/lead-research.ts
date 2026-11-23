@@ -50,7 +50,7 @@ export default async function handler(req:Request,res:ServerResponse){
   if(!response.ok)return respond(res,502,{error:'Companies House discovery unavailable ('+response.status+'). No candidates were saved.'});
   const payload=await response.json() as {items?:Result[];hits?:number};
   const now=new Date().toISOString();
-  let items=(Array.isArray(payload.items)?payload.items:[]).filter(row=>row.company_status==='active'&&!!row.company_name&&/^(\d{8}|[A-Z]{2}\d{6}|R\d{7})$/i.test(row.company_number||'')&&row.company_type==='ltd')
+  let items: Array<{company:string;companyNumber:string;sector:Profile;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;researchMethod?:string;researchConfidence?:string;evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>}>= (Array.isArray(payload.items)?payload.items:[]).filter(row=>row.company_status==='active'&&!!row.company_name&&/^(\d{8}|[A-Z]{2}\d{6}|R\d{7})$/i.test(row.company_number||'')&&row.company_type==='ltd')
    .map(row=>({
     company:String(row.company_name).trim(),companyNumber:String(row.company_number).toUpperCase(),sector:profile,
     sicCodes:(row.sic_codes||[]).filter(code=>/^\d{5}$/.test(code)),
