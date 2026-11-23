@@ -20,7 +20,7 @@ assert.ok(lead.companyBriefingEditedAt);
 assert.throws(()=>saveManualCompanyBriefing(s,lead.id,'Stale change from another device.',stamp),/changed elsewhere/);
 const restored=core.normalize(JSON.parse(JSON.stringify(s)));
 assert.equal(restored.leads.find(l=>l.id===lead.id).companyBriefing,draft,'JSON backup and cloud normalisation preserve briefing');
-assert.deepEqual({contacts:lead.contacts,tasks:s.tasks,activities:s.activities,researchRationale:lead.researchRationale,stage:lead.stage,readiness:lead.readiness},JSON.parse(before),'Manual briefing cannot change sales state');
+assert.equal(JSON.stringify({contacts:lead.contacts,tasks:s.tasks,activities:s.activities,researchRationale:lead.researchRationale,stage:lead.stage,readiness:lead.readiness}),before,'Manual briefing cannot change sales state');
 const csv='Company Name,Company Number,Business Description,Standardised Industry,Company Briefing\nFictional Clearview Recruitment Ltd,00076543,Recruitment firm - specialist hiring,Recruitment & Staffing,A replacement briefing that would overwrite seller notes.';
 const plan=planCompanyEnrichment(s,csv,{replaceResearchCopy:false});
 assert.equal(plan.matched,1);
