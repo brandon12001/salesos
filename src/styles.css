@@ -100,3 +100,12 @@
 .clarity-example small { display: block; font-size: 11px; opacity: .85; line-height: 1.5; overflow-wrap: anywhere; }
 .clarity-example p { margin: 6px 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
 @media (max-width: 700px) { .company-identity { padding: 11px; } .company-identity-description { font-size: 16px; } .company-identity-chips { display: grid; gap: 3px; } }
+
+/* Optional business background: off-screen until deliberately opened during call prep. */
+.company-briefing { margin: 4px 0 11px; border-top: 1px solid #31475f; padding-top: 8px; }
+.company-briefing summary { cursor: pointer; color: #b9d5f7; font-weight: 650; font-size: 13px; line-height: 1.6; }
+.company-briefing summary:hover { color: #eef6ff; }
+.company-briefing summary:focus-visible { outline: 2px solid #9abaff; outline-offset: 3px; border-radius: 3px; }
+.company-briefing-content { padding: 8px 0 2px 14px; max-width: 780px; }
+.company-briefing-content p { color: #cbd9e9; font-size: 13px; line-height: 1.65; margin: 0 0 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.company-briefing-editor textarea { width: 100%; max-width: 100%; box-sizing: border-box; }
