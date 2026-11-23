@@ -13,7 +13,7 @@ export function DupeQueue({state,onCRMCheck,onRequest,onDecision,onReserve}:{
   onDecision:(id:string,decision:Decision,note:string)=>boolean;
   onReserve:()=>void;
 }){
-  const held=useMemo(()=>core.dupeQueue(state) as Lead[],[state]);
+  const held=useMemo(()=>(core.dupeQueue(state) as Lead[]).slice().sort((a,b)=>(b.opportunityScore??-1)-(a.opportunityScore??-1)||a.company.localeCompare(b.company)),[state]);
   const [filter,setFilter]=useState<Filter>('all'),[query,setQuery]=useState('');
   const [dialog,setDialog]=useState<{id:string;mode:DialogMode}|null>(null);
   const [activityDate,setActivityDate]=useState(''),[note,setNote]=useState(''),[decision,setDecision]=useState<Decision>('approved'),[ack,setAck]=useState(false);
@@ -33,7 +33,7 @@ export function DupeQueue({state,onCRMCheck,onRequest,onDecision,onReserve}:{
     if(ok)close();
   };
   return <div className="page-content">
-    <div className="page-heading"><div><span className="eyebrow">FUTURE RECLAIM OPPORTUNITIES</span><h1>Duplicate Queue</h1><p>Bank Salesforce-owned prospects, review them after three calendar months without qualifying activity, then request reassignment manually.</p></div><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Back to Lead Reserve</button></div>
+    <div className="page-heading"><div><span className="eyebrow">FUTURE RECLAIM OPPORTUNITIES</span><h1>Duplicate Queue</h1><p>Bank Salesforce-owned prospects ranked by research priority. Your manager can verify missing activity dates for exceptional companies; three calendar months without qualifying activity permits a manual reassignment request.</p></div><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Back to Lead Reserve</button></div>
     <div className="metrics-grid">
       <div className="metric"><span>Banked duplicates</span><strong>{held.length}</strong><small>Excluded from calls and activation</small></div>
       <div className="metric"><span>Review date reached</span><strong>{due}</strong><small>Recheck CRM before any request</small></div>
@@ -46,13 +46,13 @@ export function DupeQueue({state,onCRMCheck,onRequest,onDecision,onReserve}:{
       <p className="hint">After the request is submitted, the company stays on hold. Only explicitly recording an approved reassignment releases it back into your ranked Lead Reserve. Declined requests remain banked.</p>
     </section>
     <section className="panel stack">
-      <div className="section-between"><h2>Banked companies</h2><Badge>{shown.length} shown</Badge></div>
+      <div className="section-between"><h2>Banked companies · highest screening priority first</h2><Badge>{shown.length} shown</Badge></div>
       <div className="filters"><div className="search-wrap"><Icon name="search"/><input aria-label="Search duplicates" placeholder="Search banked companies" value={query} onChange={e=>setQuery(e.target.value)}/></div><select aria-label="Reclaim status" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="all">All CRM holds</option><option value="review-due">Review due</option><option value="waiting">Waiting three months</option><option value="missing-activity">Last activity needed</option><option value="requested">Request submitted</option><option value="declined">Request declined</option></select></div>
       {shown.length?<div className="table-wrap"><table className="data-table"><thead><tr><th>Company</th><th>FX score</th><th>Last qualifying CRM activity</th><th>Review date</th><th>Reclaim stage</th><th>Next action</th></tr></thead><tbody>{shown.slice(0,250).map(l=>{
         const stage=core.dupeState(l) as string,dueDate=core.reclaimReviewDate(l) as string;
         const status=stage==='review-due'?'Review due':stage==='waiting'?'Waiting':stage==='requested'?'Awaiting decision':stage==='declined'?'Declined':'Activity date needed';
         return <tr key={l.id}>
-          <td><strong>{l.company}</strong><small>{l.sector||'Sector unknown'}</small><small>{l.crmNote||'Salesforce ownership hold'}</small></td>
+          <td><strong>{l.company}</strong><button className="btn quiet small" onClick={()=>void navigator.clipboard.writeText(l.company)}>Copy name</button><small>{l.sector||'Sector unknown'}</small><small>{l.crmNote||'Salesforce ownership hold'}</small></td>
           <td><Badge tone={l.opportunityScore!==null&&l.opportunityScore>=80?'green':'muted'}>{l.opportunityScore===null?'Not scored':l.opportunityScore+'/100'}</Badge></td>
           <td>{l.crmLastActivityAt?day(l.crmLastActivityAt):'Not recorded'}</td>
           <td>{dueDate?day(dueDate):'Needs activity date'}</td>
