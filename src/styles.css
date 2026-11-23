@@ -141,3 +141,28 @@
 .kpi-first-status progress::-moz-progress-bar { background: #3b82f6; border-radius: 8px; }
 .kpi-first-status small { color: #a6c2e0; font-size: 12px; }
 @media(max-width:700px) { .kpi-toolbar-marker { font-size: 11px; padding: 4px 7px; } .kpi-first-status { padding: 10px; } }
+
+/* Phone log reconciliation: compact at a glance, expanded only when requested. */
+.kpi-minute-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:6px 0;}
+.kpi-minute-grid>div{padding:10px;border:1px solid #38506d;border-radius:9px;background:#101e31;display:grid;gap:5px;}
+.kpi-minute-grid span,.phone-log-totals span{color:#b6c7e2;font-size:12px;}
+.kpi-minute-grid strong{font-size:17px;line-height:1.2;color:#f5f9ff;}
+.kpi-minute-grid small{font-size:11px;color:#a6b8d0;line-height:1.5;}
+.phone-log-import{border:1px solid #496786;border-radius:12px;background:#13263d;padding:15px;margin:0 0 15px;display:grid;gap:12px;}
+.phone-log-import h3,.phone-log-import h4{margin:0;}
+.phone-log-import textarea{width:100%;box-sizing:border-box;min-height:130px;font-family:ui-monospace,Consolas,monospace;}
+.phone-log-import .phone-log-fields{display:flex;gap:12px;max-width:250px;}
+.phone-log-import input[type=date]{width:100%;box-sizing:border-box;}
+.phone-log-totals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.phone-log-totals>div{background:#1c3552;border:1px solid #395573;border-radius:8px;padding:10px;display:grid;gap:5px;}
+.phone-log-totals b{font-size:15px;}
+.phone-log-table{max-height:380px;overflow:auto;border:1px solid #3b5069;border-radius:8px;}
+.phone-log-table table{border-collapse:collapse;width:100%;font-size:12px;min-width:700px;}
+.phone-log-table th{position:sticky;top:0;background:#263b55;text-align:left;color:#e3efff;padding:8px;}
+.phone-log-table td{vertical-align:top;border-bottom:1px solid #304862;padding:8px;}
+.phone-log-table td small{display:block;color:#aec3de;margin-top:3px;}
+.phone-log-table td select{min-width:240px;max-width:380px;width:100%;font-size:12px;}
+.phone-log-confirm{display:flex;align-items:flex-start;gap:8px;padding:10px;background:#263c52;border-radius:7px;line-height:1.5;font-size:12px;}
+.phone-log-confirm input{margin-top:3px;}
+.phone-log-outcome{display:grid;gap:5px;color:#b4cae4;font-size:12px;}
+@media(max-width:720px){.kpi-minute-grid{grid-template-columns:1fr;}.phone-log-totals{grid-template-columns:repeat(2,minmax(0,1fr));}}
