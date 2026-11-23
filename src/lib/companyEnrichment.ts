@@ -18,6 +18,19 @@ function registration(s:string){return s.replace(/\s/g,'').toUpperCase()}
 function domain(s:string){
  try {return new URL(/^https?:\/\//i.test(s.trim())?s.trim():'https://'+s.trim()).hostname.replace(/^www\./i,'').toLowerCase()}catch{return ''}
 }
+export const companyDomainKey=domain;
+export function matchExistingCompany(s:State,item:{name:string;number:string;domain:string}):{lead:Lead}|{kind:'ambiguous'|'conflicts'|'unmatched';reason:string}{
+ const number=registration(item.number),nameMatches=s.leads.filter(l=>companyKey(l.company)===companyKey(item.name));
+ const regMatches=number?s.leads.filter(l=>registration(l.companyNumber||'')===number):[];
+ if(regMatches.length>1||nameMatches.length>1)return {kind:'ambiguous',reason:'Several existing companies share the same identifier; manual review required'};
+ const byReg=regMatches[0],byName=nameMatches[0];
+ if(byReg&&byName&&byReg.id!==byName.id)return {kind:'conflicts',reason:'Registration number and company name resolve to different records'};
+ if(byName&&number&&byName.companyNumber&&registration(byName.companyNumber)!==number)return {kind:'conflicts',reason:'Existing registration number does not match the CSV'};
+ const lead=byReg||byName;
+ if(!lead)return {kind:'unmatched',reason:'No existing company matched; nothing will be created'};
+ if(!byReg&&item.domain&&lead.companyDomain&&domain(item.domain)&&domain(lead.companyDomain)&&domain(item.domain)!==domain(lead.companyDomain))return {kind:'conflicts',reason:'Company name matches but website domains differ; verify identity'};
+ return {lead};
+}
 const columns:ReadonlyArray<readonly [string,EnrichmentField]>=[
  ['Business Description','businessDescription'],
  ['Standardised Industry','standardisedIndustry'],
@@ -86,19 +99,9 @@ export function planCompanyEnrichment(s:State,text:string,options:EnrichmentOpti
  const plan:EnrichmentPlan={totalRows,companies:groups.size,matched:0,changed:0,unchanged:0,unmatched:0,ambiguous:0,conflicts:0,manualDescriptionsProtected:0,updates:[],issues:[],samples:[]};
  for(const item of groups.values()){
   if(item.conflict){plan.conflicts++;plan.issues.push({company:item.name,reason:'Conflicting company-level values across CSV contact rows'});continue;}
-  const nameMatches=s.leads.filter(l=>companyKey(l.company)===companyKey(item.name));
-  const regMatches=item.number?s.leads.filter(l=>registration(l.companyNumber||'')===item.number):[];
-  if(regMatches.length>1||nameMatches.length>1){plan.ambiguous++;plan.issues.push({company:item.name,reason:'Several existing companies share the same identifier; manual review required'});continue;}
-  const byReg=regMatches[0],byName=nameMatches[0];
-  if(byReg&&byName&&byReg.id!==byName.id){plan.conflicts++;plan.issues.push({company:item.name,reason:'Registration number and company name resolve to different records'});continue;}
-  // A legal registration number must not overwrite a different registered company.
-  if(byName&&item.number&&byName.companyNumber&&registration(byName.companyNumber)!==item.number){plan.conflicts++;plan.issues.push({company:item.name,reason:'Existing registration number does not match the CSV'});continue;}
-  const match=byReg||byName;
-  if(!match){plan.unmatched++;if(plan.issues.length<100)plan.issues.push({company:item.name,reason:'No existing company matched; nothing will be created'});continue;}
-  // Domains are supporting evidence, NEVER a standalone merge key.
-  if(!byReg&&item.domain&&match.companyDomain&&domain(item.domain)&&domain(match.companyDomain)&&domain(item.domain)!==domain(match.companyDomain)){
-   plan.conflicts++;plan.issues.push({company:item.name,reason:'Company name matches but website domains differ; verify identity'});continue;
-  }
+  const result=matchExistingCompany(s,item);
+  if('kind' in result){plan[result.kind]++;if(result.kind!=='unmatched'||plan.issues.length<100)plan.issues.push({company:item.name,reason:result.reason});continue;}
+  const match=result.lead;
   plan.matched++;
   const patch:EnrichmentPatch={};
   for(const [key,val] of Object.entries(item.fields) as [EnrichmentField,string][]){
