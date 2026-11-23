@@ -51,7 +51,7 @@ try{
  const optedOut=company(reserve,'Fictional Contact Opted Out Ltd',{leadPool:'reserve'});
  optedOut.contacts[0].optedOut=true;
  const candidates=k.reserveCallCandidates(reserve,now);
- assert.deepEqual(candidates.map(l=>l.company),['Fictional Reserve Callable Ltd']);
+ assert.equal(JSON.stringify(candidates.map(l=>l.company)),JSON.stringify(['Fictional Reserve Callable Ltd']));
  const before=clone(reserve),out=k.replenishCallSupply(reserve,now,true);
  assert.equal(out.activated,1);
  assert.equal(ready.leadPool,'active');
