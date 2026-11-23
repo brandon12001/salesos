@@ -1,3 +1,13 @@
+# Current update — 23 November 2026: call outcomes without scrolling
+
+Production main is `558fe970840d2514cec333df20e43b30ec10172c` (PRs #10/#11 merged and deployed). The user's standing automatic-release instruction in AGENTS.md remains active. The current fix is `fix/focus-call-controls` in `/workspace/salesos-call-controls`, based on this main. A separate expandable company briefing PR #12 was already open; preserve its independent work and do not replace main from its older base.
+
+The user reported needing to scroll to log calls. Active call/callback outcomes now stay in a fixed bar above the stats strip, with current contact/company identity, the existing one-click/dialog handlers and responsive wrapped labels. Historical review/empty states show no call bar. Dynamic bottom spacing keeps page content reachable and notifications/dialogs clear; instant outcomes ignore a second mouse double-click against the next task. No data/schema, scoring, scheduling, readiness, stage, reserve or XP changes. See [behaviour and fictional browser validation](FOCUS_CALL_CONTROLS.md).
+
+The change is authorised for automatic release after build/unit/browser checks. Feature-branch deployment is disabled; obtain a fresh private workspace backup before the main release, preserve all production records and stop/report a failed release step. Earlier draft-only notes below are historical. Track this fix's PR for final commit, checks and deployment details.
+
+---
+
 # Release update — 23 November 2026: standing automatic releases
 
 The user now authorises routine tested SalesOS releases automatically, with no further merge/deploy confirmation. This supersedes the older draft-only approval notes below; the production-data protection constraints remain. See AGENTS.md for the exact standing instruction.
