@@ -33,8 +33,8 @@ async function restore(p,document){
  const expected=JSON.parse(JSON.stringify(core.normalize(document)));
  await nav(p,'Settings');p.once('dialog',d=>d.accept());await p.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'fictional-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
  // FileReader/import is asynchronous: the previous fixture may still say Saved.
- // Confirm this exact document has entered the local outbox before awaiting cloud acknowledgement.
- await poll(async()=>{try{assert.deepEqual(await state(p),expected);return true}catch{return false}});
+ // Confirm this exact document and its drained outbox, then check the visible acknowledgement.
+ await poll(async()=>{try{const current=await cache(p);assert.deepEqual(current.document,expected);return !current.dirty}catch{return false}});
  await saved(p);
 }
 function calling(name,phone='07700900123'){const s=core.newState();core.createLead(s,{crmClearance:'cleared',crmCheckedAt:core.today(),company:name,contact:'Fictional CFO',title:'CFO',mobile:phone,email:'fictional@salesos.example',readiness:1});return s}
