@@ -11,6 +11,18 @@ module.exports=async function({a,saved,state,restore,nav,core,artifacts}){
  }
  await a.bringToFront();
  async function copyVisible(expected){await visibleControls();const y=await a.evaluate(()=>window.scrollY);await dock().getByRole('button',{name:'Copy number',exact:true}).click();assert.equal(await a.evaluate(()=>window.scrollY),y,'Copying should not scroll the page');assert.equal(await a.evaluate(()=>navigator.clipboard.readText()),expected)}
+ const compact=fixture();compact.settings.kpiFirstMode=1;compact.settings.reserveAutoActivate=0;compact.meta.industryFocus={enabled:true,category:'recruitment'};compact.meta.callPreparation={version:1,companies:{}};
+ for(const l of compact.leads){l.businessDescription='Recruitment firm — recruits engineering contractors for UK and overseas businesses.';compact.meta.callPreparation.companies[l.id]={fxClue:'Operates overseas recruitment offices; settlement currencies unconfirmed.',question:'Are overseas customer fees invoiced in sterling or foreign currency?',hypothesis:'Unverified currency exposure',internationalEvidence:'Overseas offices',sources:'Fictional archive',sourceDate:core.today()}}
+ await load(compact);const beforeLayout=await state(a);
+ for(const [width,height] of [[1920,900],[1366,768],[1024,768],[390,844]]){
+  await a.setViewportSize({width,height});await a.evaluate(()=>scrollTo(0,0));await visibleControls();
+  const card=await a.locator('.focus-card').boundingBox(),bar=await dock().boundingBox();assert.ok(card.y<(width>700?230:350),'Prospect starts too far down the first screen');
+  for(const selector of ['.focus-heading','.company-identity-description',...(width>=1366?['.focus-purpose']:[])]){const box=await a.locator(selector).boundingBox();assert.ok(box.y>=0&&box.y+box.height<=bar.y,'First-screen call preparation obscured: '+selector+' at '+width)}
+  assert.equal(await a.locator('.focus-session-tools').getAttribute('open'),null);assert.equal(await a.getByRole('progressbar',{name:'KPI minutes completed today'}).isVisible(),false);
+  await a.screenshot({path:path.join(artifacts,'compact-focus-'+width+'.png'),animations:'disabled'});
+ }
+ await a.setViewportSize({width:1366,height:768});await a.locator('.focus-session-tools>summary').click();await a.getByRole('progressbar',{name:'KPI minutes completed today'}).waitFor();await a.getByRole('button',{name:'Paste call log',exact:true}).click();await a.getByRole('button',{name:'Hide call log importer',exact:true}).waitFor();await a.getByRole('button',{name:'Hide call log importer',exact:true}).click();await a.getByRole('button',{name:'Industry Lead Reserve',exact:true}).waitFor();await a.locator('.focus-session-tools>summary').click();assert.deepEqual(await state(a),beforeLayout,'Opening session tools must not change sales data or settings');
+ console.log('PASS: KPI + Industry Focus first-screen company and desktop call objective, collapsed optional tools, accessible call-log importer, unchanged KPI/settings/history');
  await load(fixture());const initial=await state(a),first=(await dock().getAttribute('data-task-id')),firstLead=initial.tasks.find(t=>t.id===first).leadId;
  for(const [width,height] of [[1440,900],[1366,768],[1024,600],[768,1024],[390,844],[320,568],[844,390]]){
   await a.setViewportSize({width,height});await a.evaluate(()=>window.scrollTo(0,0));await copyVisible('+447700900123');await a.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));await copyVisible('+447700900123');

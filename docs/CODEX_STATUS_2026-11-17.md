@@ -1,3 +1,13 @@
+# Current update — 23 November 2026: compact daily calling screen
+
+Work is on `fix/compact-focus-screen`, based on released main `18feca4` (PR #16). It incorporates the previously unreleased pinned-phone fix and preserves PRs #14–#16, including the single **100 KPI minutes** unlock target, call-history reconciliation and reserve safeguards. The older `fix/pinned-phone-copy` branch is superseded by this combined release. Keep separate PR #12's company-briefing work independent.
+
+Focus now shows compact queue/navigation controls followed immediately by the prospect's company summary and call objective. Full KPI tiles, paste-call-log launch, recent tasks, industry reserve link and mode explanations remain in a collapsed **Session details & tools** disclosure; Power Hour is below the task card. Phone number, Copy number and all six existing outcomes stay in the same pinned bar, using the selected task's actual contact method. No changes to sales rules, data/schema, cloud contracts, stages/readiness, KPI calculations, scoring, commitments or reserve settings. See [layout and regression coverage](FOCUS_CALL_CONTROLS.md).
+
+Run build, all fourteen unit suites and the complete fictional-only isolated browser suite before the standing-authorised automatic release. CI must pass on the final source head. Feature-branch deployments are disabled. Fresh recoverable production backup: `/workspace/work/private-compact-focus-release-2026-11-23/SalesOS_before_compact_focus.json`, revision 180, SHA-256 `7047f19613b080d55e4c2d3011723c42dcdb4c923dd4e69c3d9f2173b185bae8` (442 companies, 508 contacts, 293 tasks, 888 activities). Never restore it over later user work. Verify deployment SHA/READY/alias and read-only data preservation; signed-in work-browser acceptance remains the user's separate check. Track the combined PR for exact CI and release results.
+
+---
+
 # Current update — 23 November 2026: copy and log from the same pinned bar
 
 PR #13's call outcome bar is deployed on main `bde567c4a8674bf89a1950ec7fe3662d52616298`. The user reported that copying the number still required scrolling. The follow-up `fix/pinned-phone-copy` in `/workspace/salesos-phone-copy` moves the active call's number and single Copy number button into that persistent bar, keeping current contact/company identity and all six outcomes together. Historical/non-call copying retains its existing inline placement. Existing task/contact/method binding and clipboard action are reused; copying never logs outreach.

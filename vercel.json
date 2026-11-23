@@ -13,7 +13,8 @@
       "feature/call-ready-preparation": false,
       "feature/opportunity-queues": false,
       "fix/focus-call-controls": false,
-      "fix/pinned-phone-copy": false
+      "fix/pinned-phone-copy": false,
+      "fix/compact-focus-screen": false
     }
   }
 }
