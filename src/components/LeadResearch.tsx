@@ -38,7 +38,7 @@ export function LeadResearch({state,onDiscover,onAvailable,onHold,onMove,onDismi
    if(!Array.isArray(rows)||!Number.isInteger(payload.nextCursor))throw Error('Research returned an unexpected result. Nothing was imported.');
    if(failed(onDiscover(rows,profile,payload.nextCursor)))return;
    setFilter('unchecked');
-   setStatus('Checked '+payload.resultsScanned+' official company records (SIC '+payload.sourceSic+'). New legal entities were added to the clearance queue; existing companies were skipped.');
+   setStatus('Checked '+payload.resultsScanned+' Companies House records (SIC '+payload.sourceSic+'). '+(payload.webResearchEnabled?payload.webSearches+' website-search checks attempted.':'No web evidence checks: optional BRAVE_SEARCH_API_KEY not configured.')+' New legal entities staged; existing companies skipped.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  function accept(id:string){if(!verified){setError('Confirm you personally checked Salesforce before marking a company available.');return}if(!failed(onAvailable(id)))setStatus('Salesforce availability recorded. Move the company to Lead Reserve when ready.')}
@@ -50,7 +50,7 @@ export function LeadResearch({state,onDiscover,onAvailable,onHold,onMove,onDismi
   if(!failed(onMove(ids))){setSelected({});setStatus('Moved '+ids.length+' cleared companies to the Lead Reserve. No call tasks created.')}
  }
  return <div className="page-content">
-  <div className="page-heading"><div><span className="eyebrow">COMPANIES HOUSE DISCOVERY</span><h1>Lead Research & Clearance</h1><p>Discover companies automatically, check each name in Salesforce, then move cleared companies individually or in bulk. This is a screening stage, not verified FX qualification.</p></div>
+  <div className="page-heading"><div><span className="eyebrow">RULES-BASED COMPANY DISCOVERY · NO AI</span><h1>Lead Research & Clearance</h1><p>Scan active UK companies, apply explainable international-business screening rules, check each name in Salesforce, then move cleared companies individually or in bulk. High priority is not confirmed FX qualification.</p></div>
    <div className="button-row"><button className="btn secondary" onClick={onDupes}><Icon name="archive"/> Duplicate Queue</button><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Lead Reserve</button></div></div>
   <div className="metrics-grid">
    <div className="metric"><span>Awaiting Salesforce check</span><strong>{pending.length}</strong><small>Never callable</small></div>
@@ -62,7 +62,7 @@ export function LeadResearch({state,onDiscover,onAvailable,onHold,onMove,onDismi
    <div className="section-between"><h2>Discover new UK companies</h2><Badge tone="blue">Free public-register data</Badge></div>
    <p className="hint">No company submission needed. The scanner chooses a fresh page of active UK registered companies in the selected SIC industries and skips existing SalesOS names and registration numbers. It rotates through industry codes on subsequent runs.</p>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Research sector<select aria-label="Research sector" value={profile} onChange={e=>{setProfile(e.target.value as ResearchSector);setError('')}}>{researchProfiles.map(x=><option value={x.id} key={x.id}>{x.label}</option>)}</select></label><button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking public register…':'Find next batch of companies'}</button></div>
-   <p className="hint">Research priority is capped at 65/100 because SIC classification and company age do <strong>not</strong> establish international payments. No domains, contacts, FX volumes or buyer interest are guessed. A free Companies House API key must be configured server-side for this scanner to run.</p>
+   <p className="hint">Without a web-search key, priority is capped at 65/100: SIC and company age don't prove overseas payments. When optional Brave Search is configured, the top eight registry candidates per scan receive source-linked, keyword-based evidence screening (at most eight searches per batch). Scores can rise to 85 only with signals from independent websites; FX volume and treasury control remain unverified. No AI model is called. Configure the free Companies House API key to scan; web search remains optional and may have usage charges beyond the provider's free credit.</p>
    {registry.lastRunAt&&<small>Last saved research run: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
   </section>
   <section className="panel stack">
@@ -76,8 +76,8 @@ export function LeadResearch({state,onDiscover,onAvailable,onHold,onMove,onDismi
    </div>
    {visible.length?<div className="stack">{visible.map(c=><div key={c.id} className="panel inset stack">
     <div className="section-between"><div><strong>{c.company}</strong><p className="hint">{c.companyNumber} · {c.sector==='recruitment'?'Recruitment':'Machinery & equipment'} · Incorporated {c.incorporated||'date unknown'}</p></div>
-    <Badge tone={c.priority>=58?'blue':'muted'}>{c.priority}/65 screening</Badge></div>
-    <p className="hint">{c.reason}</p>
+    <Badge tone={c.priority>=75?'green':c.priority>=58?'blue':'muted'}>{c.priority}/100 priority</Badge></div>
+    <p className="hint">{c.reason}</p>{c.researchMethod==='web-rule-screen'&&!!c.evidence?.length?<div className="stack"><small>Rule-based web evidence · {c.researchConfidence||'Low'} confidence · not confirmed FX payments</small>{c.evidence.slice(0,4).map((signal,i)=><div className="hint" key={signal.sourceUrl+i}><strong>{signal.label}</strong> · <a href={signal.sourceUrl} target="_blank" rel="noopener noreferrer">View source</a><small>{signal.excerpt}</small></div>)}</div>:<p className="hint">Registry screening only · No independent cross-border evidence verified</p>}
     <div className="button-row"><a className="btn secondary small" href={c.sourceUrl} target="_blank" rel="noopener noreferrer">Companies House <Icon name="external" size={13}/></a><button className="btn secondary small" onClick={()=>void copy(c.company)}><Icon name="copy"/> Copy name</button>
     {c.status==='unchecked'&&<><button className="btn primary small" disabled={!verified} onClick={()=>accept(c.id)}>Available — checked</button><button className="btn secondary small" onClick={()=>{setOwnerId(ownerId===c.id?'':c.id);setOwner('');setActivity('')}}>Already owned</button><button className="btn quiet small" onClick={()=>{if(window.confirm('Dismiss '+c.company+' from the research queue?'))failed(onDismiss(c.id))}}>Dismiss</button></>}
     {c.status==='cleared'&&<><label className="check-row"><input type="checkbox" checked={!!selected[c.id]} onChange={e=>setSelected(s=>({...s,[c.id]:e.target.checked}))}/> Select</label><button className="btn primary small" onClick={()=>move([c.id])}>Move to reserve</button></>}

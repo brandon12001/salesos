@@ -2,7 +2,7 @@ import type {State,Lead} from '../types';
 import {core} from './core';
 
 export type ResearchSector='recruitment'|'goods';
-export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string};
+export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>};
 export type ClearanceStatus='unchecked'|'cleared'|'held'|'moved'|'dismissed';
 export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string};
 type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string};
@@ -19,7 +19,13 @@ const isDate=(v:string)=>/^\d{4}-\d\d-\d\d$/.test(v)&&!Number.isNaN(Date.parse(v
 function ensureValid(d:Discovery){
  if(!d||!String(d.company||'').trim()||!/^([A-Z]{2}\d{6}|\d{8}|R\d{7})$/.test(reg(d.companyNumber)))throw Error('Research contained a company with an invalid legal identity.');
  if(!['recruitment','goods'].includes(d.sector)||!Array.isArray(d.sicCodes)||!d.sicCodes.every(x=>/^\d{5}$/.test(x)))throw Error('Invalid research industry evidence.');
- if(!Number.isInteger(d.priority)||d.priority<0||d.priority>65)throw Error('Companies House screening priority cannot exceed 65 without independent commercial evidence.');
+ if(!Number.isInteger(d.priority)||d.priority<0||d.priority>85)throw Error('Research priority outside permitted range.');
+ if(d.priority>65){
+  const strong=(d.evidence||[]).filter(e=>e.strength==='strong'&&e.label?.trim()&&e.excerpt?.trim()&&/^https:\/\//.test(e.sourceUrl));
+  const hosts=new Set(strong.map(e=>{try{return new URL(e.sourceUrl).hostname.toLowerCase()}catch{return ''}}).filter(Boolean));
+  if(d.researchMethod!=='web-rule-screen'||strong.length===0||hosts.size<1)throw Error('High-scoring research requires source-linked cross-border evidence.');
+  if(d.priority>75&&hosts.size<2)throw Error('Scores over 75 require independent websites.');
+ }
  if(d.sourceUrl!==`https://find-and-update.company-information.service.gov.uk/company/${reg(d.companyNumber)}`)throw Error('Research source must be the official Companies House legal-entity record.');
  if(!isDate(d.foundAt.slice(0,10))||!d.reason?.trim())throw Error('Research lacks an evidence date or explanation.');
 }
@@ -55,7 +61,7 @@ function reserveData(c:Candidate,clearance:'cleared'|'hold',extra:Record<string,
  standardisedIndustry:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
  leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:c.priority,
  researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.',
- researchSources:c.sourceUrl,researchConfidence:'Low — Companies House registry screening only',researchHypothesis:'Potential FX requirement not independently verified; qualify before prioritising outreach.',
+ researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl)].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:'Potential FX requirement not independently verified; qualify before prioritising outreach.',
  crmClearance:clearance,crmCheckedAt:c.checkedAt||core.today(),crmNote:c.crmNote||'Manual Salesforce duplicate check recorded',readiness:1,
  readinessEvidence:'Unaware default for newly discovered company, not a verified buyer statement',
  nextMilestone:core.NEXT_MILESTONES[0],notes:'Lead Factory · sourced from Companies House. No contact or FX volume invented.',...extra};

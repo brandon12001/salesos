@@ -1,3 +1,4 @@
+import {ruleScore,type SearchHit} from './rule-score';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 
 type Request=IncomingMessage&{body?:unknown};
@@ -49,7 +50,7 @@ export default async function handler(req:Request,res:ServerResponse){
   if(!response.ok)return respond(res,502,{error:'Companies House discovery unavailable ('+response.status+'). No candidates were saved.'});
   const payload=await response.json() as {items?:Result[];hits?:number};
   const now=new Date().toISOString();
-  const items=(Array.isArray(payload.items)?payload.items:[]).filter(row=>row.company_status==='active'&&!!row.company_name&&/^(\d{8}|[A-Z]{2}\d{6}|R\d{7})$/i.test(row.company_number||'')&&row.company_type==='ltd')
+  let items: Array<{company:string;companyNumber:string;sector:Profile;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;researchMethod?:string;researchConfidence?:string;evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>}>= (Array.isArray(payload.items)?payload.items:[]).filter(row=>row.company_status==='active'&&!!row.company_name&&/^(\d{8}|[A-Z]{2}\d{6}|R\d{7})$/i.test(row.company_number||'')&&row.company_type==='ltd')
    .map(row=>({
     company:String(row.company_name).trim(),companyNumber:String(row.company_number).toUpperCase(),sector:profile,
     sicCodes:(row.sic_codes||[]).filter(code=>/^\d{5}$/.test(code)),
@@ -59,7 +60,35 @@ export default async function handler(req:Request,res:ServerResponse){
     reason:'Companies House confirms an active UK limited company classified under SIC '+source.sic+' ('+source.label+'). Operational international activity, payment currencies, FX volume and decision-making autonomy are unverified. Screening priority only.',
     foundAt:now
    })).sort((a,b)=>b.priority-a.priority||a.company.localeCompare(b.company)).slice(0,50);
-  respond(res,200,{items,profile,sourceSic:source.sic,resultsScanned:(payload.items||[]).length,nextCursor:code+1,runAt:now,disclaimer:'Companies House classification is not evidence of FX. No contacts, websites, currency volumes or buyer interest have been verified.'});
+  // Optional zero-AI public web corroboration. Hard cap: eight paid/free-credit
+  // web searches per scan, sequential, never behind the user's back.
+  const searchKey=process.env.BRAVE_SEARCH_API_KEY;
+  const maxSearches=searchKey?Math.min(8,items.length):0;
+  let webSearches=0,webErrors=0;
+  if(searchKey){
+   for(let i=0;i<maxSearches;i++){
+    const company=items[i];
+    try{
+     const phrase=profile==='recruitment'?'international contractor payroll overseas payments employer of record':'imported machinery overseas supplier official distributor';
+     const query='"'+company.company.replace(/[\x22]/g,'').slice(0,85)+'" '+phrase;
+     const web=await fetch('https://api.search.brave.com/res/v1/web/search?'+new URLSearchParams({q:query,count:'7'}),{
+      headers:{'X-Subscription-Token':searchKey,Accept:'application/json'},signal:AbortSignal.timeout(5000)
+     });
+     webSearches++;
+     if(web.status===429){webErrors++;break}
+     if(!web.ok){webErrors++;continue}
+     const found=await web.json() as {web?:{results?:SearchHit[]}};
+     const assessment=ruleScore(company.company,profile,company.priority,found.web?.results||[]);
+     items[i]={...company,priority:assessment.priority,reason:company.reason+' '+assessment.reason,
+      researchMethod:assessment.researchMethod,researchConfidence:assessment.researchConfidence,
+      evidence:assessment.signals};
+    }catch{webErrors++}
+   }
+  }
+  items=items.sort((a,b)=>b.priority-a.priority||a.company.localeCompare(b.company));
+  respond(res,200,{items,profile,sourceSic:source.sic,resultsScanned:(payload.items||[]).length,nextCursor:code+1,runAt:now,
+   webSearches,webErrors,webResearchEnabled:!!searchKey,
+   disclaimer:'Rule-based screening, not AI. Public search snippets may be inaccurate or refer to other entities. Even high-ranked companies have unverified FX volume, invoice currency and treasury autonomy. Companies House-only scores are limited to 65.'});
  }catch(error){
   const message=error instanceof Error?error.message:'Research failed.';
   respond(res,502,{error:/abort|timeout/i.test(message)?'The research source timed out. Retry later.':'Research failed without importing candidates. Check the configured source and retry.'});
