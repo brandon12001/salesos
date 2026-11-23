@@ -1,6 +1,7 @@
 // Run only against tests/browser/stack.cjs. Never point this suite at production.
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const {isDeepStrictEqual}=require('node:util');
 const core=require('../core.cjs');const {poll,jwt}=require('./stack.cjs');
 const origin='http://127.0.0.1:5273',api='http://127.0.0.1:55421',mail='http://127.0.0.1:55424';
 const artifacts=path.resolve('.test-artifacts');fs.mkdirSync(artifacts,{recursive:true});
@@ -34,7 +35,7 @@ async function restore(p,document){
  await nav(p,'Settings');p.once('dialog',d=>d.accept());await p.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'fictional-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
  // FileReader/import is asynchronous: the previous fixture may still say Saved.
  // Confirm this exact document and its drained outbox, then check the visible acknowledgement.
- await poll(async()=>{try{const current=await cache(p);assert.deepEqual(current.document,expected);return !current.dirty}catch{return false}});
+ await poll(async()=>{try{const current=await cache(p);return !current.dirty&&isDeepStrictEqual(current.document,expected)}catch{return false}});
  await saved(p);
 }
 function calling(name,phone='07700900123'){const s=core.newState();core.createLead(s,{crmClearance:'cleared',crmCheckedAt:core.today(),company:name,contact:'Fictional CFO',title:'CFO',mobile:phone,email:'fictional@salesos.example',readiness:1});return s}
