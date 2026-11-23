@@ -27,7 +27,7 @@ try{
  const added=s.leads.find(l=>l.companyNumber==='12000001');
  assert.ok(added);assert.equal(added.leadPool,'reserve');assert.equal(added.crmClearance,'cleared');
  assert.equal(added.contacts.length,0,'no contacts invented by discovery');
- assert.equal(added.researchConfidence,'Low — Companies House registry screening only');
+ assert.equal(added.researchConfidence,'Low — screening only; FX unverified');
  assert.equal(added.opportunityScore,55);assert.equal(added.readiness,1);
  assert.equal(s.tasks.length,0,'moving to reserve still creates no outreach');
  assert.throws(()=>f.moveCleared(s,['ch:12000001']),/not cleared/,'cannot repeat transfer');
