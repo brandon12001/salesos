@@ -9,9 +9,10 @@ export function CompanyBriefing({lead,onSave}:{lead:Lead;onSave:SaveCompanyBrief
  const [editing,setEditing]=useState(false);
  const [draft,setDraft]=useState('');
  const [error,setError]=useState('');
- const start=()=>{setDraft(lead.companyBriefing||'');setError('');setEditing(true)};
+ const [expected,setExpected]=useState('');
+ const start=()=>{setDraft(lead.companyBriefing||'');setExpected(briefingStamp(lead));setError('');setEditing(true)};
  const save=()=>{
-  const failure=onSave(lead.id,draft,briefingStamp(lead));
+  const failure=onSave(lead.id,draft,expected);
   if(failure){setError(failure);return}
   setEditing(false);setError('');
  };
