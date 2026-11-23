@@ -29,7 +29,14 @@ async function cache(p){return p.evaluate(()=>{const k=Object.keys(localStorage)
 async function state(p){return (await cache(p)).document}
 async function openNew(p,name){await nav(p,'Prospects');await p.getByRole('button',{name:'New prospect',exact:true}).click();const d=p.getByRole('dialog');await d.getByLabel('Company *',{exact:true}).fill(name);await d.getByLabel('Contact name',{exact:true}).fill('Fictional CFO');await d.getByLabel('Mobile',{exact:true}).fill('07700900111');await d.getByLabel('Email',{exact:true}).fill('fictional@salesos.example');return d}
 async function add(p,name){const d=await openNew(p,name);await d.getByRole('button',{name:'Save prospect',exact:true}).click();await d.waitFor({state:'hidden'});await saved(p)}
-async function restore(p,document){await nav(p,'Settings');p.once('dialog',d=>d.accept());await p.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'fictional-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});await saved(p)}
+async function restore(p,document){
+ const expected=JSON.parse(JSON.stringify(core.normalize(document)));
+ await nav(p,'Settings');p.once('dialog',d=>d.accept());await p.locator('input[type=file][accept=".json,application/json"]').setInputFiles({name:'fictional-backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+ // FileReader/import is asynchronous: the previous fixture may still say Saved.
+ // Confirm this exact document has entered the local outbox before awaiting cloud acknowledgement.
+ await poll(async()=>{try{assert.deepEqual(await state(p),expected);return true}catch{return false}});
+ await saved(p);
+}
 function calling(name,phone='07700900123'){const s=core.newState();core.createLead(s,{crmClearance:'cleared',crmCheckedAt:core.today(),company:name,contact:'Fictional CFO',title:'CFO',mobile:phone,email:'fictional@salesos.example',readiness:1});return s}
 async function recoveryDownload(p,button,file){const pending=p.waitForEvent('download');await p.getByRole('button',{name:button,exact:true}).click();const d=await pending;await d.saveAs(path.join(artifacts,file));return JSON.parse(fs.readFileSync(path.join(artifacts,file),'utf8'))}
 (async()=>{try{
