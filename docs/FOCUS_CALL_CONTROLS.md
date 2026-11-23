@@ -1,0 +1,11 @@
+# Call outcomes without scrolling
+
+The user reported having to scroll through company/research context to log a call. Active call/callback tasks now render their existing six outcome controls in a fixed bar above the slim stats footer. Contact and company identity remain visible beside those controls. No Answer and Bad Number remain one-click actions; Connected, Answered, Wrong Person and Skip retain their existing dialogs and logging behaviour. Non-call completion controls remain inline.
+
+Each action is rendered once, bound to the currently displayed task and the existing eligibility/transaction handlers. Historical completed-task review and an empty queue have no active call bar. Mouse double-clicks on the instant No Answer/Bad Number controls ignore the second click, preventing an accidental outcome against the next task when the bar stays in place. Keyboard shortcuts retain their existing behaviour.
+
+A ResizeObserver measures the bottom bar and stats together, reserving the corresponding page space. This responds to viewport width, wrapped button text, task/review transitions and footer size. The last research/context actions remain reachable above the bar. The observer disconnects and removes its CSS variable on unmount. Existing dialogs stay above the bar; Focus toast notifications move above it. Button text wraps rather than clipping at narrow widths.
+
+No sales rules, source data structures, cloud saving contracts, contacts, tasks, activity history, readiness, pipeline stages, reserve settings or XP definitions change. No migration, dependency or external service is added. Tests use fictional records and disposable localhost Auth/Postgres/REST/mail only.
+
+The browser regression checks visible, hit-testable controls at page top and bottom with long research on desktop, tablet, mobile and landscape sizes; reachable bottom content; unclipped labels; notification/modal layering; task identity after navigation; historical/empty states; neutral copying; double-click protection; and the actual outcomes of all six controls. The existing unit/build and full browser reliability suites remain required before the standing-authorised automatic release. Hosted live-account sign-in remains the user's separate manual check.

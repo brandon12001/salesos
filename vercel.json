@@ -11,7 +11,8 @@
       "feature/salesforce-contact-queue": false,
       "feature/company-research-feedback": false,
       "feature/call-ready-preparation": false,
-      "feature/opportunity-queues": false
+      "feature/opportunity-queues": false,
+      "fix/focus-call-controls": false
     }
   }
 }

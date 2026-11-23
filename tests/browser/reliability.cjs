@@ -89,6 +89,7 @@ async function recoveryDownload(p,button,file){const pending=p.waitForEvent('dow
  await require('./company_enrichment.cjs')({a,saved,state,restore,nav,core});
  await require('./call_preparation.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,recoveryDownload,signin});
  await require('./work_queues.cjs')({a,b,other,saved,state,restore,nav,core,artifacts,recoveryDownload,signin});
+ await require('./call_controls.cjs')({a,saved,state,restore,nav,core,artifacts});
  await require('./cold_call.cjs')({a,other,saved,state,restore,nav,core,artifacts});
  await restore(a,calling('Fictional Mobile Layout With A Long Company Name Ltd'));
  const timings=[];for(const width of [320,390,768,1440]){await a.setViewportSize({width,height:844});await nav(a,'Focus Mode');const overflow=await a.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth}));assert.ok(overflow.width<=overflow.viewport,`Focus overflows at ${width}: ${overflow.width}`);await a.screenshot({path:path.join(artifacts,'focus-'+width+'.png'),fullPage:true,animations:'disabled'});const start=Date.now();await nav(a,'Prospects');await a.getByRole('heading',{name:'Prospects',exact:true}).waitFor();timings.push(Date.now()-start);await nav(a,'Focus Mode')}
