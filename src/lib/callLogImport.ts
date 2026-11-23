@@ -50,7 +50,7 @@ export function parsePhoneHistory(text:string,date:string){
   const clockPosition=info.indexOf(clock[0]);const remainder=info.slice(clockPosition+clock[0].length);
   const duration=durationFrom(remainder);
   if(duration.seconds>86400){warnings.push('Call duration is unusually long for '+number+' at '+time);return}
-  rows.push({number,date,time,key:[date,time,number,duration.hasDuration?duration.seconds:'?'].join('|'),durationSeconds:duration.seconds,hasDuration:duration.hasDuration});
+  rows.push({number,date,time,key:[date,time,number].join('|'),durationSeconds:duration.seconds,hasDuration:duration.hasDuration});
  };
  for(const line of lines){
   const cleaned=line.replace(/[()\s-]/g,'');
@@ -59,7 +59,7 @@ export function parsePhoneHistory(text:string,date:string){
  }
  flush();
  const unique=new Set<string>();
- const distinct=rows.filter(row=>{if(unique.has(row.key)){warnings.push('Repeated identical call at '+row.time+' to '+row.number+' skipped; review if these were separate calls.');return false}unique.add(row.key);return true});
+ const distinct=rows.filter(row=>{if(unique.has(row.key)){warnings.push('Repeated number within the same minute at '+row.time+' to '+row.number+' was skipped to avoid double-counting; review separate genuine calls manually.');return false}unique.add(row.key);return true});
  return {rows:distinct,incoming,other,warnings};
 }
 function localParts(at:string){
