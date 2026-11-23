@@ -2,6 +2,7 @@ import {coldPreparation} from '../lib/callPreparation';
 import {callKpi,callableDueTasks,reserveCallCandidates,reserveActivationSlots} from '../lib/kpiFirst';
 import {minuteKpi,secondsLabel,type PhoneCallRow,type ImportSelection} from '../lib/callLogImport';
 import {CallLogImporter} from './CallLogImporter';
+import {ProspectPhoneHistory} from './ProspectPhoneHistory';
 import {commercialPurpose,focusDecision,legacyActionableTasks,legacyWorkTasks,queueClassifications,queueCounts,selectedQueue,queueLabel,type QueueSelection} from '../lib/workQueues';
 import {WorkQueuePicker,WorkQueueSummary} from './WorkQueues';
 import {taskRestriction} from '../lib/intelligence/eligibility';
@@ -92,6 +93,7 @@ export function Focus({onWorkQueue,onQueueReview,onSaveDescription,onSaveWebsite
     <p className="focus-loaded" role="status">Now viewing · {l?.company||'Workspace task'} · {review?'Review':'Active task'}</p>
     {l&&classes.has(l.id)&&<WorkQueueSummary classification={classes.get(l.id)!} onReview={()=>onQueueReview(l)}/>}
     {l&&<CompanyIdentity showQuestion={false} key={l.id} state={state} lead={l} onSave={onSaveDescription}/>}
+    {l&&<ProspectPhoneHistory state={state} lead={l}/>}
     {l&&industry.enabled&&industryForLead(state,l)!==industry.category&&t&&isProtectedIndustryTask(t)&&<p className="commitment-outside">Protected commitment outside today's focus</p>}{l&&<CompanyResearch key={l.id} lead={l} onSave={onSaveWebsite}/>}
     {review&&a&&<p className="recorded-result" role="status">{a.type==='Call'?CONVERSATION_OUTCOMES.includes(a.outcome)?'Conversation recorded':'Call recorded':'Activity recorded'} · {a.outcome} · {syncStatus==='local'?'Saved on this browser':syncStatus==='saved'?'Saved to cloud':syncStatus==='offline'?'Queued offline · not saved to cloud':syncStatus==='error'?'Cloud save failed · local copy kept':'Saved on this device · cloud sync pending'}</p>}
     {['call','callback'].includes(t.type)&&<div className="focus-primary-action"><div><span className="micro-label">{phone?'CONTACT NUMBER':'NO USABLE NUMBER'}</span><strong>{phone||'Contact Resolution needed'}</strong></div><button className="btn primary big" disabled={!phone} onClick={()=>copy(phone)}><Icon name="copy"/>Copy number</button></div>}
