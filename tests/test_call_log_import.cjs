@@ -50,9 +50,10 @@ try{
  const before=clone(clean),r=imp.importPhoneLog(clean,parsed.rows,choices,now);
  assert.deepEqual({...r},{linked:1,unlogged:1,skipped:1,added:2});
  assert.equal(clean.activities.length,before.activities.length,'matched updates do not create new sales activities');
- assert.equal(clean.activities[0].durationMins,160/60);assert.equal(clean.activities[0].phoneCallLocalTime,'2026-11-23 13:31');
- assert.equal(clean.activities[0].outcome,'No answer');assert.equal(clean.activities[0].notes,'Already logged in Focus Mode');
- assert.equal(clean.activities[0].editHistory.length,1,'time edit is audited');
+ const importedActivity=clean.activities.find(a=>a.id===act.id);
+ assert.equal(importedActivity.durationMins,160/60);assert.equal(importedActivity.phoneCallLocalTime,'2026-11-23 13:31');
+ assert.equal(importedActivity.outcome,'No answer');assert.equal(importedActivity.notes,'Already logged in Focus Mode');
+ assert.equal(importedActivity.editHistory.length,1,'time edit is audited');
  assert.equal(clean.leads[0].readiness,before.leads[0].readiness);assert.equal(clean.leads[0].stage,before.leads[0].stage);
  assert.equal(JSON.stringify(clean.tasks),JSON.stringify(before.tasks));assert.equal(JSON.stringify(clean.leads),JSON.stringify(before.leads));
  const minutes=imp.minuteKpi(clean,now);
@@ -72,7 +73,7 @@ try{
  const st=noDuration.tasks.find(t=>t.leadId===special.id);
  noDuration.activities.push({id:'existing',taskId:st.id,leadId:special.id,contactId:special.contacts[0].id,type:'Call',outcome:'No answer',callOutcome:'no_answer',at:'2026-11-23T13:30:00Z',notes:'',durationMins:1.5,xp:2});
  const row=parsed.rows[2];assert.equal(imp.importPhoneLog(noDuration,[row],{[row.key]:'existing'},now).linked,1);
- assert.equal(noDuration.activities[0].durationMins,1.5,'missing phone duration never wipes known manual time');
+ assert.equal(noDuration.activities.find(a=>a.id==='existing').durationMins,1.5,'missing phone duration never wipes known manual time');
  assert.equal(imp.minuteKpi(noDuration,now).recordedSeconds,90);
  const fake=core.newState();fake.settings.kpiFirstMode=1;
  for(let i=0;i<40;i++)fake.activities.push({id:'manual-'+i,taskId:'t'+i,type:'Call',callOutcome:'no_answer',outcome:'No answer',at:'2026-11-23T09:00:00Z',durationMins:1.5});
