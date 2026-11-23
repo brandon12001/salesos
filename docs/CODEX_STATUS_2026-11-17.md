@@ -1,3 +1,13 @@
+# Current update — 23 November 2026: clearer alternative-number calls
+
+PR #17 is merged at `bb853d96329701e18f985092fdf0e9c911a6544c`, deployed READY as `dpl_DoDQmsXKBQRVpXz37c9aSCVicUCq` on https://salesos-up-next7.vercel.app/. Build, all fourteen unit suites and the complete isolated browser suite passed; exact results are in PR #17. The latest pre-release backup was revision 188; post-release revision 191 retained every prior record, unchanged settings and automatic replenishment OFF. Those older backups must never replace newer user work.
+
+The user asked for a useful improvement while travelling home. `fix/call-task-clarity`, based on this main, addresses the misleading “alternative verified contact number” task. Active number-repair calls now explain the recorded bad-number history when available, identify the selected contact/number type, explicitly state when the route is unverified, and give a concrete contact-confirmation objective and normal next-action guidance. Legacy stored task titles/history remain intact; new repair tasks use “Try alternative contact number”. Protected commitments and unrelated tasks retain their existing objectives. Shared phone-method lookup keeps explanation and clipboard tied to the same route; no ranking, scheduling, readiness, stages, reserve settings or cloud contracts change.
+
+Validation includes pure-context and stale/foreign-route guards plus fictional browser execution in both legacy and Intelligence modes, preserved stored history, neutral copying and the actual No Answer retry. Standing automatic release is authorised after final build/unit/browser/CI checks, fresh private backup, exact deployment/alias verification and SELECT-only production-data preservation checks. No migration or production record edit is required. Preserve independent PR #12 and all older worktrees.
+
+---
+
 # Current update — 23 November 2026: compact daily calling screen
 
 Work is on `fix/compact-focus-screen`, based on released main `18feca4` (PR #16). It incorporates the previously unreleased pinned-phone fix and preserves PRs #14–#16, including the single **100 KPI minutes** unlock target, call-history reconciliation and reserve safeguards. The older `fix/pinned-phone-copy` branch is superseded by this combined release. Keep separate PR #12's company-briefing work independent.

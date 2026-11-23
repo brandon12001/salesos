@@ -1,13 +1,16 @@
-import type {Lead,Task,Contact} from '../types';
+import type {Lead,Task,Contact,Method} from '../types';
 import {core} from './core';
 export function contactFor(lead:Lead|null|undefined,task?:Task|null):Contact|null{
   if(!lead)return null;
   if(task?.contactId)return core.getContact(lead,task.contactId);
   return core.preferredContact(lead,task?.type==='callback'?'call':task?.type||'call')||lead.contacts[0]||null;
 }
+export function phoneMethodFor(contact:Contact|null,task?:Task|null):Method|null{
+  if(!contact)return null;
+  return (task?.methodId&&contact.methods.find(x=>x.id===task.methodId&&['mobile','phone'].includes(x.kind)&&x.status!=='invalid'&&x.status!=='blocked'))||core.anyPhone(contact)||null;
+}
 export function dialFor(contact:Contact|null,task?:Task|null):string{
-  if(!contact)return '';
-  const m=(task?.methodId&&contact.methods.find(x=>x.id===task.methodId&&['mobile','phone'].includes(x.kind)&&x.status!=='invalid'&&x.status!=='blocked'))||core.anyPhone(contact);
+  const m=phoneMethodFor(contact,task);
   return m?core.phoneDial(m.value):'';
 }
 export function emailFor(contact:Contact|null){return contact?core.bestMethod(contact,'email')?.value||'':''}
