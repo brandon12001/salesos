@@ -1,4 +1,4 @@
-import type {Activity,State} from '../types';
+import type {State} from '../types';
 import {core} from './core';
 import {saveActivityDetails,fieldsFor,activityStamp} from './activityWorkflow';
 
@@ -131,7 +131,9 @@ export function importPhoneLog(s:State,rows:PhoneCallRow[],selections:ImportSele
  return {linked,unlogged,skipped,added:entries.length};
 }
 export function minuteKpi(s:State,now:Date){
- const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
+ const todayParts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+ const field=(name:string)=>todayParts.find(p=>p.type===name)?.value||'';
+ const day=[field('year'),field('month'),field('day')].join('-');
  const imports=registry(s).records.filter(r=>r.date===day);
  const manual=s.activities.filter(a=>a.type==='Call'&&a.taskId&&a.callOutcome&&localParts(a.at)?.date===day);
  const unique=new Map(manual.map(a=>[a.id,a]));
