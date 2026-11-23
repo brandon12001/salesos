@@ -19,7 +19,7 @@ export function outboundCallsToday(s:State,now:Date){
   seen.add(a.id);return true;
  }).length;
 }
-export function kpiFirstEnabled(s:State){return s.settings.kpiFirstMode!==0}
+export function kpiFirstEnabled(s:State){return s.settings.kpiFirstMode===1}
 export function callKpi(s:State,now:Date){
  const calls=outboundCallsToday(s,now),target=DAILY_CALL_TARGET;
  return {enabled:kpiFirstEnabled(s),calls,target,remaining:Math.max(0,target-calls),active:kpiFirstEnabled(s)&&calls<target,complete:calls>=target};
