@@ -63,6 +63,7 @@ try{
  assert.equal(reserve.activities.filter(a=>a.type==='Call').length,0);
  assert.equal(held.crmClearance,before.leads.find(l=>l.id===held.id).crmClearance);
  assert.equal(reserve.settings.reserveAutoActivate,0,'no unrelated auto-replenishment setting change');
+ const capped=base();capped.settings.reserveActiveCap=1;company(capped,'Fictional Cap Active Ltd');const capReserve=company(capped,'Fictional Cap Reserve Ltd',{leadPool:'reserve',opportunityScore:90});assert.equal(k.replenishCallSupply(capped,now,true).activated,0,'existing active-prospect cap cannot be bypassed');assert.equal(capReserve.leadPool,'reserve');
  console.log('PASS: bounded reserve refill; holds, stale clearance, unscored, email-only and opt-outs remain excluded; no invented dials');
  const full=base();company(full,'Fictional Complete Ltd');const high=company(full,'Fictional Waiting Reserve Ltd',{leadPool:'reserve',opportunityScore:90});for(let i=0;i<100;i++)dial(full,i);assert.equal(k.replenishCallSupply(full,now,true).activated,0,'no KPI supply activation after target');assert.equal(high.leadPool,'reserve');
  console.log('PASS: completion stops KPI replenishment and preserves acquisition states');
