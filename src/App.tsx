@@ -86,7 +86,7 @@ function Workspace({user}:{user?:User}){
  const updateState=useCallback((updated:State)=>{const parsed=core.normalize(updated);if(!parsed)throw new Error('Incompatible backup');if(engine)engine.change(parsed);else persistLocal(parsed);stateRef.current=parsed;setState(parsed);setFeedback(null);setTrail(emptyTrail());setPostModal(null);setSFContact(null);setQueueLead(null);setHistoryScope(undefined);setTab('focus');message('SalesOS database restored.')},[message,engine]);
  const copy=useCallback(async(value:string)=>{try{await navigator.clipboard.writeText(value);message('Copied — paste into Teams, Outlook or your browser.')}catch{message('Clipboard not available here. Select and copy manually.')}},[message]);
  const doTask=useCallback((t:Task,preset='complete',recommendation?:Recommendation)=>{
-   if(restrictedRoutineEmail(stateRef.current,t,new Date())&&preset!=='snooze'){message('KPI-first: complete 100 logged outbound calls before sending routine emails. Agreed commitments are protected.');return;}
+   if(restrictedRoutineEmail(stateRef.current,t,new Date())&&preset!=='snooze'){message('KPI-first: reach 100 KPI minutes before sending routine emails. Each outbound dial earns one minute, plus recorded call time. Agreed commitments remain protected.');return;}
    if(preset==='snooze'){
     // A virtual recommendation has no scheduled task to snooze yet. Feedback defers it without manufacturing activity.
     if(recommendation?.generated){try{commit(s=>rejectRecommendation(s,recommendation,'Wrong time',new Date()));message('Recommendation deferred for 24 hours.')}catch(e){message((e as Error).message)}return}
@@ -103,7 +103,7 @@ function Workspace({user}:{user?:User}){
  const submitTask=(f:TaskForm,disposition:'stay'|'next'):string|void=>{
   if(!modal)return 'Task missing.';let response:any;
   try{response=commit(s=>{
-    const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};if(restrictedRoutineEmail(s,t,new Date()))return {error:'Complete 100 outbound calls before sending routine emails.'};assertPendingAction(s,t,new Date());
+    const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};if(restrictedRoutineEmail(s,t,new Date()))return {error:'Reach 100 KPI minutes before sending routine emails.'};assertPendingAction(s,t,new Date());
     let result;
     if(['call','callback'].includes(t.type))result=core.logCall(s,t,{outcome:f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:f.date,callbackTime:f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
     else if(t.type==='research')result=core.resolveContact(s,t,{mode:f.repairMode,contactId:t.contactId,kind:'mobile',value:f.repairPhone,name:f.repairName,title:f.repairTitle,email:f.repairEmail,nextDate:f.date,notes:f.notes});
