@@ -1,7 +1,8 @@
 import type {State,Task} from '../types';
 import {core} from './core';
 import {channel,taskRestriction} from './intelligence/eligibility';
-import {isDue,localDate,protectedTask} from './intelligence/evidence';
+import {isDue,protectedTask} from './intelligence/evidence';
+import {minuteKpi} from './callLogImport';
 
 export const DAILY_CALL_TARGET=100;
 export const CALL_SUPPLY_FLOOR=120;
@@ -9,16 +10,7 @@ export const RESERVE_REFILL_BATCH=25;
 
 // A call is counted once after the outbound attempt is actually logged.
 // Copying the number, viewing a task or editing a previous activity is not a dial.
-export function outboundCallsToday(s:State,now:Date){
- const day=localDate(now);
- const seen=new Set<string>();
- return s.activities.filter(a=>{
-  if(a.type!=='Call'||!a.taskId||!a.callOutcome||seen.has(a.id))return false;
-  const at=new Date(a.at);
-  if(!Number.isFinite(+at)||localDate(at)!==day)return false;
-  seen.add(a.id);return true;
- }).length;
-}
+export function outboundCallsToday(s:State,now:Date){return minuteKpi(s,now).calls;}
 export function kpiFirstEnabled(s:State){return s.settings.kpiFirstMode===1}
 export function callKpi(s:State,now:Date){
  const calls=outboundCallsToday(s,now),target=DAILY_CALL_TARGET;
