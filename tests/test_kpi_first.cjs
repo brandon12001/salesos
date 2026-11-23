@@ -31,16 +31,30 @@ try{
  s.activities.push({id:'fake-preview',type:'Task',at:at,outcome:'Copied number',taskId:'preview'});
  s.activities.push({id:'inbound',type:'Call',at:at,outcome:'Incoming call'});
  assert.equal(k.outboundCallsToday(s,now),99,'views and inbound entries do not count');
- assert.equal(k.callKpi(s,now).remaining,1);
+ assert.equal(k.callKpi(s,now).remainingMinutes,1);
  assert.equal(k.restrictedRoutineEmail(s,routine,now),true);
  dial(s,99);
  assert.equal(k.callKpi(s,now).calls,100);
  assert.equal(k.callKpi(s,now).active,false);
  assert.equal(k.restrictedRoutineEmail(s,routine,now),false);
- assert.equal(q.legacyWorkTasks(s,now).some(t=>t.id===routine.id),true,'full queue resumes at call 100');
- assert.equal(k.callKpi(s,new Date('2026-11-24T10:00:00Z')).remaining,100,'counter resets on next local day');
+ assert.equal(q.legacyWorkTasks(s,now).some(t=>t.id===routine.id),true,'full queue resumes after 100 minutes');
+ assert.equal(k.callKpi(s,new Date('2026-11-24T10:00:00Z')).remainingMinutes,100,'counter resets on next local day');
  const classic=clone(s);classic.settings.kpiFirstMode=0;classic.settings.coldCallMode=0;assert.equal(k.callKpi(classic,now).enabled,false);assert.equal(q.legacyWorkTasks(classic,now).some(t=>t.id===routine.id),true);
- console.log('PASS: 99/100 calls, 100th unlock, daily reset, no preview counting, legacy off, protected promised email');
+ const minutesOnly=base(),minutesLead=company(minutesOnly,'Fictional Short Call Day Ltd');
+ const minutesContact=minutesLead.contacts[0],minutesEmail=minutesContact.methods.find(m=>m.kind==='email');
+ const earlyEmail=core.addTask(minutesOnly,minutesLead,'email','Routine follow-up',today,{origin:'manual',contactId:minutesContact.id,methodId:minutesEmail.id});
+ for(let i=0;i<40;i++){dial(minutesOnly,i);minutesOnly.activities[minutesOnly.activities.length-1].durationMins=1.5}
+ assert.equal(k.callKpi(minutesOnly,now).calls,40);
+ assert.equal(k.callKpi(minutesOnly,now).minutes,100);
+ assert.equal(k.callKpi(minutesOnly,now).active,false,'40 calls plus 60 recorded minutes achieve the KPI');
+ assert.equal(k.restrictedRoutineEmail(minutesOnly,earlyEmail,now),false,'emails unlock at 100 minutes even below 100 calls');
+ assert.equal(q.legacyWorkTasks(minutesOnly,now).some(t=>t.id===earlyEmail.id),true);
+ assert.equal(k.reserveCallCandidates(minutesOnly,now).length,0);
+ const near=base();company(near,'Fictional Nearly Done Ltd');for(let i=0;i<39;i++){dial(near,i);near.activities[near.activities.length-1].durationMins=1.5}
+ assert.equal(k.callKpi(near,now).minutes,97.5);
+ assert.equal(k.callKpi(near,now).dialsForMinutes,3,'round up minimum additional dials when no more talk time');
+ assert.equal(k.callKpi(near,now).active,true);
+ console.log('PASS: 100-minute gate, 40-call completion, dynamic dial estimates, daily reset, protected commitments and legacy mode');
  const reserve=base(),a=company(reserve,'Fictional First Active Ltd');
  const ready=company(reserve,'Fictional Reserve Callable Ltd',{leadPool:'reserve',opportunityScore:85});
  const held=company(reserve,'Fictional Salesforce Held Ltd',{leadPool:'reserve',crmClearance:'hold'});
