@@ -2,7 +2,22 @@ import type {State,Lead} from '../types';
 import {core} from './core';
 
 export type ResearchSector='recruitment'|'goods';
-export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>};
+export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean};
+export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>};
+export type RegistryUpdate={id:string;registryCheck:RegistryCheck;priority:number};
+export type QualityTier='ready'|'research'|'flagged'|'excluded';
+export function qualityTier(c:Discovery):QualityTier{
+ if(c.registryCheck?.risk==='excluded')return 'excluded';
+ if(c.registryCheck?.risk==='review')return 'flagged';
+ if(c.registryCheck?.risk!=='ok')return 'research';
+ const strong=(c.evidence||[]).some(e=>e.strength==='strong'&&/^https:\/\//.test(e.sourceUrl));
+ return c.researchMethod==='web-rule-screen'&&strong?'ready':'research';
+}
+export function candidatePriority(c:Discovery){
+ if(c.registryCheck?.risk==='excluded')return 0;
+ if(qualityTier(c)==='ready')return Math.min(85,c.priority);
+ return Math.min(35,c.priority);
+}
 export type ClearanceStatus='unchecked'|'cleared'|'held'|'moved'|'dismissed';
 export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string};
 type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string};
@@ -27,6 +42,10 @@ function ensureValid(d:Discovery){
   if(d.priority>75&&hosts.size<2)throw Error('Scores over 75 require independent websites.');
  }
  if(d.sourceUrl!==`https://find-and-update.company-information.service.gov.uk/company/${reg(d.companyNumber)}`)throw Error('Research source must be the official Companies House legal-entity record.');
+ if(d.registryCheck){
+  if(!['ok','review','excluded','unverified'].includes(d.registryCheck.risk)||!Array.isArray(d.registryCheck.flags)||!isDate(d.registryCheck.checkedAt.slice(0,10)))throw Error('Invalid official registry screening.');
+  if(d.priority>35&&qualityTier(d)!=='ready')throw Error('High research priority requires an operational company and strong source-linked evidence.');
+ }
  if(!isDate(d.foundAt.slice(0,10))||!d.reason?.trim())throw Error('Research lacks an evidence date or explanation.');
 }
 function inExisting(s:State,d:Discovery){
@@ -48,9 +67,27 @@ export function addDiscoveries(s:State,rows:Discovery[],profile:ResearchSector,n
  save(s,{version:1,candidates:records,cursors:{...current.cursors,[profile]:nextCursor},lastRunAt:new Date().toISOString()});
  return {added,existing};
 }
+/** Re-screen an existing backlog in batches. Keep all user CRM decisions untouched. */
+export function applyRegistryChecks(s:State,updates:RegistryUpdate[]){
+ if(!Array.isArray(updates)||!updates.length||updates.length>12)throw Error('Choose up to 12 registry checks.');
+ const r=leadFactory(s),targets=updates.map(u=>r.candidates.find(c=>c.id===u.id));
+ if(targets.some((c,i)=>!c||c.status!=='unchecked'||!updates[i].registryCheck||
+  !['ok','review','excluded','unverified'].includes(updates[i].registryCheck.risk)||
+  !Array.isArray(updates[i].registryCheck.flags)||!Number.isInteger(updates[i].priority)||updates[i].priority<0||updates[i].priority>35||
+  !isDate(updates[i].registryCheck.checkedAt.slice(0,10))))throw Error('Registry check was invalid or a candidate changed. Refresh.');
+ for(let i=0;i<updates.length;i++){
+  const c=targets[i]!,u=updates[i];
+  c.registryCheck=u.registryCheck;
+  if(qualityTier(c)!=='ready')c.priority=u.priority;
+  c.reason='Companies House profile reviewed '+u.registryCheck.checkedAt.slice(0,10)+'. '+(u.registryCheck.flags.join(' ')||'Active profile and filing checks passed.')+' FX payments, volume and UK treasury authority remain unverified.';
+ }
+ save(s,r);
+ return updates.reduce((a,u)=>{a[u.registryCheck.risk]++;return a},{ok:0,review:0,excluded:0,unverified:0});
+}
 export function markAvailable(s:State,id:string){
  const r=leadFactory(s),c=r.candidates.find(x=>x.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked research candidates can be cleared.');
+ if(qualityTier(c)!=='ready')throw Error('Company needs verified active registry status and source-backed international payment evidence before Salesforce clearance.');
  if(inExisting(s,c))throw Error('This company already exists in SalesOS; review it rather than clearing another copy.');
  c.status='cleared';c.checkedAt=core.today();c.crmNote='Manually checked Salesforce duplicate search; no matching owned company found.';
  save(s,r);
@@ -59,7 +96,7 @@ function reserveData(c:Candidate,clearance:'cleared'|'hold',extra:Record<string,
  return {company:c.company,companyNumber:c.companyNumber,sector:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
  businessDescription:'Registered business classified under SIC '+c.sicCodes.join(', ')+'. Cross-border payments unverified.',
  standardisedIndustry:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
- leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:c.priority,
+ leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:candidatePriority(c),
  researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.',
  researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl)].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:'Potential FX requirement not independently verified; qualify before prioritising outreach.',
  crmClearance:clearance,crmCheckedAt:c.checkedAt||core.today(),crmNote:c.crmNote||'Manual Salesforce duplicate check recorded',readiness:1,
@@ -72,6 +109,7 @@ function alreadyInLeads(s:State,c:Candidate){
 export function markOwned(s:State,id:string,owner:string,lastActivityAt=''){
  const r=leadFactory(s),c=r.candidates.find(x=>x.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked candidates can be marked as owned.');
+ if(qualityTier(c)!=='ready')throw Error('Research this company before starting Salesforce ownership checks.');
  if(!owner.trim()||owner.trim().length>120)throw Error('Record the Salesforce owner name.');
  if(lastActivityAt&&(!isDate(lastActivityAt)||lastActivityAt>core.today()))throw Error('Last qualifying activity date must be a valid past date, or left blank.');
  if(alreadyInLeads(s,c))throw Error('Company already exists in SalesOS. Review its Salesforce ownership there.');
@@ -83,7 +121,7 @@ export function markOwned(s:State,id:string,owner:string,lastActivityAt=''){
 export function moveCleared(s:State,ids:string[]){
  if(!Array.isArray(ids)||!ids.length||ids.length>600||new Set(ids).size!==ids.length)throw Error('Choose one or more unique cleared companies.');
  const r=leadFactory(s),records=ids.map(id=>r.candidates.find(c=>c.id===id));
- if(records.some(c=>!c||c.status!=='cleared'||!c.checkedAt||inExisting(s,c)))throw Error('A selected company is not cleared or is already in SalesOS. Refresh the clearance queue.');
+ if(records.some(c=>!c||c.status!=='cleared'||!c.checkedAt||qualityTier(c)!=='ready'||inExisting(s,c)))throw Error('A selected company lacks current research evidence, is not cleared, or is already in SalesOS. Refresh the queue.');
  let moved=0;
  for(const c of records as Candidate[]){
   const lead=core.createLead(s,reserveData(c,'cleared')) as Lead&{duplicate?:Lead};
