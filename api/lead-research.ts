@@ -98,7 +98,7 @@ export default async function handler(req:Request,res:ServerResponse){
      typeof x.incorporated!=='string'||x.incorporated.length>15))
     return respond(res,400,{error:'Select up to four existing companies for web research.'});
    if(!process.env.BRAVE_SEARCH_API_KEY)return respond(res,503,{error:'Add the Brave Search server-side key before running website research.'});
-   const checks=await batches(cs,4,async c=>{
+   const checks:ResearchItem[]=await batches(cs,4,async c=>{
     const companyNumber=c.companyNumber.toUpperCase();
     const screening=await screen(c.company,companyNumber,c.sector,c.sicCodes[0]||'',c.incorporated,chAuth,now);
     return {company:c.company,companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated,
