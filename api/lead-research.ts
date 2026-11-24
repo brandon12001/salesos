@@ -44,7 +44,7 @@ function webQueries(company:string,sector:Sector){
 }
 async function enrichWeb(items:ResearchItem[],profile:Sector){
  const searchKey=process.env.BRAVE_SEARCH_API_KEY;
- if(!searchKey)return {webSearches:0,webErrors:0,webResearchEnabled:false,webCompleted:0};
+ if(!searchKey)return {webSearches:0,webErrors:0,webResearchEnabled:false,webCompleted:0,authRejected:false,rateLimited:false};
  let webSearches=0,webErrors=0,webCompleted=0,authRejected=false,rateLimited=false;
  const eligible=items.filter(x=>x.registryCheck.risk==='ok').slice().sort((a,b)=>b.priority-a.priority).slice(0,MAX_WEB_COMPANIES);
  await batches(eligible,2,async c=>{
