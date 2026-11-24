@@ -3,8 +3,9 @@ import {core} from './core';
 
 export type ResearchSector='recruitment'|'goods';
 export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean};
-export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>};
+export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>;webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
 export type RegistryUpdate={id:string;registryCheck:RegistryCheck;priority:number};
+export type WebResearchUpdate={id:string;registryCheck:RegistryCheck;priority:number;reason:string;researchMethod:'registry-only'|'web-rule-screen';researchConfidence:'Low'|'Medium';evidence:NonNullable<Discovery['evidence']>;webCheckedAt:string;webQueries:number;fxHypothesis:string;discoveryQuestion:string};
 export type QualityTier='ready'|'research'|'flagged'|'excluded';
 export function qualityTier(c:Discovery):QualityTier{
  if(c.registryCheck?.risk==='excluded')return 'excluded';
@@ -84,6 +85,36 @@ export function applyRegistryChecks(s:State,updates:RegistryUpdate[]){
  save(s,r);
  return updates.reduce((a,u)=>{a[u.registryCheck.risk]++;return a},{ok:0,review:0,excluded:0,unverified:0});
 }
+/** User-triggered research enrichment is never allowed to change CRM status,
+ * existing leads, or buyer readiness. Unknown/failed searches stay retryable.
+ */
+export function applyWebResearch(s:State,updates:WebResearchUpdate[]){
+ if(!Array.isArray(updates)||!updates.length||updates.length>4||new Set(updates.map(u=>u.id)).size!==updates.length)
+  throw Error('Choose up to four unique companies for web research.');
+ const r=leadFactory(s),targets=updates.map(u=>r.candidates.find(c=>c.id===u.id));
+ if(targets.some(c=>!c||c.status!=='unchecked'))throw Error('A research record changed; refresh and retry.');
+ for(let i=0;i<updates.length;i++){
+  const u=updates[i],c=targets[i]!;
+  if(!u.registryCheck||!Array.isArray(u.registryCheck.flags)||!['ok','review','excluded','unverified'].includes(u.registryCheck.risk)||
+    !isDate(u.registryCheck.checkedAt.slice(0,10))||!Number.isInteger(u.webQueries)||u.webQueries<0||u.webQueries>2||
+    typeof u.fxHypothesis!=='string'||u.fxHypothesis.length>500||typeof u.discoveryQuestion!=='string'||u.discoveryQuestion.length>500||
+    typeof u.webCheckedAt!=='string'||(u.webCheckedAt!==''&&!isDate(u.webCheckedAt.slice(0,10)))||
+    (u.webQueries>0)!==(u.webCheckedAt!=='')||
+    !Array.isArray(u.evidence)||u.evidence.length>8||!['Low','Medium'].includes(u.researchConfidence))
+    throw Error('Invalid web research metadata.');
+  const candidate={...c,...u};
+  ensureValid(candidate);
+ }
+ for(let i=0;i<updates.length;i++){
+  const c=targets[i]!,u=updates[i];
+  c.registryCheck=u.registryCheck;c.priority=u.priority;c.reason=u.reason;
+  c.researchMethod=u.researchMethod;c.researchConfidence=u.researchConfidence;c.evidence=u.evidence;
+  c.fxHypothesis=u.fxHypothesis;c.discoveryQuestion=u.discoveryQuestion;
+  if(u.webCheckedAt){c.webCheckedAt=u.webCheckedAt;c.webQueries=u.webQueries}
+ }
+ save(s,r);
+ return {checked:updates.filter(u=>!!u.webCheckedAt).length,ready:updates.filter(u=>!!u.webCheckedAt&&qualityTier({...targets[updates.indexOf(u)]!,...u})==='ready').length};
+}
 export function markAvailable(s:State,id:string){
  const r=leadFactory(s),c=r.candidates.find(x=>x.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked research candidates can be cleared.');
@@ -98,7 +129,7 @@ function reserveData(c:Candidate,clearance:'cleared'|'hold',extra:Record<string,
  standardisedIndustry:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
  leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:candidatePriority(c),
  researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.',
- researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl)].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:'Potential FX requirement not independently verified; qualify before prioritising outreach.',
+ researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl)].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:c.fxHypothesis||'Potential FX requirement not independently verified; qualify before prioritising outreach.',
  crmClearance:clearance,crmCheckedAt:c.checkedAt||core.today(),crmNote:c.crmNote||'Manual Salesforce duplicate check recorded',readiness:1,
  readinessEvidence:'Unaware default for newly discovered company, not a verified buyer statement',
  nextMilestone:core.NEXT_MILESTONES[0],notes:'Lead Factory · sourced from Companies House. No contact or FX volume invented.',...extra};
