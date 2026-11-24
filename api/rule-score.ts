@@ -55,8 +55,11 @@ export function ruleScore(company:string,sector:Sector,base:number,hits:SearchHi
  // One search excerpt can't demonstrate FX, and multiple words on one page
  // must not be treated as independent proof.
  const strong=uniqueStrongHosts.size,support=signals.some(s=>s.strength==='supporting');
- const increment=strong>=2?24:strong===1?11:support?5:0;
- const priority=Math.min(strong>=2?85:strong===1?75:70,Math.max(0,Math.round(base+increment)));
+ // Scores describe *research quality*, not a verified FX need. Registry-only
+ // matches stay below 36; corroborated overseas-payment clues can earn 65–85.
+ const priority=strong>=2?Math.min(85,80+Math.min(5,base/7|0)):
+  strong===1?Math.min(75,65+Math.min(10,base/4|0)):
+  support?Math.min(45,Math.max(base,38)):Math.round(base);
  const method:RuleResult['researchMethod']=signals.length?'web-rule-screen':'registry-only';
  const reason=strong>=2?'Multiple independent web sources suggest an international operating model. FX payments, amounts and UK decision authority remain unverified.':
   strong===1?'One web source suggests cross-border operations. Independent verification and FX qualification required.':
