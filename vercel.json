@@ -17,5 +17,10 @@
       "fix/compact-focus-screen": false,
       "fix/call-task-clarity": false
     }
+  },
+  "functions": {
+    "api/lead-research.ts": {
+      "maxDuration": 45
+    }
   }
 }
