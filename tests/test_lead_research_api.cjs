@@ -14,6 +14,7 @@ const original=global.fetch;
 global.fetch=async(url,options)=>{
  calls.push({url:String(url),options});
  if(String(url).includes('/auth/v1/user'))return {ok:true,json:async()=>({id:'authorized-user'})};
+ if(String(url).includes('/company/12000123'))return {ok:true,status:200,json:async()=>({company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_status_detail:'',accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}})};
  return {ok:true,status:200,json:async()=>({hits:2,items:[
   {company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},
   {company_name:'Dissolved Agency Ltd',company_number:'12000999',company_status:'dissolved',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},
@@ -31,6 +32,8 @@ global.fetch=async(url,options)=>{
   assert.equal(r.body.items.length,1,'only active limited companies accepted');
   assert.equal(r.body.items[0].companyNumber,'12000123');
   assert.equal(r.body.items[0].sector,'recruitment');
+  assert.equal(r.body.items[0].registryCheck.risk,'ok','company profile independently verified');
+  assert.ok(r.body.items[0].priority<=35,'registry-only companies cannot rank as Gold');
   assert.ok(r.body.items[0].priority<=65,'CH screening cannot claim a high-confidence FX opportunity');
   assert.equal(r.body.items[0].sourceUrl,'https://find-and-update.company-information.service.gov.uk/company/12000123');
   assert.match(r.body.items[0].reason,/unverified/i);
@@ -43,6 +46,12 @@ global.fetch=async(url,options)=>{
   const before=calls.length;r=await invoke(request({profile:'recruitment',cursor:0},''));
   assert.equal(r.statusCode,401);assert.equal(calls.length,before,'unauthorized callers cannot hit register');
   r=await invoke(request({profile:'recruitment',cursor:-1}));assert.equal(r.statusCode,400);
+  r=await invoke(request({mode:'recheck',candidates:[{company:'Fictional International Staffing Ltd',companyNumber:'12000123',sector:'recruitment',sicCodes:['78200'],incorporated:'2018-01-01'}]}));
+  assert.equal(r.statusCode,200);assert.equal(r.body.checks.length,1);assert.equal(r.body.checks[0].registryCheck.risk,'ok');
+  assert.equal(r.body.checks[0].id,'ch:12000123');
+  r=await invoke(request({mode:'recheck',candidates:[{company:'Bad Number Ltd',companyNumber:'../../secrets',sector:'recruitment',sicCodes:['78200'],incorporated:'2018-01-01'}]}));
+  assert.equal(r.statusCode,400,'arbitrary paths cannot be fetched');
+
   console.log('PASS: authenticated free-register scanner, server-only key, source-backed SIC screening, safe filtering, no-key and invalid-request responses.');
  }catch(error){console.error(error);process.exitCode=1}finally{global.fetch=original}
 })();
