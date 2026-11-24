@@ -1,34 +1,39 @@
-# SalesOS Lead Research — activation and operating rules
+# SalesOS — rules-based FX Lead Finder (no AI model)
 
-## Enable official UK company discovery
+## Current production design
 
-1. Create a **live** Companies House developer application at https://developer.company-information.service.gov.uk/ and generate a REST **API Key**. The official advanced search endpoint is `GET /advanced-search/companies`, filtered by SIC codes and `company_status=active`.
-2. In your Vercel project for SalesOS → Settings → Environment Variables, create `COMPANIES_HOUSE_API_KEY` for **Production** (and Preview if testing previews). Paste the key **in Vercel only**; never in GitHub, code, browser, chats, the public `VITE_` namespace, or commits.
-3. Redeploy SalesOS so its serverless function receives the new environment variable.
-4. **Optional zero-AI corroboration:** Add a separate `BRAVE_SEARCH_API_KEY` to Vercel Production, as a server-only secret. The scanner will search for public web snippets indicating overseas contractor payroll or imported equipment and show their source links, applying deterministic rules instead of a language model. Each scan performs at most **eight** Brave searches. Brave currently offers $5 monthly free credits but paid usage is possible; configure a provider spending cap before enabling this key. Without it, all research remains Companies House-only at a maximum screening score of 65/100.
-5. Open **Lead Research** in SalesOS; choose Recruitment or Machinery & Equipment Distribution; click **Find next batch of companies**. The system cycles through preset SIC codes and pages. It does not require a submitted company list.
-6. Review each company using the official Companies House link; click **Copy name**, run your own Salesforce duplicate check and mark either **Available** or **Already owned**.
-7. For available companies, click **Move to reserve** individually, **Move selected**, or **Move all cleared**. These companies have no verified contacts, no demonstrated FX flows, and no call tasks until further enrichment and existing activation gates are satisfied.
-8. For owned companies, record the Salesforce owner and (optionally) your manager's verified last qualifying activity date. They are added to the existing **Duplicate Queue** under Hold. Three calendar months without qualifying activity creates a review opportunity only; manager approval and actual reassignment are mandatory.
+This workflow operates only when the user clicks a research button. It does not run an unattended agent, scrape arbitrary websites, integrate with Salesforce, or trigger outreach.
 
-## What research does / does not prove
+1. **Company discovery**: Companies House advanced SIC search for up to 12 candidates per scan. Each candidate receives a separate official profile check for live status, strike-off proposals, dormant accounts, overdue filings, insolvency flags, and legal identity. Holding/management entities are flagged for manual review.
+2. **Web corroboration**: If `BRAVE_SEARCH_API_KEY` is configured, up to **four eligible companies** get **two different targeted Brave searches each** (maximum **eight API calls** per click). Searches focus on international contractor payroll or overseas client billing for recruiters, and foreign manufacturers, importation, supplier invoicing for goods distributors.
+3. **Saved-company research**: Click **Research saved companies on web** to automatically take the next four unresearched companies from the existing backlog (including the original 50), re-verify their Companies House profiles, run the capped Brave searches and save evidence. Skips registry-excluded/flagged companies and already researched companies to conserve API credits. The separate **Verify saved registry** button verifies up to 12 company profiles using Companies House alone.
+4. **Conservative scoring**: Registry-only and weak marketing evidence stay in the **Research backlog**, at 35/100 or below. One independent **specific cross-border financial-flow signal** can earn 65–75; matching signals on two different websites can earn 80–85. These are **prospecting research priority scores**, not FX qualification scores, revenue estimates or trading probabilities. International offices alone or recruiting overseas candidates cannot earn a high score.
+5. **Actionable context**: Each web-researched company stores its website snippet evidence, URLs, research date, an explicitly unverified FX hypothesis, and a targeted buyer discovery question.
+6. **Salesforce clearance**: The user manually checks company duplicates before recording availability or colleague ownership. Only verified company profiles with strong sourced operational signals enter the **Ready for Salesforce** list. A cleared company can be moved to Lead Reserve manually; the discovery process never creates calls or emails.
 
-- The free discovery scanner returns Companies House registration number, incorporation date, status, SIC codes and an official source link. It uses rule-based **screening priority** capped at 65/100.
-- SIC code, company age and registration are **not evidence** of foreign-currency payments, independently controlled treasury, overseas contractor payroll, or revenue. The queue must never label such signals as confirmed.
-- This version is **deliberately not an AI agent**: it runs deterministic regex rules on public web-search snippets from an optional web-search provider. Indexed snippets can be wrong, stale or ambiguous, so even a high rule-based score is *not* a confirmed currency requirement. Until a second source backs an overseas payment clue, rank increases remain limited. Registered UK companies are not assumed to control their own FX decisions.
-- SalesOS never connects to Salesforce automatically, sends calls or emails, or transfers a held company without a documented manager decision.
-- The discovery endpoint authenticates the signed-in Supabase user but keeps the Companies House key entirely server-side. The scanner is initiated from the app; it is **not yet a recurring unattended cron job**.
+## Costs and access
 
-## Operational limits
+- Official Companies House API key: `COMPANIES_HOUSE_API_KEY`. Server-only variable in Vercel Production. No key in any `VITE_` variable.
+- Search API key: `BRAVE_SEARCH_API_KEY` (optional). Server-only Vercel Production. Requires a valid Brave subscription; Brave may charge for searches beyond any available credit. Check current credit, card requirements, plan and hard spending controls in the Brave dashboard before making repeated research requests. The application limits **requests per user action**, but does **not** enforce an account-wide billing budget across sessions/users. Do not assume the tool is guaranteed free.
+- No AI API calls. Search-result snippets are not full website analysis. The app never asserts verified foreign currencies, annual payment volume, treasury authority, supplier contracts or FX provider. User must confirm these in discovery.
+- User action is required: **New scan**, **Verify saved registry**, or **Research saved companies on web**.
 
-- Maximum 50 registry records reviewed per research run; up to eight optional Brave searches; staging queue has a 600-record cap.
-- Salesforce ownership and contact verification are human decisions; the model cannot determine CRM activity dates.
-- No candidate is inserted into Lead Reserve by discovery alone.
-- Existing lead matches are skipped using registration number and normalised legal name.
-- No source/API key means the UI will show a configuration error, not invented leads.
+## Safety / reliability
 
-Official references:
-- https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference/search/advanced-company-search
-- https://developer.company-information.service.gov.uk/get-started
+- All API calls authenticate the signed-in SalesOS session first. CH and Brave keys remain server-side.
+- Web enrichment rechecks the company's official legal profile before searching. A company with a strike-off/dormant/red flag cannot advance to Salesforce just from keywords.
+- Company registration identity, source URLs and scoring evidence are validated before writing to the workspace. Saved data, prior CRM decisions and buyer readiness are preserved.
+- Partial or failed Brave searches do not count as successfully researched companies. Temporary provider failures are retryable. A 401/403 or rate limit is reported rather than fabricated evidence.
+- A rerun skips an already web-researched candidate to preserve free credits. Individual URLs are used as evidence; no page crawling, LinkedIn scraping, email sending or CRM API connection.
+- Data remains in the existing SalesOS workspace; no new Supabase tables or migration required.
 
-Current Brave Search plan details: https://brave.com/search/api/ — check prices and monthly free credits before enabling paid access.
+## Setup
+
+1. Register a Companies House REST API key at https://developer.company-information.service.gov.uk/ and save it as `COMPANIES_HOUSE_API_KEY` in Vercel Production.
+2. If desired, register a Brave Search API key at https://api-dashboard.search.brave.com/ and save it as `BRAVE_SEARCH_API_KEY` in Vercel Production. Set billing controls with Brave.
+3. Redeploy SalesOS after updating environment variables.
+4. Open **Lead Research**, then either click **Find next screened batch** or **Research saved companies on web**. Confirm evidence and manually duplicate-check only the justified shortlist.
+
+Official Companies House API specs: https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/reference/search/advanced-company-search
+
+Current search API terms: https://brave.com/search/api/
