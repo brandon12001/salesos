@@ -32,8 +32,17 @@ export function LeadResearch({state,onDiscover,onAvailable,onHold,onMove,onDismi
    if(!cloud)throw Error('Sign into the SalesOS cloud workspace to run authenticated research.');
    const {data,error}=await cloud.auth.getSession();if(error||!data.session)throw Error('Sign in again to use Lead Research.');
    const response=await fetch('/api/lead-research',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token},body:JSON.stringify({profile,cursor:registry.cursors[profile]||0})});
-   const payload=await response.json();
-   if(!response.ok)throw Error(payload.error||'Research source unavailable.');
+   const contentType=response.headers.get('content-type')||'';
+   const raw=await response.text();
+   let payload:any;
+   if(contentType.toLowerCase().includes('application/json')){
+    try{payload=JSON.parse(raw)}catch{throw Error('The research service returned invalid JSON ('+response.status+'). Nothing was imported.')}
+   }else{
+    throw Error(response.status>=500
+     ?'The research service encountered a server error ('+response.status+'). No companies were imported. Retry after the deployment is repaired.'
+     :'The research service returned an unexpected response ('+response.status+'). Nothing was imported.');
+   }
+   if(!response.ok)throw Error(typeof payload?.error==='string'?payload.error:'Research source unavailable ('+response.status+').');
    const rows=payload.items as Discovery[];
    if(!Array.isArray(rows)||!Number.isInteger(payload.nextCursor))throw Error('Research returned an unexpected result. Nothing was imported.');
    if(failed(onDiscover(rows,profile,payload.nextCursor)))return;

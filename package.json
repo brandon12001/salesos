@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues && npm run test:kpi-first && npm run test:call-log && npm run test:lead-factory && npm run test:lead-research-api && npm run test:rule-score",
+    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues && npm run test:kpi-first && npm run test:call-log && npm run test:lead-factory && npm run test:lead-research-api && npm run test:lead-research-esm && npm run test:rule-score",
     "test:reserve": "node tests/test_reserve.cjs",
     "test:autosave": "node tests/test_autosave.cjs",
     "test:browser": "node tests/browser/run.cjs",
@@ -25,6 +25,7 @@
     "test:call-log": "node tests/test_call_log_import.cjs",
     "test:lead-factory": "node tests/test_lead_factory.cjs",
     "test:lead-research-api": "node tests/test_lead_research_api.cjs",
+    "test:lead-research-esm": "node tests/test_lead_research_esm.cjs",
     "test:rule-score": "node tests/test_rule_score.cjs"
   },
   "dependencies": {
