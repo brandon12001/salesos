@@ -1,4 +1,4 @@
-import {ruleScore,type SearchHit} from './rule-score';
+import {ruleScore,type SearchHit} from './rule-score.js';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 
 type Request=IncomingMessage&{body?:unknown};
