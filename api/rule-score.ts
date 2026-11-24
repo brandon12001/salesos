@@ -12,6 +12,7 @@ const BLOCKED_HOSTS=['linkedin.com','facebook.com','instagram.com','twitter.com'
 const strip=(s:string)=>s.toLowerCase().replace(/\b(limited|ltd|plc|the|uk|group)\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
 const hostOf=(u:string)=>{try{const parsed=new URL(u);return parsed.protocol==='https:'?parsed.hostname.toLowerCase().replace(/^www\./,''):''}catch{return ''}};
 const rootName=(name:string)=>strip(name).split(' ').filter(w=>w.length>=3).slice(0,3);
+const hostGroup=(url:string)=>{const h=hostOf(url);const parts=h.split('.');const n=parts.length;return n<=2?h:parts.slice(-(parts[n-2]==='co'&&parts[n-1]==='uk'?3:2)).join('.')};
 function companyRelevant(name:string,hit:SearchHit){
  const parts=rootName(name);
  if(parts.length===0)return false;
@@ -42,7 +43,7 @@ const WEAK_CONTEXT=/\b(?:recruits?\s+(?:international|overseas)\s+(?:candidates|
 export function ruleScore(company:string,sector:Sector,base:number,hits:SearchHit[]):RuleResult{
  if(!Number.isFinite(base)||base<0||base>65)throw Error('Invalid registry score.');
  const seen=new Set<string>(),signals:Signal[]=[];
- for(const hit of hits.slice(0,12)){
+ for(const hit of hits.slice(0,20)){
   const host=hostOf(hit.url||'');
   if(!host||BLOCKED_HOSTS.some(b=>host===b||host.endsWith('.'+b))||!companyRelevant(company,hit))continue;
   const body=[hit.title,hit.description,...(Array.isArray(hit.extra_snippets)?hit.extra_snippets.slice(0,2):[])].join(' ').slice(0,1400);
@@ -54,7 +55,7 @@ export function ruleScore(company:string,sector:Sector,base:number,hits:SearchHi
    }
   }
  }
- const uniqueStrongHosts=new Set(signals.filter(s=>s.strength==='strong').map(s=>hostOf(s.sourceUrl)));
+ const uniqueStrongHosts=new Set(signals.filter(s=>s.strength==='strong').map(s=>hostGroup(s.sourceUrl)));
  const uniqueHosts=new Set(signals.map(s=>hostOf(s.sourceUrl)));
  // One search excerpt can't demonstrate FX, and multiple words on one page
  // must not be treated as independent proof.
