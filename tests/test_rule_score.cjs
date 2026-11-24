@@ -25,5 +25,18 @@ result=ruleScore(company,'recruitment',25,[hit('https://site-one.example/','Fict
 assert.equal(result.priority,25,'overseas candidates alone do not demonstrate cross-border payments');
 result=ruleScore('Fictional Machine Importers Ltd','goods',28,[hit('https://machine.example/about','Fictional Machine Importers','We import industrial machinery and equipment from Germany and Italy.')]);
 assert.ok(result.priority>28&&result.priority<=75);
+result=ruleScore(company,'recruitment',25,[
+ hit('https://www.example.com/payroll','Fictional Global Staffing','International contractor payroll for 20 countries.'),
+ hit('https://blog.example.com/crossborder','Fictional Global Staffing','Cross-border contractor payments overseas.')
+]);
+assert.equal(result.researchConfidence,'Low','two subdomains of same organisation cannot count as independent confirmation');
+assert.ok(result.priority<=75);
+result=ruleScore(company,'recruitment',25,[hit('https://services.example/presence','Fictional Global Staffing','Our offices in multiple countries hire internationally.')]);
+assert.ok(result.priority<=35,'offices alone cannot promote FX-qualified status');
+assert.match(result.fxHypothesis,/No specific cross-border/i);
+assert.match(result.discoveryQuestion,/invoice overseas/i);
+result=ruleScore(company,'recruitment',25,[hit('https://recruitment.example/billing','Fictional Global Staffing','Multi-currency invoicing and foreign currency billing for international clients.')]);
+assert.match(result.fxHypothesis,/invoices in foreign currencies/i);
+assert.ok(result.priority>=65);
 assert.throws(()=>ruleScore(company,'recruitment',100,[]),/registry score/);
 console.log('PASS: no-AI rules rank verified context conservatively, reject unrelated/weak snippets, require independent hosts for high priority, preserve registry-only fallback.');

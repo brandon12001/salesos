@@ -1,12 +1,13 @@
 import {useMemo,useState} from 'react';
 import type {State} from '../types';
 import {cloud} from '../lib/cloud';
-import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate} from '../lib/leadFactory';
+import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
  state:State;
  onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number)=>string|void;
  onRegistryChecks:(rows:RegistryUpdate[])=>string|void;
+ onWebResearch:(rows:WebResearchUpdate[])=>string|void;
  onAvailable:(id:string)=>string|void;
  onHold:(id:string,owner:string,lastActivity:string)=>string|void;
  onMove:(ids:string[])=>string|void;
@@ -14,7 +15,7 @@ type Props={
  onDupes:()=>void;onReserve:()=>void;
 };
 type Filter='ready'|'research'|'flagged'|'cleared'|'all';
-export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
+export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
  const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('recruitment');
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
  const [filter,setFilter]=useState<Filter>('ready'),[search,setSearch]=useState('');
@@ -27,6 +28,8 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
  const cleared=candidates.filter(c=>c.status==='cleared'&&qualityTier(c)==='ready');
  const held=candidates.filter(c=>c.status==='held');
  const unverified=candidates.filter(c=>c.status==='unchecked'&&!c.registryCheck).slice(0,12);
+ const webQueue=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&(!c.registryCheck||c.registryCheck.risk==='ok')).slice(0,4);
+ const webCompleted=candidates.filter(c=>c.status==='unchecked'&&!!c.webCheckedAt).length;
  const visible=useMemo(()=>candidates.filter(c=>(filter==='all'?c.status!=='dismissed'&&c.status!=='moved':
   filter==='cleared'?c.status==='cleared':c.status==='unchecked'&&(
    filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):qualityTier(c)===filter))
@@ -50,7 +53,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
    const result=await api({profile,cursor:registry.cursors[profile]||0});
    if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor))throw Error('Invalid company research response.');
    if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor)))return;
-   setFilter('research');
+   setFilter('ready');
    setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.registryExcluded||0)+' excluded · '+(result.registryFlagged||0)+' flagged. '+(result.webResearchEnabled?result.webSearches+' public web checks.':'No independent web verification connected.')+' Only strongly researched candidates appear in Salesforce clearance.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
@@ -62,6 +65,16 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
    if(failed(onRegistryChecks(result.checks as RegistryUpdate[])))return;
    setFilter('flagged');
    setStatus('Rechecked '+result.checked+' existing companies using official registry profiles; '+result.ready+' passed legal/filing checks. Passing these checks does not prove FX exposure.');
+  }catch(e){setError((e as Error).message)}finally{setRunning(false)}
+ }
+ async function webResearch(){
+  if(running||!webQueue.length)return;setRunning(true);setError('');setStatus('');
+  try{
+   const result=await api({mode:'web-enrich',candidates:webQueue.map(c=>({company:c.company,companyNumber:c.companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated}))});
+   if(!Array.isArray(result.updates)||result.updates.length!==webQueue.length)throw Error('Web research returned an incomplete batch; no records changed.');
+   if(failed(onWebResearch(result.updates as WebResearchUpdate[])))return;
+   setFilter('ready');
+   setStatus('Web researched '+result.webCompleted+' companies using '+result.webSearches+' Brave requests ('+result.webErrors+' provider errors). '+(result.rateLimited?'Provider rate limit reached; remaining names stay retryable.':'Research saved with source links and FX discovery questions.')+' Salesforce clearance still requires manual checks.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  function accept(c:Candidate){if(!verified){setError('Confirm you checked Salesforce first.');return}if(!failed(onAvailable(c.id)))setStatus('Salesforce check recorded. Company ready to transfer.')}
@@ -81,7 +94,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
    <div className="button-row"><button className="btn secondary" onClick={onDupes}><Icon name="archive"/> Duplicate Queue</button><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Lead Reserve</button></div></div>
   <div className="metrics-grid">
    <div className="metric"><span>Worth a Salesforce check</span><strong>{ready.length}</strong><small>Registry verified + strong web clue</small></div>
-   <div className="metric"><span>Research backlog</span><strong>{backlog.length}</strong><small>FX mechanism not evidenced</small></div>
+   <div className="metric"><span>Research backlog</span><strong>{backlog.length}</strong><small>{webCompleted} checked on the web; evidence still uncertain</small></div>
    <div className="metric"><span>Registry flags / exclusions</span><strong>{flagged.length}</strong><small>Overdue filings, holding companies or closure concerns</small></div>
    <div className="metric"><span>Salesforce-cleared / duplicates</span><strong>{cleared.length} / {held.length}</strong><small>Transfer or manager review</small></div>
   </div>
@@ -90,8 +103,9 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
    <p className="hint">Each scan inspects up to 12 legal profiles (status, strike-off notices, overdue accounts, dormant filings and holding-company flags). Results are kept for audit even if excluded. No FX volumes or websites are invented.</p>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
     <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':'Find next screened batch'}</button>
-    <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Re-screen saved companies ({unverified.length} next)</button></div>
-   <p className="hint">The re-screen button works through the older 50 companies 12 at a time without deleting your records. No independent cross-border evidence is available until a web-search source is connected. Registry-only names stay in Research Backlog and are not recommended for Salesforce checks.</p>
+    <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
+    <button className="btn primary" disabled={running||!webQueue.length} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
+   <p className="hint">No AI costs. Research Saved automatically takes four unresearched companies (including your original 50), re-verifies each official Companies House profile and runs up to eight Brave searches total. Each company gets two focused queries about how money might cross borders. Searches require an active Brave subscription and can incur provider charges; set a monthly spending cap in Brave. Previously researched names are skipped to conserve credits. Registry-only names stay in the research backlog.</p>
    {registry.lastRunAt&&<small>Last scan: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
   </section>
   <section className="panel stack">
@@ -105,6 +119,9 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
     <div className="section-between"><div><strong>{c.company}</strong><p className="hint">{c.companyNumber} · {c.sector==='recruitment'?'Recruitment':'Machinery distribution'} · Incorporated {c.incorporated||'unknown'}</p></div>
      <div className="button-row"><Badge tone={tierColor(c)}>{tierLabel(c)}</Badge><Badge tone="muted">{candidatePriority(c)}/100 screening</Badge></div></div>
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
+    {c.fxHypothesis&&<p className="hint"><strong>FX hypothesis:</strong> {c.fxHypothesis}</p>}
+    {c.discoveryQuestion&&<p className="hint"><strong>Call discovery question:</strong> {c.discoveryQuestion}</p>}
+    {c.webCheckedAt&&<small>Web checked {new Date(c.webCheckedAt).toLocaleDateString('en-GB')} · {c.webQueries||0} successful search queries</small>}
     {c.evidence?.length?<div className="stack"><small>Public web clues (not confirmed FX)</small>{c.evidence.slice(0,4).map((e,i)=><p className="hint" key={e.sourceUrl+i}><strong>{e.label}</strong> · <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">Source</a> · {e.excerpt}</p>)}</div>:<p className="hint">No source-backed cross-border payments evidence. Keep in research rather than checking Salesforce.</p>}
     <div className="button-row"><a className="btn secondary small" href={c.sourceUrl} target="_blank" rel="noopener noreferrer">Companies House <Icon name="external" size={13}/></a>
      <button className="btn secondary small" onClick={()=>void copy(c.company)}><Icon name="copy"/> Copy name</button>
@@ -116,7 +133,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onAvailable,onHo
     {ownerId===c.id&&<div className="panel stack"><label className="field">Salesforce owner<input value={owner} onChange={e=>setOwner(e.target.value)} maxLength={120} placeholder="Actual CRM owner"/></label>
      <label className="field">Last qualifying activity (optional)<input type="date" value={activity} max={new Date().toISOString().slice(0,10)} onChange={e=>setActivity(e.target.value)}/></label>
      <div className="button-row"><button className="btn primary small" disabled={!verified||!owner.trim()} onClick={()=>bank(c)}>Bank duplicate</button><button className="btn quiet small" onClick={()=>setOwnerId('')}>Cancel</button></div></div>}
-   </div>)}</div>:<Empty title={filter==='ready'?'No evidence-backed companies yet':'No companies in this view'} detail={filter==='ready'?'Registry-only results do not qualify. Connect an independent web-search source to assess international payment clues.':'Use the scan or re-screen button to investigate companies.'}/>}
+   </div>)}</div>:<Empty title={filter==='ready'?'No evidence-backed companies yet':'No companies in this view'} detail={filter==='ready'?'Click Research saved companies on web to find supported cross-border payment hypotheses. Companies without evidence remain in the backlog.':'Use the discovery or research buttons to investigate companies.'}/>}
   </section>{error&&<p className="form-error" role="alert">{error}</p>}{status&&<p role="status" className="hint">{status}</p>}
  </div>;
 }
