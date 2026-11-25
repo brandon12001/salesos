@@ -13,6 +13,7 @@ for(const change of [{months:[202611,202611]},{months:[202613]},{from:202001},{c
  c.companyContext.hmrc.activity={...activity,...change};assert.equal(lib.tradeActivity(c,now.getTime()),null,'invalid/incomplete activity cannot rank');assert.equal(lib.hmrcQualified(c,now.getTime()),true,'research fit remains independent');
 }
 c.companyContext.hmrc.activity=activity;assert.equal(lib.needsCompanyContext({...c.companyContext,checkedAt:now.toISOString(),hmrc:{...c.companyContext.hmrc,checkedAt:'2026-11-01T00:00:00Z'}},now.getTime()),true,'fresh ownership lookup cannot hide expired HMRC proof');
+const retained=lib.retainContextOnFailure(c.companyContext,{...c.companyContext,hmrc:{...c.companyContext.hmrc,activity:undefined}});assert.deepEqual(retained.hmrc.activity,activity,'optional coverage failure retains the original source-dated monthly facts');
 let mode='okay',brave=0,reservations=0,remaining=2;
 process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake';process.env.COMPANIES_HOUSE_API_KEY='fake';process.env.BRAVE_SEARCH_API_KEY='fake';
 const candidate={company:'Fictional Staffing Budget Ltd',companyNumber:'18000001',sector:'recruitment',sicCodes:['78200'],incorporated:'2016-01-01',status:'unchecked'};

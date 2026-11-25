@@ -66,7 +66,8 @@ export function needsCompanyContext(value?:CompanyContext,now=Date.now()){
 /** A provider outage must not erase a previously observed source result. */
 export function retainContextOnFailure(previous:CompanyContext|undefined,next:CompanyContext):CompanyContext{
  return {...next,
-  hmrc:next.hmrc.status==='error'&&previous?.hmrc.status==='observed'?{...previous.hmrc,checkedAt:previous.hmrc.checkedAt||previous.checkedAt,refreshErrorAt:next.checkedAt}:next.hmrc,
+  hmrc:next.hmrc.status==='error'&&previous?.hmrc.status==='observed'?{...previous.hmrc,checkedAt:previous.hmrc.checkedAt||previous.checkedAt,refreshErrorAt:next.checkedAt}:
+   next.hmrc.status==='observed'&&!next.hmrc.activity&&previous?.hmrc.activity&&previous.hmrc.traderId===next.hmrc.traderId&&hmrcNameKey(previous.hmrc.matchedName)===hmrcNameKey(next.hmrc.matchedName)&&hmrcPostcode(previous.hmrc.matchedPostcode)===hmrcPostcode(next.hmrc.matchedPostcode)?{...next.hmrc,activity:previous.hmrc.activity}:next.hmrc,
   gleif:next.gleif.status==='error'&&previous?.gleif.status==='matched'?{...previous.gleif,checkedAt:previous.gleif.checkedAt||previous.checkedAt,refreshErrorAt:next.checkedAt}:next.gleif};
 }
 /** Validate external metadata before it can enter the saved research registry. */
