@@ -26,7 +26,7 @@
   },
   "functions": {
     "api/lead-research.ts": {
-      "maxDuration": 45
+      "maxDuration": 90
     }
   }
 }

@@ -18,6 +18,8 @@ Each eligible paid batch atomically reserves two requests per company, at most e
 
 Reservations are conservative: provider rejection, timeout, unused slots after a rate limit, an interrupted server and an ambiguous/lost reservation response never automatically refund allowance. There is no retry/reuse of a grant. The UI refreshes the counter after success or failure. A provider outage/expired/empty/unprovisioned budget fails closed for paid search and keeps free scans usable. Confirming a changed allowance requires the latest budget revision; a competing reservation/configuration causes a visible conflict rather than replenishing from stale numbers. Configuration sets a new remaining ceiling against the lifetime allocated count; it never resets that count.
 
+The research function has a 90-second ceiling so bounded slow Auth/registry/budget/provider calls can finish without the platform cutting off a funded batch. Individual provider timeouts and four-company/eight-request caps remain unchanged; normal requests do not wait for the ceiling. No background process or paid infrastructure is added.
+
 ## Migration and release order
 
 1. Run install/build, all unit/API suites, real local Postgres permission/concurrency checks and the full isolated fictional browser suite; require final-head CI.
