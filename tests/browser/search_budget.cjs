@@ -1,5 +1,5 @@
 const assert=require('node:assert/strict');
-const {jwt,sql}=require('./stack.cjs');
+const {jwt,sql,poll}=require('./stack.cjs');
 module.exports=async({a,saved,state,restore,nav,core})=>{
  const s=core.newState(),now=new Date(),month=now.getUTCFullYear()*100+now.getUTCMonth()+1;
  const row=(i)=>({id:'ch:'+String(19000000+i),company:'Fictional Ranked Equipment '+i+' Ltd',companyNumber:String(19000000+i),sector:'goods',sicCodes:['46620'],incorporated:'2016-01-01',status:'unchecked',sourceUrl:'https://find-and-update.company-information.service.gov.uk/company/'+String(19000000+i),priority:25,reason:'Fictional trade evidence; FX unknown.',foundAt:now.toISOString(),registryCheck:{risk:'ok',checkedAt:now.toISOString(),flags:[],companyType:'ltd',companyStatus:'active',accountsType:'small',incorporated:'2016-01-01',sicCodes:['46620'],postalCode:'SW1A 1AA'}});
@@ -10,10 +10,11 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  s.meta.leadFactory={version:1,candidates:rows,cursors:{},lastRunAt:now.toISOString()};await restore(a,s);const before=await state(a);
  const owner=await a.evaluate(()=>{const key=Object.keys(localStorage).find(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));return JSON.parse(localStorage.getItem(key)).user.id});assert.match(owner,/^[a-f0-9-]{36}$/);
  sql(`insert into salesos_research_private.search_budget(owner_id) values('${owner}');`);
- let paid=0,failBudget=false;
+ let paid=0,failBudget=false,holdStatus=false,releaseStatus;
  await a.route('**/api/lead-research',async route=>{
   const b=route.request().postDataJSON();
   if(b.mode?.startsWith('budget-')){
+   if(b.mode==='budget-status'&&holdStatus)await new Promise(resolve=>{releaseStatus=resolve});
    if(failBudget)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:'Fictional budget unavailable; paid research paused.'})});
    const payload={action:b.mode==='budget-status'?'status':'configure',amount:b.remaining||0,stop_date:b.stopOn||null,expected_revision:b.revision??null};
    const r=await fetch('http://127.0.0.1:55421/rest/v1/rpc/salesos_search_budget',{method:'POST',headers:{Authorization:route.request().headers().authorization,apikey:jwt('anon'),'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -34,7 +35,7 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
   const confirm=a.getByRole('checkbox',{name:'I checked my current Brave allowance and reset date.'});const save=a.getByRole('button',{name:'Set confirmed allowance',exact:true});assert.equal(await save.isDisabled(),true);await confirm.check();await save.click();
   await budget.locator('summary').filter({hasText:'2 searches remaining'}).waitFor();assert.equal(await button.isEnabled(),true);
   await button.click();await a.getByRole('alert').filter({hasText:'Fictional provider timeout'}).waitFor();await budget.locator('summary').filter({hasText:'paid research paused'}).waitFor();assert.equal(await button.isDisabled(),true);assert.equal(paid,1);
-  await a.getByRole('button',{name:'Refresh search budget',exact:true}).click();await budget.getByText(/0 remaining · 2 allocated/).waitFor();
+  holdStatus=true;await a.getByRole('button',{name:'Refresh search budget',exact:true}).click();await poll(()=>releaseStatus);assert.equal(await a.getByLabel('Confirmed remaining Brave allowance').isDisabled(),true,'a slow refresh must not accept a draft it would later clear');assert.equal(await confirm.isDisabled(),true);holdStatus=false;releaseStatus();await budget.getByText(/0 remaining · 2 allocated/).waitFor();
   await a.getByLabel('Confirmed remaining Brave allowance').fill('10');await confirm.check();
   // A competing confirmation changes the revision before this form is submitted.
   sql(`begin;set local role authenticated;select set_config('request.jwt.claim.sub','${owner}',true);select public.salesos_search_budget('configure',4,'${stop}',2);commit;`);
