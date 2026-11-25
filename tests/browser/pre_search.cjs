@@ -23,13 +23,13 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  },jwt('anon'));
  assert.equal(projection.status,200,'real localhost PostgREST supports the account-scoped research projection');
  assert.equal(projection.rows[0].factory.candidates.length,6);assert.equal(projection.rows[0].leads.length,1);
- await a.getByRole('heading',{name:'Lead Research & Clearance'}).waitFor();
+ await a.getByRole('heading',{name:'Lead Research & Clearance'}).waitFor();await a.locator('summary').filter({hasText:'Search budget · 100 searches remaining'}).waitFor();
  const research=a.getByRole('button',{name:'Research saved companies on web (1 next)',exact:true});assert.equal(await research.isEnabled(),true);
  await a.getByRole('button',{name:'Review pre-search holds (4)',exact:true}).click();
  await a.getByText(/Generic placement alone is too broad/).waitFor();await a.getByText(/Under two years old:/).waitFor();
  await a.getByText(/Already tracked in SalesOS; no search credits will be spent/).waitFor();
  let requests=0;
- await a.route('**/api/lead-research',async route=>{
+ await a.route('**/api/lead-research',async route=>{if(route.request().postDataJSON()?.mode==='budget-status')return route.fallback();
   requests++;const body=route.request().postDataJSON();assert.equal(body.mode,'web-enrich');
   assert.deepEqual(body.candidates.map(c=>c.companyNumber),[rows[0].companyNumber],'only selected-sector eligible company submitted');
   // Official recheck finds it newly overdue: no search performed; keep it for review.

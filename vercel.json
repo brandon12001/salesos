@@ -20,7 +20,8 @@
       "fix/focus-performance": false,
       "feat/pre-search-screening": false,
       "feat/free-company-context": false,
-      "feat/hmrc-first-qualification": false
+      "feat/hmrc-first-qualification": false,
+      "feat/research-budget-ranking": false
     }
   },
   "functions": {

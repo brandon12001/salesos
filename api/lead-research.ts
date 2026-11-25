@@ -1,7 +1,8 @@
+import {budgetClient,BudgetError} from '../server/searchBudget.js';
 import {ruleScore,type SearchHit,type Signal} from './rule-score.js';
 import {assessRegistry,screenedPriority,PROFILE_LIMIT,type CompanyProfile,type RegistryCheck} from './registry-quality.js';
 import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js';
-import {turnoverFit,turnoverTarget,needsCompanyContext,retainContextOnFailure,hmrcQualified,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from '../src/lib/companyContext.js';
+import {turnoverFit,turnoverTarget,needsCompanyContext,retainContextOnFailure,hmrcQualified,researchRank,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from '../src/lib/companyContext.js';
 import {freeCompanyContext} from '../server/freeCompanyContext.js';
 import {discoverHMRC} from '../server/hmrcDiscovery.js';
 import type {IncomingMessage,ServerResponse} from 'node:http';
@@ -48,7 +49,7 @@ function webQueries(company:string,sector:Sector){
   ?[quoted+' international contractor payroll payments',quoted+' overseas clients invoicing currencies employer of record']
   :[quoted+' imported equipment overseas manufacturers distributors',quoted+' foreign suppliers invoicing currency Germany Europe Asia'];
 }
-async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:WorkspaceScreen,enabled=true){
+async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:WorkspaceScreen,enabled=true,reserve?:ReturnType<typeof budgetClient>){
  const target=turnoverTarget(known?.factory?.turnoverTarget);
  const screened=items.map(c=>{
   const registry=preSearchScreen(c.sector,c.registryCheck),saved=known?.factory?.candidates.find(k=>sameResearchCompany(k,c));
@@ -56,8 +57,12 @@ async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:W
   const tradeOK=c.sector!=='goods'||hmrcQualified({...c,companyContext:saved?.companyContext});
   return {c,gate:{eligible:registry.eligible&&fit.eligible&&tradeOK,reasons:[...registry.reasons,fit.reason,...(!tradeOK?['A recent matched HMRC trade record is required before optional goods web research. Run free checks first; missing data does not disqualify the company.']:[])]}};
  });
+ const rank=(c:ResearchItem)=>{
+  const saved=known?.factory?.candidates.find(k=>sameResearchCompany(k,c));
+  return researchRank({...c,turnover:saved?.turnover,companyContext:saved?.companyContext},target,c.priority);
+ };
  const eligible=screened.filter(({c,gate})=>gate.eligible&&!blocked.some(b=>sameResearchCompany(c,b)))
-  .map(({c})=>c).sort((a,b)=>b.priority-a.priority).slice(0,MAX_WEB_COMPANIES);
+  .map(({c})=>c).sort((a,b)=>rank(b)-rank(a)).slice(0,MAX_WEB_COMPANIES);
  const preSearchHeld=screened.filter(({gate})=>!gate.eligible).length;
  const knownSkipped=screened.filter(({c,gate})=>gate.eligible&&blocked.some(b=>sameResearchCompany(c,b))).length;
  for(const {c,gate} of screened){
@@ -66,15 +71,22 @@ async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:W
  const screening={preSearchPassed:screened.length-preSearchHeld-knownSkipped,preSearchHeld,knownSkipped};
  const searchKey=process.env.BRAVE_SEARCH_API_KEY;
  if(!searchKey||!enabled)return {...screening,webSearches:0,webErrors:0,webResearchEnabled:false,webCompleted:0,authRejected:false,rateLimited:false};
+ let budget;
+ if(eligible.length){
+  if(!reserve)throw new BudgetError('Search budget unavailable; no Brave requests sent.');
+  budget=await reserve('reserve',eligible.length*2);
+  if(!budget.granted)throw new BudgetError('Search allowance is paused, expired or exhausted. Confirm your remaining Brave allowance in Search budget. Free scans still work.',429);
+ }
+ const funded=eligible.slice(0,(budget?.granted||0)/2);
  let webSearches=0,webErrors=0,webCompleted=0,authRejected=false,rateLimited=false;
- await batches(eligible,2,async c=>{
+ await batches(funded,2,async c=>{
   const hits:SearchHit[]=[],unique=new Set<string>();let completed=0;
   for(const q of webQueries(c.company,c.sector)){
    if(authRejected||rateLimited)break;
    try{
     webSearches++;
     const response=await fetch('https://api.search.brave.com/res/v1/web/search?'+new URLSearchParams({q,count:'10'}),{
-     headers:{'X-Subscription-Token':searchKey,Accept:'application/json'},signal:AbortSignal.timeout(5500)});
+     headers:{'X-Subscription-Token':searchKey,Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(5500)});
     if(response.status===401||response.status===403){webErrors++;authRejected=true;break}
     if(response.status===429){webErrors++;rateLimited=true;break}
     if(!response.ok){webErrors++;continue}
@@ -93,7 +105,7 @@ async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:W
    c.webCheckedAt=new Date().toISOString();c.webQueries=completed;webCompleted++;
   }
  });
- return {...screening,webSearches,webErrors,webResearchEnabled:true,webCompleted,authRejected,rateLimited};
+ return {...screening,webSearches,webErrors,webResearchEnabled:true,webCompleted,authRejected,rateLimited,budget,budgetHeld:eligible.length-funded.length};
 }
 export default async function handler(req:Request,res:ServerResponse){
  if(req.method!=='POST')return respond(res,405,{error:'Use POST.'});
@@ -105,7 +117,13 @@ export default async function handler(req:Request,res:ServerResponse){
   const auth=await fetch(url.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:publishable,Authorization:'Bearer '+token},signal:AbortSignal.timeout(9000)});
   if(!auth.ok)return respond(res,401,{error:'Your SalesOS session has expired.'});
   const user=await auth.json() as {id?:string};if(!user.id)return respond(res,401,{error:'SalesOS session is not authorised.'});
-  const input=await bodyOf(req) as {mode?:string;profile?:Sector;cursor?:number;candidates?:Array<{company:string;companyNumber:string;sector:Sector;sicCodes:string[];incorporated:string}>};
+  const input=await bodyOf(req) as {mode?:string;profile?:Sector;cursor?:number;remaining?:number;stopOn?:string;revision?:number;confirmed?:boolean;candidates?:Array<{company:string;companyNumber:string;sector:Sector;sicCodes:string[];incorporated:string}>};
+  const budget=budgetClient(url,publishable,token);
+  if(input.mode==='budget-status')return respond(res,200,{budget:await budget('status')});
+  if(input.mode==='budget-config'){
+   if(input.confirmed!==true||!Number.isInteger(input.remaining)||input.remaining!<0||input.remaining!>1000||!Number.isSafeInteger(input.revision)||input.revision!<0||typeof input.stopOn!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(input.stopOn))return respond(res,400,{error:'Confirm your remaining allowance (0-1000), stop date and latest budget revision.'});
+   return respond(res,200,{budget:await budget('configure',input.remaining!,input.stopOn,input.revision!)});
+  }
   const key=process.env.COMPANIES_HOUSE_API_KEY;
   if(!key)return respond(res,503,{error:'Add COMPANIES_HOUSE_API_KEY to Vercel Production environment to run company checks.'});
   const chAuth='Basic '+Buffer.from(key+':').toString('base64'),now=new Date().toISOString();
@@ -152,7 +170,7 @@ export default async function handler(req:Request,res:ServerResponse){
     });
     return respond(res,200,{mode:'free-context',updates,braveSearches:0,providerErrors:updates.reduce((n,u)=>n+Number(u.companyContext.hmrc.status==='error'||!!u.companyContext.hmrc.refreshErrorAt)+Number(u.companyContext.gleif.status==='error'||!!u.companyContext.gleif.refreshErrorAt),0)});
    }
-   const web=await enrichWeb(checks,known.leads,known);
+   const web=await enrichWeb(checks,known.leads,known,true,budget);
    const {webSearches,webCompleted,rateLimited,authRejected}=web;
    if(authRejected)return respond(res,502,{error:'Brave rejected the API key (401/403). Check its subscription, permissions or billing status. No results saved.'});
    if(rateLimited&&webCompleted===0)return respond(res,429,{error:'Brave has rate-limited web research. Try later. No results saved.'});
@@ -192,13 +210,14 @@ export default async function handler(req:Request,res:ServerResponse){
     reason:'Companies House SIC '+source.sic+' ('+source.label+'). '+(result.registryCheck.flags.join(' ')||'Active registry profile verified.')+' Foreign currency payments and UK treasury autonomy unverified.',
     researchMethod:'registry-only',researchConfidence:'Low',foundAt:now};
   });
-  const web=await enrichWeb(items,[...known.leads,...(known.factory?.candidates||[])],known,input.mode!=='registry-discover');
+  const web=await enrichWeb(items,[...known.leads,...(known.factory?.candidates||[])],known,input.mode!=='registry-discover',budget);
   items.sort((a,b)=>b.priority-a.priority||a.company.localeCompare(b.company));
   respond(res,200,{items,profile,sourceSic:source.sic,resultsScanned:raw.length,nextCursor:cursor+1,runAt:now,...web,
    registryExcluded:items.filter(x=>x.registryCheck.risk==='excluded').length,
    registryFlagged:items.filter(x=>x.registryCheck.risk==='review'||x.registryCheck.risk==='unverified').length,
    disclaimer:'A public search snippet is an unverified clue; these scores never confirm FX volumes, currencies, decision authority or revenue. No AI.'});
  }catch(error){
+  if(error instanceof BudgetError)return respond(res,error.status,{error:error.message});
   const message=error instanceof Error?error.message:'Research failed.';
   respond(res,502,{error:/abort|timeout/i.test(message)?'Registry service timed out; no changes saved.':'Research service unavailable; no companies saved.'});
  }

@@ -1,7 +1,7 @@
 import {assessRegistry,screenedPriority,type CompanyProfile} from '../api/registry-quality.js';
 import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js';
 import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified,type CompanyContext} from '../src/lib/companyContext.js';
-import {freeGet,hmrcTradeQuery,hmrcTradeContext} from './freeCompanyContext.js';
+import {freeGet,hmrcTradeQuery,hmrcTradeContext,hmrcActivity} from './freeCompanyContext.js';
 type Known={company:string;companyNumber?:string};
 type CHGet=(path:string,auth:string,timeout?:number)=>Promise<Response>;
 const HMRC='https://api.uktradeinfo.com',SIZE=4;
@@ -29,12 +29,12 @@ export async function discoverHMRC(cursor:number,now:Date,chAuth:string,chGet:CH
    if(matches.length!==1){unmatched++;return null}
    const companyNumber=matches[0].company_number,company=matches[0].title;
    if(known.some(k=>sameResearchCompany(k,{company,companyNumber}))){knownSkipped++;return null}
-   const [official,trade]=await Promise.all([chGet('/company/'+encodeURIComponent(companyNumber),chAuth),freeGet(HMRC+'/Trade?'+hmrcTradeQuery(id,now))]);
+   const [official,trade,activity]=await Promise.all([chGet('/company/'+encodeURIComponent(companyNumber),chAuth),freeGet(HMRC+'/Trade?'+hmrcTradeQuery(id,now)),hmrcActivity(id,now)]);
    if(!official.ok)throw Error('Registry profile unavailable');
    const p=await official.json() as CompanyProfile;
    if(hmrcNameKey(p.company_name)!==hmrcNameKey(trader.CompanyName)||hmrcPostcode(p.registered_office_address?.postal_code)!==hmrcPostcode(trader.PostCode)||p.company_number!==companyNumber||!Array.isArray(trade.value)){unmatched++;return null}
    const registryCheck=assessRegistry(company,companyNumber,p,now.toISOString());
-   const companyContext:CompanyContext={checkedAt:now.toISOString(),hmrc:hmrcTradeContext(trader,trade.value,now),gleif:{status:'unknown',deferred:true,sourceUrl:'https://www.gleif.org/en/lei-data/gleif-api',summary:'Ownership context not checked in this HMRC-first scan. Manual Salesforce clearance is still required.'}};
+   const companyContext:CompanyContext={checkedAt:now.toISOString(),hmrc:{...hmrcTradeContext(trader,trade.value,now),activity},gleif:{status:'unknown',deferred:true,sourceUrl:'https://www.gleif.org/en/lei-data/gleif-api',summary:'Ownership context not checked in this HMRC-first scan. Manual Salesforce clearance is still required.'}};
    const result={company,companyNumber,sector:'goods' as const,sicCodes:registryCheck.sicCodes||[],incorporated:registryCheck.incorporated||'',
     sourceUrl:'https://find-and-update.company-information.service.gov.uk/company/'+companyNumber,foundAt:now.toISOString(),registryCheck,companyContext,
     priority:screenedPriority('goods',registryCheck.sicCodes?.[0]||'',registryCheck.incorporated||'',registryCheck),researchMethod:'registry-only' as const,researchConfidence:'Low' as const,

@@ -1,6 +1,6 @@
 import {researchNameKey} from '../src/lib/researchScreen.js';
 import type {CompanyContext,HMRCContext,GLEIFContext} from '../src/lib/companyContext.js';
-import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified} from '../src/lib/companyContext.js';
+import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified,tradeActivity} from '../src/lib/companyContext.js';
 type Company={company:string;companyNumber:string;sector:'recruitment'|'goods';postalCode?:string};
 const HMRC='https://api.uktradeinfo.com',GLEIF='https://api.gleif.org/api/v1';
 const hmrcSource='https://www.uktradeinfo.com/search/traders/';
@@ -14,6 +14,19 @@ const get=freeGet;
 export function hmrcTradeQuery(id:number,now:Date){
  const {from,to}=hmrcWindow(now);
  return new URLSearchParams({'$filter':`TraderId eq ${id} and MonthId ge ${from} and MonthId le ${to}`,'$top':'12','$select':'TraderId,TradeTypeId,MonthId,CommodityId','$expand':'Commodity($select=Hs2Code,Hs2Description)'});
+}
+export function hmrcActivityQuery(id:number,now:Date){
+ const {from,to}=hmrcWindow(now);
+ return new URLSearchParams({'$apply':`filter(TraderId eq ${id} and MonthId ge ${from} and MonthId le ${to})/groupby((TraderId,MonthId,TradeTypeId))`,'$top':'25'});
+}
+export async function hmrcActivity(id:number,now:Date):Promise<HMRCContext['activity']>{
+ try{
+  const query=hmrcActivityQuery(id,now),result=await get(HMRC+'/Trade?'+query),{from,to}=hmrcWindow(now);
+  if(!Array.isArray(result.value)||!result.value.length||result.value.length>24||result['@odata.nextLink'])return undefined;
+  const rows=result.value;
+  if(rows.some((x:any)=>x.TraderId!==id||!Number.isInteger(x.MonthId)||x.MonthId<from||x.MonthId>to||x.MonthId%100<1||x.MonthId%100>12||![1,2].includes(x.TradeTypeId))||new Set(rows.map((x:any)=>x.MonthId+':'+x.TradeTypeId)).size!==rows.length)return undefined;
+  return {from,to,months:[...new Set<number>(rows.map((x:any)=>x.MonthId))].sort().reverse(),checkedAt:now.toISOString(),sourceUrl:HMRC+'/Trade?'+query};
+ }catch{return undefined} // Incomplete coverage must never become a frequency score.
 }
 export function hmrcTradeContext(trader:{TraderId:number;CompanyName:string;PostCode:string},rows:any[],now:Date):HMRCContext{
  const id=trader.TraderId,{from,to}=hmrcWindow(now);
@@ -38,9 +51,9 @@ async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
    return {status:'unknown',sourceUrl:hmrcSource,summary:'No unique HMRC name-and-postcode match in the bounded search. Coverage is incomplete; this is not evidence of no overseas trade.'};
   const id=matches[0].TraderId;
   const query=hmrcTradeQuery(id,now);
-  const result=await get(HMRC+'/Trade?'+query);
+  const [result,activity]=await Promise.all([get(HMRC+'/Trade?'+query),hmrcActivity(id,now)]);
   if(!Array.isArray(result.value))throw Error('Invalid trade response');
-  return hmrcTradeContext(matches[0],result.value,now);
+  return {...hmrcTradeContext(matches[0],result.value,now),activity};
  }catch{return {status:'error',sourceUrl:hmrcSource,summary:'HMRC lookup unavailable; no negative conclusion drawn. Retry after the provider recovers.'}}
 }
 async function gleif(c:Company):Promise<GLEIFContext>{
@@ -71,6 +84,10 @@ async function gleif(c:Company):Promise<GLEIFContext>{
 }
 export async function freeCompanyContext(c:Company,now=new Date(),previous?:CompanyContext):Promise<CompanyContext>{
  const cached=!previous?.hmrc.refreshErrorAt&&hmrcQualified({...c,registryCheck:{postalCode:c.postalCode},companyContext:previous},now.getTime());
- const [trade,ownership]=await Promise.all([cached?previous!.hmrc:hmrc(c,now),gleif(c)]);
+ let tradeCheck:Promise<HMRCContext>;
+ if(!cached)tradeCheck=hmrc(c,now);
+ else if(tradeActivity({...c,registryCheck:{postalCode:c.postalCode},companyContext:previous},now.getTime()))tradeCheck=Promise.resolve(previous!.hmrc);
+ else tradeCheck=hmrcActivity(previous!.hmrc.traderId!,now).then(activity=>({...previous!.hmrc,activity:activity||previous!.hmrc.activity}));
+ const [trade,ownership]=await Promise.all([tradeCheck,gleif(c)]);
  return {checkedAt:now.toISOString(),hmrc:{...trade,checkedAt:trade.checkedAt||now.toISOString()},gleif:{...ownership,checkedAt:now.toISOString()}};
 }

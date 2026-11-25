@@ -27,7 +27,7 @@ Refresh old/incomplete source evidence through **Free trade & ownership checks**
 
 ## Safeguards
 
-Only persisted eligible candidates may be researched. No provider credentials, user bearer tokens or arbitrary provider URLs are forwarded to other services. All provider calls use fixed origins, bounded result sizes, timeouts and no redirects. HMRC-first discovery and source qualification use **zero Brave requests**; optional deeper web research stays at four companies/eight requests per action. There is no scheduler or daily/monthly search ledger.
+Only persisted eligible candidates may be researched. No provider credentials, user bearer tokens or arbitrary provider URLs are forwarded to other services. All provider calls use fixed origins, bounded result sizes, timeouts and no redirects. HMRC-first discovery and source qualification use **zero Brave requests**; optional deeper web research stays at four companies/eight requests per action. There is no scheduler. Optional paid searches now require the shared allowance described in [trade activity and budget](RESEARCH_BUDGET_RANKING.md).
 
 Manual Salesforce ownership checking remains required before availability/transfer; held duplicates still require the existing approval workflow. Reserve activation still requires permitted contacts and valid methods, and auto replenishment remains OFF unless explicitly enabled. Qualification and source viewing never log outreach, change stages/readiness, award XP or create calls. No existing prospects are reclassified or overwritten by deployment. A no-query web hold updates registry checks without erasing previous independent research.
 

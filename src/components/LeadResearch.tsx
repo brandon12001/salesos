@@ -1,10 +1,12 @@
 import {useMemo,useState} from 'react';
 import type {State} from '../types';
-import {cloud} from '../lib/cloud';
+import {researchApi as api} from '../lib/researchApi';
+import {SearchBudget} from './SearchBudget';
+import type {SearchBudget as Budget} from '../../server/searchBudget';
 import {preSearchScreen,needsRegistryRefresh,sameResearchCompany} from '../lib/researchScreen';
-import {turnoverFit,turnoverTarget,needsCompanyContext,hmrcQualified,type TurnoverTarget,type TurnoverEvidence} from '../lib/companyContext';
+import {turnoverFit,turnoverTarget,needsCompanyContext,hmrcQualified,tradeActivity,type TurnoverTarget,type TurnoverEvidence} from '../lib/companyContext';
 import {ResearchTarget,TurnoverEditor} from './ResearchTarget';
-import {leadFactory,researchProfiles,qualityTier,clearanceReady,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
+import {leadFactory,researchProfiles,qualityTier,clearanceReady,candidatePriority,researchPriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
  state:State;
@@ -23,6 +25,7 @@ type Props={
 type Filter='ready'|'research'|'screen-held'|'flagged'|'cleared'|'all';
 export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onCompanyContext,onTarget,onTurnover,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
  const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('recruitment');
+ const [budget,setBudget]=useState<Budget|null>(null),[budgetRefresh,setBudgetRefresh]=useState(0);
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
  const [filter,setFilter]=useState<Filter>('ready'),[search,setSearch]=useState('');
  const [verified,setVerified]=useState(false),[ownerId,setOwnerId]=useState(''),[owner,setOwner]=useState(''),[activity,setActivity]=useState('');
@@ -42,7 +45,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  };
  const webScreen=(c:Candidate)=>{const base=screen(c);return c.sector==='goods'&&!hmrcQualified(c)?{eligible:false,reasons:[...base.reasons,'Run free HMRC checks first. A recent matched goods-trade record is required before optional Brave research. Missing data remains unknown.']}:base};
  const pendingWeb=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile);
- const rank=(c:Candidate)=>Number(turnoverFit(c.turnover,target).status==='in-range')*1000+Number(c.companyContext?.hmrc.status==='observed')*100+candidatePriority(c);
+ const rank=(c:Candidate)=>researchPriority(c,target);
  const eligibleWeb=pendingWeb.filter(c=>webScreen(c).eligible).sort((a,b)=>rank(b)-rank(a)||a.company.localeCompare(b.company));
  const webQueue=eligibleWeb.slice(0,4),screenHeld=pendingWeb.filter(c=>!webScreen(c).eligible);
  const contextQueue=candidates.filter(c=>['unchecked','cleared'].includes(c.status)&&c.sector===profile&&(screen(c).eligible||c.status==='cleared'&&needsRegistryRefresh(c.registryCheck)&&turnoverFit(c.turnover,target).eligible&&!state.leads.some(l=>sameResearchCompany(c,l)))&&needsCompanyContext(c.companyContext)).sort((a,b)=>rank(b)-rank(a)).slice(0,4);
@@ -52,19 +55,10 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   filter==='cleared'?c.status==='cleared':c.status==='unchecked'&&(
    filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):filter==='ready'?clearanceReady(state,c):qualityTier(c)==='research'||qualityTier(c)==='ready'&&!clearanceReady(state,c)))
   &&(!search||[c.company,c.companyNumber,c.reason].join(' ').toLowerCase().includes(search.toLowerCase())))
-  .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads,target.min,target.max]);
+  .sort((a,b)=>rank(b)-rank(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads,target.min,target.max]);
  const picked=cleared.filter(c=>selected[c.id]);
  function failed(message:string|void){if(message){setError(message);return true}setError('');return false}
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setStatus('Copied '+value)}catch{setStatus('Clipboard blocked; select company name manually.')} }
- async function api(payload:unknown):Promise<any>{
-  if(!cloud)throw Error('Sign in to the SalesOS cloud workspace first.');
-  const {data,error}=await cloud.auth.getSession();if(error||!data.session)throw Error('SalesOS sign-in expired.');
-  const response=await fetch('/api/lead-research',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+data.session.access_token},body:JSON.stringify(payload)});
-  const raw=await response.text();let parsed:any;
-  try{parsed=JSON.parse(raw)}catch{throw Error('Research server responded with an error ('+response.status+'). No records changed.')}
-  if(!response.ok)throw Error(typeof parsed?.error==='string'?parsed.error:'Research request failed ('+response.status+').');
-  return parsed;
- }
  async function run(){
   if(running)return;setRunning(true);setError('');setStatus('');
   try{
@@ -97,14 +91,14 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function webResearch(){
-  if(running||!webQueue.length)return;setRunning(true);setError('');setStatus('');
+  if(running||!webQueue.length||!budget||budget.remaining<2||budget.expired)return;setRunning(true);setError('');setStatus('');
   try{
    const result=await api({mode:'web-enrich',candidates:webQueue.map(c=>({company:c.company,companyNumber:c.companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated}))});
    if(!Array.isArray(result.updates)||result.updates.length!==webQueue.length)throw Error('Web research returned an incomplete batch; no records changed.');
    if(failed(onWebResearch(result.updates as WebResearchUpdate[])))return;
    setFilter('ready');
-   setStatus('Web researched '+result.webCompleted+' companies using '+result.webSearches+' Brave requests ('+result.webErrors+' provider errors). '+(result.preSearchHeld||0)+' held by refreshed filters; '+(result.knownSkipped||0)+' already tracked. '+(result.rateLimited?'Provider rate limit reached; remaining names stay retryable.':'Research saved with source links and FX discovery questions.')+' Salesforce clearance still requires manual checks.');
-  }catch(e){setError((e as Error).message)}finally{setRunning(false)}
+   setStatus('Web researched '+result.webCompleted+' companies using '+result.webSearches+' Brave requests ('+result.webErrors+' provider errors). '+(result.preSearchHeld||0)+' held by refreshed filters; '+(result.knownSkipped||0)+' already tracked. '+(result.rateLimited?'Provider rate limit reached; remaining names stay retryable.':'Research saved with source links and FX discovery questions.')+' '+(result.budgetHeld||0)+' companies deferred by the budget. Salesforce clearance still requires manual checks.');
+  }catch(e){setError((e as Error).message)}finally{setRunning(false);setBudgetRefresh(n=>n+1)}
  }
  function accept(c:Candidate){if(!verified){setError('Confirm you checked Salesforce first.');return}if(!failed(onAvailable(c.id)))setStatus('Salesforce check recorded. Company ready to transfer.')}
  function bank(c:Candidate){
@@ -132,12 +126,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    <ResearchTarget key={target.min+':'+target.max} value={target} onSave={value=>!failed(onTarget(value))}/>
    <p className="hint">Goods discovery starts with HMRC machinery/electrical trade records, then verifies company identity and registry fit. A recent matched trade record qualifies research fit for manual ownership checking without Brave. Recruitment keeps its existing web-evidence route. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
    <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
+   <SearchBudget onChange={setBudget} refresh={budgetRefresh} disabled={running}/>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
     <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':profile==='goods'?'Find HMRC traders (no Brave)':'Find companies (no Brave)'}</button>
     <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
     <button className="btn secondary" disabled={running||!contextQueue.length} onClick={()=>void freeContext()}>Free trade & ownership checks ({contextQueue.length} next)</button>
-    <button className="btn primary" disabled={running||!webQueue.length} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
-   <p className="hint">Selected sector: {eligibleWeb.length} saved companies pass the free filters; {screenHeld.length} held. Each manual research action takes up to four eligible companies and uses at most eight Brave requests. The server refreshes official facts and checks your saved workspace before searching. Existing companies, held duplicates and already researched candidates are skipped. Verify saved registry first for older discoveries. Searches use your Brave allowance; no background research or daily/monthly quota enforcement is enabled.</p>
+    <button className="btn primary" disabled={running||!webQueue.length||!budget?.configured||budget.expired||budget.remaining<2} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
+   <p className="hint">Selected sector: {eligibleWeb.length} saved companies pass the free filters; {screenHeld.length} held. Each manual research action takes up to four eligible companies and uses at most eight Brave requests. The server refreshes official facts and checks your saved workspace before searching. Existing companies, held duplicates and already researched candidates are skipped. Verify saved registry first for older discoveries. Searches use your Brave allowance; no background research is enabled. The shared cloud budget blocks paid searches when paused, expired or exhausted.</p>
    <div className="button-row"><button className="btn secondary small" onClick={()=>setFilter('screen-held')}>Review pre-search holds ({screenHeld.length})</button></div>
    {registry.lastRunAt&&<small>Last scan: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
   </section>
@@ -154,6 +149,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
     {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{webScreen(c).eligible?'Passes research filters:':'No Brave search yet — on hold:'}</strong> {webScreen(c).reasons.join(' ')}</p>}
     {c.status==='unchecked'&&<TurnoverEditor key={c.turnover?.recordedAt||'empty'} value={c.turnover} onSave={value=>!failed(onTurnover(c.id,value))}/>}
+    {c.companyContext&&tradeActivity(c)&&<p className="hint"><strong>Trade activity:</strong> {tradeActivity(c)!.months} recorded months in the past 12 · Latest {String(tradeActivity(c)!.latest).slice(0,4)}-{String(tradeActivity(c)!.latest).slice(4)} · Recorded months, not shipment count or FX volume. <a href={c.companyContext.hmrc.activity!.sourceUrl} target="_blank" rel="noopener noreferrer">Monthly source</a></p>}
     {c.companyContext&&<details><summary>Trade & ownership context · checked {new Date(c.companyContext.checkedAt).toLocaleDateString('en-GB')}</summary><div className="stack">
      <p className="hint"><a href={c.companyContext.hmrc.sourceUrl} target="_blank" rel="noopener noreferrer">HMRC</a>: {c.companyContext.hmrc.summary}</p>
      {c.companyContext.hmrc.refreshErrorAt&&<p className="hint">HMRC refresh unavailable. Retained source result from {new Date(c.companyContext.hmrc.checkedAt||c.companyContext.checkedAt).toLocaleDateString('en-GB')}.</p>}

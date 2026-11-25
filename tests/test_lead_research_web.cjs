@@ -10,6 +10,7 @@ let braveCalls=0,braveReject=false,empty=false,requests=[];
 const original=global.fetch;
 global.fetch=async(url,options)=>{
  const u=String(url);requests.push(u);
+ if(u.includes('/rest/v1/rpc/salesos_search_budget'))return require('./budget_fixture.cjs')(options);
  if(u.includes('/auth/v1/user'))return {ok:true,json:async()=>({id:'authorized-user'})};
  if(u.includes('/rest/v1/salesos_workspaces'))return {ok:true,json:async()=>[{leads:[],factory:{candidates:[{...company,status:'unchecked'}]}}]};
  if(u.includes('/company/'+num))return {ok:true,status:200,json:async()=>({company_name:name,company_number:num,company_status:'active',type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01',accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}})};

@@ -6,7 +6,7 @@ const core=require('../core.cjs');const {poll,jwt}=require('./stack.cjs');
 const origin='http://127.0.0.1:5273',api='http://127.0.0.1:55421',mail='http://127.0.0.1:55424';
 const artifacts=path.resolve('.test-artifacts');fs.mkdirSync(artifacts,{recursive:true});
 const errors=[],lastFixtureEmail=new Map();let browser;
-async function context(){const c=await browser.newContext({permissions:['clipboard-read','clipboard-write'],viewport:{width:1440,height:1000}});await c.route('**/*',route=>{const u=new URL(route.request().url());if(u.protocol.startsWith('http')&&u.hostname!=='127.0.0.1')throw Error('External network forbidden in reliability suite');return route.continue()});return c}
+async function context(){const c=await browser.newContext({permissions:['clipboard-read','clipboard-write'],viewport:{width:1440,height:1000}});await c.route('**/api/lead-research',async route=>{if(route.request().postDataJSON()?.mode==='budget-status')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({budget:{configured:true,remaining:100,allocated:0,revision:0,stopOn:'2099-01-01',expired:false,granted:0}})});return route.fallback()});await c.route('**/*',route=>{const u=new URL(route.request().url());if(u.protocol.startsWith('http')&&u.hostname!=='127.0.0.1')throw Error('External network forbidden in reliability suite');return route.fallback()});return c}
 async function page(c){const p=await c.newPage();p.setDefaultTimeout(12000);p.on('pageerror',e=>errors.push(e.message));return p}
 async function saved(p){await p.getByRole('button',{name:'Saved to cloud',exact:true}).waitFor({timeout:25000})}
 async function signin(p,box){
@@ -102,6 +102,7 @@ async function recoveryDownload(p,button,file){const pending=p.waitForEvent('dow
  await require('./pre_search.cjs')({a,saved,state,restore,nav,core});
  await require('./company_context.cjs')({a,saved,state,restore,nav,core});
  await require('./hmrc_first.cjs')({a,saved,state,restore,nav,core});
+ await require('./search_budget.cjs')({a,saved,state,restore,nav,core});
  await require('./performance.cjs')({a,saved,state,restore,nav,core,artifacts});
  await restore(a,calling('Fictional Mobile Layout With A Long Company Name Ltd'));
  const timings=[];for(const width of [320,390,768,1440]){await a.setViewportSize({width,height:844});await nav(a,'Focus Mode');const overflow=await a.evaluate(()=>({viewport:innerWidth,width:document.documentElement.scrollWidth}));assert.ok(overflow.width<=overflow.viewport,`Focus overflows at ${width}: ${overflow.width}`);await a.screenshot({path:path.join(artifacts,'focus-'+width+'.png'),fullPage:true,animations:'disabled'});const start=Date.now();await nav(a,'Prospects');await a.getByRole('heading',{name:'Prospects',exact:true}).waitFor();timings.push(Date.now()-start);await nav(a,'Focus Mode')}

@@ -32,4 +32,4 @@ async function start(){
  await poll(async()=> (await fetch('http://127.0.0.1:55421/rest/v1/',{headers:{Authorization:'Bearer '+jwt('anon')}})).ok);
  return {url:'http://127.0.0.1:55421',key:jwt('anon'),sql,close:async()=>{await new Promise(r=>proxy.close(r));docker(['down','-v','--remove-orphans'])}};
 }
-module.exports={start,poll,jwt,stop:()=>docker(['down','-v','--remove-orphans'])};
+module.exports={start,poll,jwt,sql,stop:()=>docker(['down','-v','--remove-orphans'])};

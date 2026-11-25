@@ -1,7 +1,7 @@
 import type {State,Lead} from '../types';
 import {core} from './core';
 import {preSearchScreen} from './researchScreen';
-import {turnoverTarget,turnoverFit,validTurnover,validCompanyContext,hmrcQualified,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
+import {turnoverTarget,turnoverFit,validTurnover,validCompanyContext,hmrcQualified,researchRank,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
 
 export type ResearchSector='recruitment'|'goods';
 export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string;postalCode?:string};
@@ -20,6 +20,9 @@ export function candidatePriority(c:Discovery){
  if(c.registryCheck?.risk==='excluded')return 0;
  if(qualityTier(c)==='ready')return Math.min(85,c.priority);
  return Math.min(35,c.priority);
+}
+export function researchPriority(c:Discovery,target:TurnoverTarget){
+ return researchRank(c,target,candidatePriority(c));
 }
 export type ClearanceStatus='unchecked'|'cleared'|'held'|'moved'|'dismissed';
 export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string;turnover?:TurnoverEvidence;companyContext?:CompanyContext};
