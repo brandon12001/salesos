@@ -9,6 +9,7 @@ const activity={...w,months:[202611,202610,202609],checkedAt:now.toISOString(),s
 c.companyContext.hmrc.activity=activity;
 assert.deepEqual(lib.tradeActivity(c,now.getTime()),{months:3,latest:202611,age:0});
 const rank=lib.tradeActivityRank(c,now.getTime());c.companyContext.hmrc.activity={...activity,months:[202611]};assert.ok(rank>lib.tradeActivityRank(c,now.getTime()),'more recorded months wins at same recency');
+const single=lib.tradeActivityRank(c,now.getTime());c.companyContext.hmrc.activity={...activity,months:[202610,202609]};assert.ok(lib.tradeActivityRank(c,now.getTime())>single,'recurring trade beats a single recent month');
 for(const change of [{months:[202611,202611]},{months:[202613]},{from:202001},{checkedAt:'2020-01-01'},{sourceUrl:activity.sourceUrl.replace('123','999')},{sourceUrl:'https://untrusted.example/Trade'}]){
  c.companyContext.hmrc.activity={...activity,...change};assert.equal(lib.tradeActivity(c,now.getTime()),null,'invalid/incomplete activity cannot rank');assert.equal(lib.hmrcQualified(c,now.getTime()),true,'research fit remains independent');
 }

@@ -33,7 +33,7 @@ export function tradeActivity(c:Parameters<typeof hmrcQualified>[0],now=Date.now
  return {months:a.months.length,latest,age};
 }
 export function tradeActivityRank(c:Parameters<typeof hmrcQualified>[0],now=Date.now()){
- const a=tradeActivity(c,now);return a?(12-a.age)*20+a.months:0;
+ const a=tradeActivity(c,now);return a?a.months*20+(12-a.age):0;
 }
 export function researchRank(c:Parameters<typeof hmrcQualified>[0]&{turnover?:TurnoverEvidence},target:TurnoverTarget,priority:number,now=Date.now()){
  return Number(turnoverFit(c.turnover,target,now).status==='in-range')*10000000+Number(hmrcQualified(c,now))*1000000+tradeActivityRank(c,now)*100+Math.min(85,Math.max(0,priority));
