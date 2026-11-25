@@ -1,3 +1,11 @@
+# Current update — 25 November 2026: restore manual Cold Call Mode
+
+The user prefers the original on/off Cold Call Mode over the “100-minute focus” badge. `fix/restore-cold-call-toggle` is based on current main `aea1d3a` (PRs #19–#23 Lead Factory/research are preserved). The toolbar always shows Cold call mode again. An explicit toggle atomically saves `coldCallMode` and disables the older `kpiFirstMode` queue gate, so OFF makes the full eligible queue available immediately and ON stays calls-only even after 100 minutes. Due promises/meetings, industry/queue filters and all contact/ownership checks retain their existing priority. Unchanged legacy settings remain compatible until the user chooses a mode; no automatic workspace migration occurs on load.
+
+Minute totals, the 100-minute progress bar and call-log import remain available in collapsed Session details in either mode; the top timed badge is removed. Mode changes never create outreach, reset progress, activate reserve leads or change other settings. No schema, pipeline/readiness, follow-up or Lead Factory changes. Validate the legacy zero-minute workspace, OFF/ON/reload/target-completion cases in all three engines, protected commitments and preservation of minute history; all available unit/API/browser suites and final-head CI are required before the standing-authorised automatic release. Take a fresh recoverable private backup and verify deployment/alias and SELECT-only record preservation. No migration or production record edit is required.
+
+---
+
 # Current update — 23 November 2026: clearer alternative-number calls
 
 PR #17 is merged at `bb853d96329701e18f985092fdf0e9c911a6544c`, deployed READY as `dpl_DoDQmsXKBQRVpXz37c9aSCVicUCq` on https://salesos-up-next7.vercel.app/. Build, all fourteen unit suites and the complete isolated browser suite passed; exact results are in PR #17. The latest pre-release backup was revision 188; post-release revision 191 retained every prior record, unchanged settings and automatic replenishment OFF. Those older backups must never replace newer user work.
