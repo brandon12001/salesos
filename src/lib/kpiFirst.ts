@@ -11,6 +11,12 @@ export const RESERVE_REFILL_BATCH=25;
 // A call is counted once after the outbound attempt is actually logged.
 // Copying the number, viewing a task or editing a previous activity is not a dial.
 export function outboundCallsToday(s:State,now:Date){return minuteKpi(s,now).calls;}
+// An explicit manual choice takes precedence over the older timed queue gate.
+// Minute totals remain independent in callLogImport; this is a view preference only.
+export function setColdCallMode(s:State,enabled:boolean){
+ s.settings.coldCallMode=enabled?1:0;
+ s.settings.kpiFirstMode=0;
+}
 export function kpiFirstEnabled(s:State){return s.settings.kpiFirstMode===1}
 export function callKpi(s:State,now:Date){
  const value=minuteKpi(s,now),target=DAILY_KPI_MINUTES_TARGET;

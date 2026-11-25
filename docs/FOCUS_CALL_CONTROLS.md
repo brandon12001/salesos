@@ -23,3 +23,8 @@ Follow-up checks caught a long promised-commitment badge overflowing at 320px an
 ## Alternative-number task clarity
 
 Active `repair_followup` calls display “Try alternative contact number”, including older saved tasks whose original title said “verified”. Their why/objective/progress text explains any recorded company bad-number outcome, the selected contact and number type, and an explicitly unverified method status. A usable/valid format does not establish external verification. Missing bad-number history is not invented. The existing contact/method route is shared with clipboard lookup; stale explicit routes receive no repair explanation. Historical review, ordinary cold calls and protected commitments retain their existing wording and objectives. New engine tasks use the corrected title; prior task titles/history are never migrated or rewritten. The display does not change ranking, eligibility, follow-up scheduling, readiness, stages or XP.
+
+
+## Manual Cold Call Mode (25 November)
+
+Cold call mode is always available as an on/off switch in the Focus toolbar, including an older workspace with KPI-first mode enabled. Choosing either state saves the manual preference and disables the older timed queue gate; OFF exposes all eligible task types immediately at zero minutes, and ON remains calls-only after the minute target is reached. Due commitments/meetings remain protected. The full minute tracker and call-log import stay under Session details in both modes, without replacing the switch. No progress/history is reset, no tasks are rewritten and no reserve refill occurs when choosing the mode. Existing `kpiFirstMode` metadata is retained for backwards compatibility; no load-time or production data migration is performed.
