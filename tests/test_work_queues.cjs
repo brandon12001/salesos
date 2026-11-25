@@ -31,6 +31,26 @@ try{
  const noSources=fixture(),no=lead(noSources);no.researchSources='';assert.ok(q.goldGaps(noSources,no,now).length);assert.throws(()=>record(noSources,no,'gold'),/source/);no.researchSources='https://fictional.example';record(noSources,no,'gold');no.researchRationale+=' New material claim';assert.equal(classify(noSources,no),'standard');assert.match(q.classifyWork(noSources,no,now).review,/changed/);record(noSources,no,'gold');assert.equal(q.classifyWork(noSources,no,new Date('2027-03-01T10:00:00Z')).category,'standard');
  const blank=fixture(),bl=lead(blank);blank.meta.callPreparation={version:1,companies:{[bl.id]:{fxClue:'',question:'Who handles overseas invoices?',hypothesis:'',internationalEvidence:'',sources:'',sourceDate:''}}};assert.throws(()=>record(blank,bl,'gold'),/specific/);assert.equal(bl.researchRationale.includes('Accounts'),true);
  console.log('PASS: stale/future/empty/malformed evidence rejection, explicit Gold attestation, blank-clue/research freshness gates and invalidation without destroying original evidence');
+ // Routine contact repair must never become Focus work, regardless of mode.
+ const repairs=fixture(),broken=lead(repairs,'Fictional Contact Repair Ltd',{mobile:'',email:''}),callable=lead(repairs,'Fictional Callable Ltd');
+ const repair=repairs.tasks.find(t=>t.leadId===broken.id&&t.type==='research');assert.ok(repair);
+ const repairBaseline=clone(repairs);
+ for(const mode of [0,1,2])for(const cold of [0,1]){
+  repairs.settings.intelligenceMode=mode;repairs.settings.coldCallMode=cold;
+  assert.ok(q.legacyWorkTasks(repairs,now).every(t=>t.type!=='research'));
+  const filtered=q.focusDecision(repairs,evaluate(repairs,now),now);
+  assert.ok(filtered.recommendations.every(r=>r.task.type!=='research'),'stored and virtual contact-repair suggestions stay out of Focus');
+  assert.equal(q.queueCounts(repairs,core.due(repairs,now),q.queueClassifications(repairs,now),now).total,1);
+  assert.ok(planSession(repairs,now,new Date(+now+45*60000)).actions.every(a=>a.recommendation.task.type!=='research'));
+ }
+ assert.deepEqual(clone(repairs.tasks),repairBaseline.tasks);assert.deepEqual(clone(repairs.activities),repairBaseline.activities);assert.deepEqual(clone(repairs.leads),repairBaseline.leads);
+ assert.equal(core.pending(repairs).some(t=>t.id===repair.id),true,'repair remains available outside Focus');
+ const alternative=core.addTask(repairs,callable,'call','Fictional alternative number',date,{origin:'repair',contactId:callable.contacts[0].id});assert.ok(q.legacyWorkTasks(repairs,now).some(t=>t.id===alternative.id),'real alternative-number calls remain available');
+ const virtualRepair=fixture();lead(virtualRepair,'Fictional Missing Route Ltd',{mobile:'',email:''});virtualRepair.tasks=[];assert.ok(evaluate(virtualRepair,now).recommendations.some(r=>r.task.type==='research'));assert.equal(q.focusDecision(virtualRepair,evaluate(virtualRepair,now),now).recommendations.length,0);
+ const promised=core.scheduleCallback(repairs,callable,date,'09:00','Actual promised callback',callable.contacts[0].id);
+ assert.equal(q.legacyWorkTasks(repairs,now)[0].id,promised.id);
+ const promisedResearch={...repair,isCommitment:true};assert.equal(q.focusTaskAllowed(promisedResearch),true,'explicit promises are not hidden by a routine-admin filter');
+ console.log('PASS: Focus hides routine stored/virtual research in all modes and Cold Call settings; task/history/contact data and protected promises are preserved');
  const roundtrip=core.normalize(clone(guards));assert.deepEqual(clone(roundtrip.meta.workQueues),clone(guards.meta.workQueues));assert.equal(core.STAGES.length,7);assert.equal(core.READINESS.length,8);roundtrip.meta.workQueues={version:2,records:{},events:[]};assert.throws(()=>q.setWorkQueue(roundtrip,'gold'),/not supported/);
  const engine=fixture(),eg=lead(engine,'Fictional Engine Gold Ltd'),eo=lead(engine,'Fictional Engine Opportunity Ltd');record(engine,eg,'gold');record(engine,eo,'opportunity');engine.settings.intelligenceMode=1;const base=evaluate(engine,now),d=q.focusDecision(engine,base,now);assert.equal(d.recommendations[0].leadId,eo.id);q.setWorkQueue(engine,'gold');assert.ok(q.focusDecision(engine,base,now).recommendations.every(r=>r.leadId===eg.id));const end=new Date(+now+45*60000);assert.ok(planSession(engine,now,end).actions.every(a=>a.recommendation.leadId===eg.id));
  const promise=core.scheduleCallback(engine,eo,date,'09:00','Actual promise',eo.contacts[0].id);const dc=q.focusDecision(engine,evaluate(engine,now),now);assert.equal(dc.recommendations[0].task.id,promise.id);const counts=q.queueCounts(engine,evaluate(engine,now).recommendations.map(r=>r.task),q.queueClassifications(engine,now),now);assert.equal(counts.commitments,1);assert.equal(counts.counts.gold,1);assert.equal(counts.counts.opportunity,0,'generic outreach waits for the recorded promise');assert.equal(planSession(engine,now,end).actions[0].recommendation.task.id,promise.id);

@@ -4,7 +4,7 @@ import {callKpi,callableDueTasks,reserveCallCandidates,reserveActivationSlots} f
 import {minuteKpi,secondsLabel,type PhoneCallRow,type ImportSelection} from '../lib/callLogImport';
 import {CallLogImporter} from './CallLogImporter';
 import {ProspectPhoneHistory} from './ProspectPhoneHistory';
-import {commercialPurpose,focusDecision,legacyActionableTasks,legacyWorkTasks,queueClassifications,queueCounts,selectedQueue,queueLabel,type QueueSelection} from '../lib/workQueues';
+import {commercialPurpose,focusTaskAllowed,focusDecision,legacyActionableTasks,legacyWorkTasks,queueClassifications,queueCounts,selectedQueue,queueLabel,type QueueSelection} from '../lib/workQueues';
 import {WorkQueuePicker,WorkQueueSummary} from './WorkQueues';
 import {taskRestriction} from '../lib/intelligence/eligibility';
 import {useEffect,useLayoutEffect,useMemo,useRef,useState,type ReactNode} from 'react';
@@ -52,7 +52,9 @@ export function Focus({onWorkQueue,onQueueReview,onSaveDescription,onSaveWebsite
  const counts=useMemo(()=>queueCounts(state,enabled?evaluation?.recommendations.map(r=>r.task)||[]:legacyActionableTasks(state,now),classes,now),[state,enabled,evaluation,classes,now]);
  const recommended=decision?selectRecommendation(decision,{callBlock,preferredId}):null,recommendedTask=enabled?recommended?.task||null:legacy;
  useEffect(()=>{if(trail.following&&recommendedTask)onRecommendedViewed(recommendedTask)},[trail.following,recommendedTask?.id,onRecommendedViewed]);
- const selected=!trail.following?trail.entries[trail.index]:null;
+ const visit=!trail.following?trail.entries[trail.index]:null;
+ const visitTask=visit?state.tasks.find(t=>t.id===visit.task.id)||visit.task:null;
+ const selected=visitTask?.status==='pending'&&!focusTaskAllowed(visitTask)?null:visit;
  const stored=selected?state.tasks.find(t=>t.id===selected.task.id):undefined;
  const currentSuggestion=selected?decision?.recommendations.find(r=>r.task.id===selected.task.id):null;
  const t=selected?(stored||currentSuggestion?.task||{...selected.task,status:'review'}):recommendedTask;
@@ -93,7 +95,7 @@ export function Focus({onWorkQueue,onQueueReview,onSaveDescription,onSaveWebsite
    </section>
    {callBlock&&<p className="call-mode-note">Calls only · Due promised actions and meetings still take priority.</p>}{industry.enabled&&<div className="industry-focus-banner"><strong>{industryLabel(state,industry.category)} Focus</strong><span>Discretionary recommendations only · protected commitments from any industry remain due</span><button className="btn quiet small" onClick={onIndustryReserve}>Industry Lead Reserve</button></div>}
    <p className="hint">Opportunities → Qualified → Gold → Standard. Due commitments always stay first.</p>
-   <details><summary>Recently viewed tasks</summary><select aria-label="Recently viewed tasks" value={trail.following?'':trail.index} onChange={e=>{if(e.target.value!=='')onRecent(Number(e.target.value))}}><option value="">Choose a recent task</option>{trail.entries.map((v,i)=><option key={i} value={i}>{state.leads.find(l=>l.id===v.task.leadId)?.company||'Workspace'} · {v.task.title} · {state.tasks.find(t=>t.id===v.task.id)?.status||v.task.status}</option>)}</select><button className="btn quiet small" onClick={()=>onTab('history')}>Search all activity history</button></details>
+   <details><summary>Recently viewed tasks</summary><select aria-label="Recently viewed tasks" value={trail.following?'':trail.index} onChange={e=>{if(e.target.value!=='')onRecent(Number(e.target.value))}}><option value="">Choose a recent task</option>{trail.entries.map((v,i)=>{const task=state.tasks.find(t=>t.id===v.task.id)||v.task;return task.status==='pending'&&!focusTaskAllowed(task)?null:<option key={i} value={i}>{state.leads.find(l=>l.id===v.task.leadId)?.company||'Workspace'} · {v.task.title} · {state.tasks.find(t=>t.id===v.task.id)?.status||v.task.status}</option>})}</select><button className="btn quiet small" onClick={()=>onTab('history')}>Search all activity history</button></details>
    </details>
    </div>
    {callImportOpen&&<CallLogImporter state={state} onImport={onImportCallLog} onClose={()=>setCallImportOpen(false)}/>}

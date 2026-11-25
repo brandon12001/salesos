@@ -96,11 +96,14 @@ export function commercialPurpose(s:State,l:Lead,t:Task,now:Date,classification=
  return null;
 }
 function rank(id:WorkCategory){return WORK_QUEUES.findIndex(q=>q.id===id);}
+// Contact-detail administration stays in Contact Resolution for now.
+// Explicit promises are still protected; this never completes or deletes a task.
+export function focusTaskAllowed(t:Task){return t.type!=='research'||protectedTask(t);}
 function viewTasks(s:State,tasks:Task[],classes:Map<string,WorkClassification>,now:Date){
  const selected=selectedQueue(s),seen=new Set<string>();
  const phase=callKpi(s,now),callsOnly=phase.enabled?phase.active:s.settings.coldCallMode===1;
  return filteredIndustryTasks(s,tasks).filter(t=>{
-  if(seen.has(t.id))return false;seen.add(t.id);
+  if(!focusTaskAllowed(t)||seen.has(t.id))return false;seen.add(t.id);
   if(protectedTask(t))return true;
   return (!callsOnly||['call','callback'].includes(t.type))&&(selected==='recommended'||(classes.get(t.leadId||'')?.category||'standard')===selected);
  }).sort((a,b)=>Number(protectedTask(b))-Number(protectedTask(a))||(protectedTask(a)?a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59'):rank(classes.get(a.leadId||'')?.category||'standard')-rank(classes.get(b.leadId||'')?.category||'standard')));
@@ -115,7 +118,7 @@ export function queueCounts(s:State,tasks:Task[],classes:Map<string,WorkClassifi
  const counts={opportunity:0,qualified:0,gold:0,standard:0},seen=new Set<string>();let commitments=0;
  const phase=callKpi(s,now),callsOnly=phase.enabled?phase.active:s.settings.coldCallMode===1;
  for(const t of filteredIndustryTasks(s,tasks)){
-  if(seen.has(t.id)||!isDue(t,now)||taskRestriction(s,t,now,false,s.settings.intelligenceMode===1))continue;seen.add(t.id);
+  if(!focusTaskAllowed(t)||seen.has(t.id)||!isDue(t,now)||taskRestriction(s,t,now,false,s.settings.intelligenceMode===1))continue;seen.add(t.id);
   if(protectedTask(t)){commitments++;continue;}
   if(callsOnly&&!['call','callback'].includes(t.type))continue;
   counts[classes.get(t.leadId||'')?.category||'standard']++;
