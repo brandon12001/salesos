@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: trade activity and search budget
+
+Released base PR #28 is `7237dc863a4e7f645bf4c1fbeb74d5c28b6d156b`, Vercel READY `dpl_7xjmP8aZNEUeNrdokR5NWhLYr8Po`, canonical https://salesos-up-next7.vercel.app/. The user accepted better trade-frequency ranking and a search-budget guard. Work is isolated on `feat/research-budget-ranking` in `/workspace/salesos-research-budget`.
+
+Complete bounded HMRC monthly groups add recency/recorded-month ranking only; missing coverage remains unknown, no FX volume/interest or sales progression is inferred. Paid research uses an atomic owner-bound private ledger outside workspace JSON, so concurrent sessions/imports cannot roll back allowance. Initial allowance is zero until the actual remaining Brave balance/expiry is confirmed. Free scans remain available, and no scheduler is enabled. See [behaviour, SQL and tests](RESEARCH_BUDGET_RANKING.md).
+
+Standing release authorisation applies after install/build/all suites, full fictional browser/real-local-DB concurrency checks and final-head CI. Fresh recoverable private production backup is required. Deploy compatible client/API first, verify exact tested tree/READY/alias, then apply the reviewed additive migration and provision only the verified account at zero allowance. Stop/report failed deployment/migration without resetting data. Verify SELECT-only preservation and record exact results in the PR/receipt. Live protected sign-in remains manual. Preserve all previous prospects, activity, holds, promises and earlier worktrees/PR #12.
+
+---
+
 # Current update — 25 November 2026: HMRC-first goods qualification
 
 Released base is PR #27 at `32ae1df7220b3a5daabbc3e82116eefd5d4ac0be`, Vercel READY `dpl_CsiDvCYFpQxTghUJ5rAUUSih6UrF`, canonical https://salesos-up-next7.vercel.app/. Work is isolated on `feat/hmrc-first-qualification` in `/workspace/salesos-hmrc-first` following the user's request to start with HMRC import/export data and use it as qualification.

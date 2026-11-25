@@ -12,11 +12,13 @@ let saved=[],leads=[],requests=[],profilePatch={},postalMismatch=false,ambiguous
 const original=global.fetch;
 global.fetch=async(url,options={})=>{
  const u=new URL(url);requests.push({url:u,options});
+ if(u.pathname==='/rest/v1/rpc/salesos_search_budget')return require('./budget_fixture.cjs')(options);
  if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fictional-user'})};
  if(u.pathname==='/rest/v1/salesos_workspaces')return {ok:true,json:async()=>[{leads,factory:{candidates:saved}}]};
  if(u.hostname==='api.uktradeinfo.com'){
   assert.equal(options.headers.Authorization,undefined);assert.equal(options.redirect,'error');
   if(outage)throw Error('Fictional provider unavailable');
+  if(u.searchParams.get('$apply')?.includes('MonthId,TradeTypeId'))return {ok:true,json:async()=>({value:[{TraderId:123,MonthId:month,TradeTypeId:2}]})};
   if(u.searchParams.has('$apply')){assert.match(u.searchParams.get('$apply'),/groupby\(\(TraderId\)\)/);assert.equal(u.searchParams.get('$top'),'4');return {ok:true,json:async()=>({value:[{TraderId:123}]})}}
   if(u.pathname==='/Trader(123)')return {ok:true,json:async()=>({TraderId:123,CompanyName:c.company,PostCode:'SW1A 1AA'})};
   assert.equal(u.pathname,'/Trade');return {ok:true,json:async()=>({value:[{TraderId:123,MonthId:month,TradeTypeId:2,Commodity:{Hs2Description:'Machinery'}}]})};

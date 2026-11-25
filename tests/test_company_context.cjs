@@ -19,6 +19,7 @@ let requests=[],mismatch=false,wrongLegalType=false,outage=false,noMatches=false
 const original=global.fetch;
 global.fetch=async(url,options={})=>{
  const u=new URL(url);requests.push(u);
+ if(u.pathname==='/rest/v1/rpc/salesos_search_budget')return require('./budget_fixture.cjs')(options);
  if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fixture-user'})};
  if(u.pathname==='/rest/v1/salesos_workspaces')return {ok:true,json:async()=>[{leads,factory:{candidates:savedCandidates,turnoverTarget:target}}]};
  if(u.hostname==='api.company-information.service.gov.uk')return {ok:true,json:async()=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',type:'ltd',date_of_creation:c.incorporated,sic_codes:c.sicCodes,registered_office_address:{postal_code:c.postalCode},accounts:{last_accounts:{type:'small'}}})};
@@ -28,6 +29,7 @@ global.fetch=async(url,options={})=>{
  if(outage)throw Error('Fictional outage');
  if(u.hostname==='api.uktradeinfo.com'){
   if(u.pathname==='/Trader')return {ok:true,json:async()=>({value:noMatches?[]:[{CompanyName:c.company.replace('Limited',wrongLegalType?'PLC':'LTD'),PostCode:mismatch?'ZZ1 1ZZ':c.postalCode,TraderId:123}]})};
+  if(u.searchParams.has('$apply'))return {ok:true,json:async()=>({value:[{TraderId:123,TradeTypeId:1,MonthId:Number(now.slice(0,4)+now.slice(5,7))}]})};
   assert.equal(u.pathname,'/Trade');assert.equal(u.searchParams.has('$orderby'),false,'provider forbids this operation');assert.equal(u.searchParams.get('$top'),'12');
   return {ok:true,json:async()=>({value:[{TraderId:123,TradeTypeId:1,MonthId:Number(now.slice(0,4)+now.slice(5,7)),Commodity:{Hs2Description:'Machinery'}},{TraderId:999,TradeTypeId:2,MonthId:202601}]})};
  }

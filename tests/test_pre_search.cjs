@@ -23,6 +23,7 @@ let candidates=[],leads=[],overrides={},calls=[],brave=0,unavailable=false,missi
 const original=global.fetch;
 global.fetch=async(url,options)=>{
  const u=new URL(url);calls.push({url:u,options});
+ if(u.pathname==='/rest/v1/rpc/salesos_search_budget')return require('./budget_fixture.cjs')(options);
  if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fixture-user'})};
  if(u.pathname==='/rest/v1/salesos_workspaces'){
   assert.equal(u.searchParams.get('user_id'),'eq.fixture-user');assert.equal(options.headers.Authorization,'Bearer fixture-token');

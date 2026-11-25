@@ -4,6 +4,7 @@ const {start,stop,poll}=require('./stack.cjs');
 const root=path.resolve(__dirname,'../..');let stack,app;
 (async()=>{try{
  stack=await start();
+ await require('./search_budget_db.cjs')(stack);
  stack.sql(fs.readFileSync(path.join(root,'db/verify_cloud_autosave.sql'),'utf8'));console.log('PASS: isolated SQL RLS, anonymous denial, stale writes, idempotence and snapshots');
  const env={...process.env,VITE_SUPABASE_URL:stack.url,VITE_SUPABASE_PUBLISHABLE_KEY:stack.key};
  const vite=path.join(root,'node_modules/vite/bin/vite.js');const dev=process.argv.includes('--dev');
