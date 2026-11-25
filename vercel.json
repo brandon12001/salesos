@@ -17,7 +17,8 @@
       "fix/compact-focus-screen": false,
       "fix/call-task-clarity": false,
       "fix/restore-cold-call-toggle": false,
-      "fix/focus-performance": false
+      "fix/focus-performance": false,
+      "feat/pre-search-screening": false
     }
   },
   "functions": {

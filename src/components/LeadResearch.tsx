@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import type {State} from '../types';
 import {cloud} from '../lib/cloud';
+import {preSearchScreen,needsRegistryRefresh,sameResearchCompany} from '../lib/researchScreen';
 import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
@@ -14,7 +15,7 @@ type Props={
  onDismiss:(id:string)=>string|void;
  onDupes:()=>void;onReserve:()=>void;
 };
-type Filter='ready'|'research'|'flagged'|'cleared'|'all';
+type Filter='ready'|'research'|'screen-held'|'flagged'|'cleared'|'all';
 export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
  const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('recruitment');
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
@@ -27,14 +28,19 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  const flagged=candidates.filter(c=>c.status==='unchecked'&&['flagged','excluded'].includes(qualityTier(c)));
  const cleared=candidates.filter(c=>c.status==='cleared'&&qualityTier(c)==='ready');
  const held=candidates.filter(c=>c.status==='held');
- const unverified=candidates.filter(c=>c.status==='unchecked'&&!c.registryCheck).slice(0,12);
- const webQueue=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&(!c.registryCheck||c.registryCheck.risk==='ok')).slice(0,4);
+ const unverified=candidates.filter(c=>c.status==='unchecked'&&needsRegistryRefresh(c.registryCheck)).slice(0,12);
+ const screen=(c:Candidate)=>state.leads.some(l=>sameResearchCompany(c,l))
+  ?{eligible:false,reasons:['Already tracked in SalesOS; no search credits will be spent.']}:preSearchScreen(c.sector,c.registryCheck);
+ const pendingWeb=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile);
+ const eligibleWeb=pendingWeb.filter(c=>screen(c).eligible).sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company));
+ const webQueue=eligibleWeb.slice(0,4),screenHeld=pendingWeb.filter(c=>!screen(c).eligible);
  const webCompleted=candidates.filter(c=>c.status==='unchecked'&&!!c.webCheckedAt).length;
  const visible=useMemo(()=>candidates.filter(c=>(filter==='all'?c.status!=='dismissed'&&c.status!=='moved':
+  filter==='screen-held'?c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile&&!screen(c).eligible:
   filter==='cleared'?c.status==='cleared':c.status==='unchecked'&&(
    filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):qualityTier(c)===filter))
   &&(!search||[c.company,c.companyNumber,c.reason].join(' ').toLowerCase().includes(search.toLowerCase())))
-  .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search]);
+  .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads]);
  const picked=cleared.filter(c=>selected[c.id]);
  function failed(message:string|void){if(message){setError(message);return true}setError('');return false}
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setStatus('Copied '+value)}catch{setStatus('Clipboard blocked; select company name manually.')} }
@@ -54,7 +60,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor))throw Error('Invalid company research response.');
    if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor)))return;
    setFilter('ready');
-   setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.registryExcluded||0)+' excluded · '+(result.registryFlagged||0)+' flagged. '+(result.webResearchEnabled?result.webSearches+' public web checks.':'No independent web verification connected.')+' Only strongly researched candidates appear in Salesforce clearance.');
+   setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked. '+(result.webResearchEnabled?result.webSearches+' Brave requests.':'No independent web verification connected.')+' Only strongly researched candidates appear in Salesforce clearance.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function rescreen(){
@@ -63,7 +69,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    const result=await api({mode:'recheck',candidates:unverified.map(c=>({company:c.company,companyNumber:c.companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated}))});
    if(!Array.isArray(result.checks)||result.checks.length!==unverified.length)throw Error('Registry recheck incomplete; no records changed.');
    if(failed(onRegistryChecks(result.checks as RegistryUpdate[])))return;
-   setFilter('flagged');
+   setFilter('screen-held');
    setStatus('Rechecked '+result.checked+' existing companies using official registry profiles; '+result.ready+' passed legal/filing checks. Passing these checks does not prove FX exposure.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
@@ -74,7 +80,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    if(!Array.isArray(result.updates)||result.updates.length!==webQueue.length)throw Error('Web research returned an incomplete batch; no records changed.');
    if(failed(onWebResearch(result.updates as WebResearchUpdate[])))return;
    setFilter('ready');
-   setStatus('Web researched '+result.webCompleted+' companies using '+result.webSearches+' Brave requests ('+result.webErrors+' provider errors). '+(result.rateLimited?'Provider rate limit reached; remaining names stay retryable.':'Research saved with source links and FX discovery questions.')+' Salesforce clearance still requires manual checks.');
+   setStatus('Web researched '+result.webCompleted+' companies using '+result.webSearches+' Brave requests ('+result.webErrors+' provider errors). '+(result.preSearchHeld||0)+' held by refreshed filters; '+(result.knownSkipped||0)+' already tracked. '+(result.rateLimited?'Provider rate limit reached; remaining names stay retryable.':'Research saved with source links and FX discovery questions.')+' Salesforce clearance still requires manual checks.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  function accept(c:Candidate){if(!verified){setError('Confirm you checked Salesforce first.');return}if(!failed(onAvailable(c.id)))setStatus('Salesforce check recorded. Company ready to transfer.')}
@@ -100,18 +106,19 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   </div>
   <section className="panel stack">
    <div className="section-between"><h2>Find and screen UK companies</h2><Badge tone="blue">Companies House</Badge></div>
-   <p className="hint">Each scan inspects up to 12 legal profiles (status, strike-off notices, overdue accounts, dormant filings and holding-company flags). Results are kept for audit even if excluded. No FX volumes or websites are invented.</p>
+   <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
     <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':'Find next screened batch'}</button>
     <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
     <button className="btn primary" disabled={running||!webQueue.length} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
-   <p className="hint">No AI costs. Research Saved automatically takes four unresearched companies (including your original 50), re-verifies each official Companies House profile and runs up to eight Brave searches total. Each company gets two focused queries about how money might cross borders. Searches require an active Brave subscription and can incur provider charges; set a monthly spending cap in Brave. Previously researched names are skipped to conserve credits. Registry-only names stay in the research backlog.</p>
+   <p className="hint">Selected sector: {eligibleWeb.length} saved companies pass the free filters; {screenHeld.length} held. Each manual research action takes up to four eligible companies and uses at most eight Brave requests. The server refreshes official facts and checks your saved workspace before searching. Existing companies, held duplicates and already researched candidates are skipped. Verify saved registry first for older discoveries. Searches use your Brave allowance; no background research or daily/monthly quota enforcement is enabled.</p>
+   <div className="button-row"><button className="btn secondary small" onClick={()=>setFilter('screen-held')}>Review pre-search holds ({screenHeld.length})</button></div>
    {registry.lastRunAt&&<small>Last scan: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
   </section>
   <section className="panel stack">
    <div className="section-between"><h2>Prospect research queues</h2><Badge>{visible.length} shown</Badge></div>
    <div className="filters"><div className="search-wrap"><Icon name="search"/><input aria-label="Search research candidates" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company or registration number"/></div>
-    <select aria-label="Lead research queue" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="ready">Ready for Salesforce ({ready.length})</option><option value="research">Needs research ({backlog.length})</option><option value="flagged">Flagged / excluded ({flagged.length})</option><option value="cleared">Salesforce cleared ({cleared.length})</option><option value="all">All tracked companies</option></select></div>
+    <select aria-label="Lead research queue" value={filter} onChange={e=>setFilter(e.target.value as Filter)}><option value="ready">Ready for Salesforce ({ready.length})</option><option value="research">Needs research ({backlog.length})</option><option value="screen-held">Pre-search holds ({screenHeld.length})</option><option value="flagged">Flagged / excluded ({flagged.length})</option><option value="cleared">Salesforce cleared ({cleared.length})</option><option value="all">All tracked companies</option></select></div>
    <label className="check-row"><input type="checkbox" checked={verified} onChange={e=>setVerified(e.target.checked)}/> I personally checked Salesforce for any company I mark available or already owned.</label>
    <div className="button-row"><button className="btn primary" disabled={!cleared.length} onClick={()=>move(cleared.map(x=>x.id))}>Move all {cleared.length} eligible cleared</button>
     <button className="btn secondary" disabled={!picked.length} onClick={()=>move(picked.map(x=>x.id))}>Move selected ({picked.length})</button></div>
@@ -119,6 +126,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
     <div className="section-between"><div><strong>{c.company}</strong><p className="hint">{c.companyNumber} · {c.sector==='recruitment'?'Recruitment':'Machinery distribution'} · Incorporated {c.incorporated||'unknown'}</p></div>
      <div className="button-row"><Badge tone={tierColor(c)}>{tierLabel(c)}</Badge><Badge tone="muted">{candidatePriority(c)}/100 screening</Badge></div></div>
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
+    {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{screen(c).eligible?'Passes pre-search filters:':'No Brave search yet — on hold:'}</strong> {screen(c).reasons.join(' ')}</p>}
     {c.fxHypothesis&&<p className="hint"><strong>FX hypothesis:</strong> {c.fxHypothesis}</p>}
     {c.discoveryQuestion&&<p className="hint"><strong>Call discovery question:</strong> {c.discoveryQuestion}</p>}
     {c.webCheckedAt&&<small>Web checked {new Date(c.webCheckedAt).toLocaleDateString('en-GB')} · {c.webQueries||0} successful search queries</small>}

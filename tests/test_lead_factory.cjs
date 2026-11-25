@@ -74,6 +74,9 @@ try{
  assert.equal(f.leadFactory(s).candidates.find(c=>c.id==='ch:12000006').discoveryQuestion,enrichment.discoveryQuestion);
  assert.throws(()=>f.applyWebResearch(s,[{...enrichment,priority:84}]),/Scores over 75/,'independent sources required for very high scores');
  assert.throws(()=>f.applyWebResearch(s,[{...enrichment,registryCheck:{...goodProfile,risk:'excluded'},priority:71}]),/High research priority/);
+ const researched=JSON.stringify(f.leadFactory(s));
+ assert.throws(()=>f.applyWebResearch(s,[{...enrichment,reason:'Stale second session result'}]),/already researched/);
+ assert.equal(JSON.stringify(f.leadFactory(s)),researched,'stale result cannot overwrite saved research');
  const normal=core.normalize(JSON.parse(JSON.stringify(s)));
  assert.equal(f.leadFactory(normal).candidates.length,5,'research queue survives cloud/JSON normalisation');
  assert.equal(normal.leads.length,3,'original lead and two authorised reserve transfers only');

@@ -14,7 +14,8 @@ const original=global.fetch;
 global.fetch=async(url,options)=>{
  calls.push({url:String(url),options});
  if(String(url).includes('/auth/v1/user'))return {ok:true,json:async()=>({id:'authorized-user'})};
- if(String(url).includes('/company/12000123'))return {ok:true,status:200,json:async()=>({company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_status_detail:'',accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}})};
+ if(String(url).includes('/rest/v1/salesos_workspaces'))return {ok:true,json:async()=>[{leads:[],factory:null}]};
+ if(String(url).includes('/company/12000123'))return {ok:true,status:200,json:async()=>({company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_status_detail:'',type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01',accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}})};
  return {ok:true,status:200,json:async()=>({hits:2,items:[
   {company_name:'Fictional International Staffing Ltd',company_number:'12000123',company_status:'active',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},
   {company_name:'Dissolved Agency Ltd',company_number:'12000999',company_status:'dissolved',company_type:'ltd',sic_codes:['78200'],date_of_creation:'2018-01-01'},

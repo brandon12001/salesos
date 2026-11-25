@@ -2,7 +2,7 @@ import type {State,Lead} from '../types';
 import {core} from './core';
 
 export type ResearchSector='recruitment'|'goods';
-export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean};
+export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string};
 export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>;webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
 export type RegistryUpdate={id:string;registryCheck:RegistryCheck;priority:number};
 export type WebResearchUpdate={id:string;registryCheck:RegistryCheck;priority:number;reason:string;researchMethod:'registry-only'|'web-rule-screen';researchConfidence:'Low'|'Medium';evidence:NonNullable<Discovery['evidence']>;webCheckedAt:string;webQueries:number;fxHypothesis:string;discoveryQuestion:string};
@@ -105,6 +105,7 @@ export function applyWebResearch(s:State,updates:WebResearchUpdate[]){
   const candidate={...c,...u};
   ensureValid(candidate);
  }
+ if(targets.some(c=>!!c?.webCheckedAt))throw Error('A company was already researched while this request ran. Refresh instead of overwriting its evidence.');
  for(let i=0;i<updates.length;i++){
   const c=targets[i]!,u=updates[i];
   c.registryCheck=u.registryCheck;c.priority=u.priority;c.reason=u.reason;

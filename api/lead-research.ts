@@ -1,5 +1,6 @@
 import {ruleScore,type SearchHit,type Signal} from './rule-score.js';
 import {assessRegistry,screenedPriority,PROFILE_LIMIT,type CompanyProfile,type RegistryCheck} from './registry-quality.js';
+import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 
 type Request=IncomingMessage&{body?:unknown};
@@ -10,6 +11,8 @@ const SOURCES:{[K in Sector]:Array<{sic:string;label:string}>}={
 };
 type CHItem={company_name?:string;company_number?:string;company_status?:string;company_type?:string;sic_codes?:string[];date_of_creation?:string};
 type ResearchItem={company:string;companyNumber:string;sector:Sector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Signal[];webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
+type KnownCompany={company:string;companyNumber?:string;sector?:Sector;status?:string;webCheckedAt?:string};
+type WorkspaceScreen={leads:KnownCompany[];factory:{candidates:KnownCompany[]}|null};
 const validNumber=(v:unknown)=>typeof v==='string'&&/^(?:\d{8}|[A-Z]{2}\d{6}|R\d{7})$/.test(v.toUpperCase());
 function respond(res:ServerResponse,status:number,body:unknown){res.statusCode=status;res.setHeader('Content-Type','application/json; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(JSON.stringify(body))}
 async function bodyOf(req:Request){
@@ -28,7 +31,7 @@ async function screen(company:string,number:string,sector:Sector,sic:string,inco
  let profile:CompanyProfile|null=null;
  try{const r=await chGet('/company/'+encodeURIComponent(number),auth);if(r.ok)profile=await r.json() as CompanyProfile}catch{}
  const registryCheck=assessRegistry(company,number,profile,now);
- return {registryCheck,priority:screenedPriority(sector,sic,incorporated,registryCheck)};
+ return {registryCheck,priority:screenedPriority(sector,registryCheck.sicCodes?.[0]||sic,registryCheck.incorporated||incorporated,registryCheck)};
 }
 /** Search is explicitly user-triggered and bounded to 8 calls per action.
  * Two distinct queries per entity help surface the PAYMENT MECHANISM, not
@@ -42,19 +45,27 @@ function webQueries(company:string,sector:Sector){
   ?[quoted+' international contractor payroll payments',quoted+' overseas clients invoicing currencies employer of record']
   :[quoted+' imported equipment overseas manufacturers distributors',quoted+' foreign suppliers invoicing currency Germany Europe Asia'];
 }
-async function enrichWeb(items:ResearchItem[],profile:Sector){
+async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[]){
+ const screened=items.map(c=>({c,gate:preSearchScreen(c.sector,c.registryCheck)}));
+ const eligible=screened.filter(({c,gate})=>gate.eligible&&!blocked.some(b=>sameResearchCompany(c,b)))
+  .map(({c})=>c).sort((a,b)=>b.priority-a.priority).slice(0,MAX_WEB_COMPANIES);
+ const preSearchHeld=screened.filter(({gate})=>!gate.eligible).length;
+ const knownSkipped=screened.filter(({c,gate})=>gate.eligible&&blocked.some(b=>sameResearchCompany(c,b))).length;
+ for(const {c,gate} of screened){
+  c.reason+=' Pre-search: '+(blocked.some(b=>sameResearchCompany(c,b))?'Already tracked in SalesOS; no search credits spent.':gate.reasons.join(' '));
+ }
+ const screening={preSearchPassed:screened.length-preSearchHeld-knownSkipped,preSearchHeld,knownSkipped};
  const searchKey=process.env.BRAVE_SEARCH_API_KEY;
- if(!searchKey)return {webSearches:0,webErrors:0,webResearchEnabled:false,webCompleted:0,authRejected:false,rateLimited:false};
+ if(!searchKey)return {...screening,webSearches:0,webErrors:0,webResearchEnabled:false,webCompleted:0,authRejected:false,rateLimited:false};
  let webSearches=0,webErrors=0,webCompleted=0,authRejected=false,rateLimited=false;
- const eligible=items.filter(x=>x.registryCheck.risk==='ok').slice().sort((a,b)=>b.priority-a.priority).slice(0,MAX_WEB_COMPANIES);
  await batches(eligible,2,async c=>{
   const hits:SearchHit[]=[],unique=new Set<string>();let completed=0;
-  for(const q of webQueries(c.company,profile)){
+  for(const q of webQueries(c.company,c.sector)){
    if(authRejected||rateLimited)break;
    try{
+    webSearches++;
     const response=await fetch('https://api.search.brave.com/res/v1/web/search?'+new URLSearchParams({q,count:'10'}),{
      headers:{'X-Subscription-Token':searchKey,Accept:'application/json'},signal:AbortSignal.timeout(5500)});
-    webSearches++;
     if(response.status===401||response.status===403){webErrors++;authRejected=true;break}
     if(response.status===429){webErrors++;rateLimited=true;break}
     if(!response.ok){webErrors++;continue}
@@ -66,14 +77,14 @@ async function enrichWeb(items:ResearchItem[],profile:Sector){
    }catch{webErrors++}
   }
   if(completed){
-   const result=ruleScore(c.company,profile,c.priority,hits.slice(0,20));
+   const result=ruleScore(c.company,c.sector,c.priority,hits.slice(0,20));
    c.priority=result.priority;c.reason+=' '+result.reason;
    c.researchMethod=result.researchMethod;c.researchConfidence=result.researchConfidence;c.evidence=result.signals;
    c.fxHypothesis=result.fxHypothesis;c.discoveryQuestion=result.discoveryQuestion;
    c.webCheckedAt=new Date().toISOString();c.webQueries=completed;webCompleted++;
   }
  });
- return {webSearches,webErrors,webResearchEnabled:true,webCompleted,authRejected,rateLimited};
+ return {...screening,webSearches,webErrors,webResearchEnabled:true,webCompleted,authRejected,rateLimited};
 }
 export default async function handler(req:Request,res:ServerResponse){
  if(req.method!=='POST')return respond(res,405,{error:'Use POST.'});
@@ -89,6 +100,18 @@ export default async function handler(req:Request,res:ServerResponse){
   const key=process.env.COMPANIES_HOUSE_API_KEY;
   if(!key)return respond(res,503,{error:'Add COMPANIES_HOUSE_API_KEY to Vercel Production environment to run company checks.'});
   const chAuth='Basic '+Buffer.from(key+':').toString('base64'),now=new Date().toISOString();
+  // Read only this authenticated user's RLS-protected workspace. Fail closed
+  // when duplicate/suppression context is unavailable; never spend speculatively.
+  let known:WorkspaceScreen={leads:[],factory:null};
+  if(input.mode!=='recheck'){
+   const query=new URLSearchParams({select:'leads:payload->leads,factory:payload->meta->leadFactory',user_id:'eq.'+user.id,limit:'1'});
+   const saved=await fetch(url.replace(/\/$/,'')+'/rest/v1/salesos_workspaces?'+query,{headers:{apikey:publishable,Authorization:'Bearer '+token},signal:AbortSignal.timeout(9000)});
+   if(!saved.ok)return respond(res,503,{error:'Could not check your saved companies. No search credits spent; retry when cloud saving is available.'});
+   const rows=await saved.json() as WorkspaceScreen[];
+   if(!Array.isArray(rows)||rows.length>1||(rows[0]&&(!Array.isArray(rows[0].leads)||(rows[0].factory!==null&&!Array.isArray(rows[0].factory?.candidates)))))
+    return respond(res,503,{error:'Saved company screening was unavailable. No search credits spent.'});
+   if(rows[0])known=rows[0];
+  }
   if(input.mode==='web-enrich'){
    const cs=input.candidates;
    if(!Array.isArray(cs)||!cs.length||cs.length>MAX_WEB_COMPANIES||
@@ -97,6 +120,9 @@ export default async function handler(req:Request,res:ServerResponse){
      !Array.isArray(x.sicCodes)||x.sicCodes.length>6||x.sicCodes.some(z=>!/^\d{5}$/.test(z))||
      typeof x.incorporated!=='string'||x.incorporated.length>15))
     return respond(res,400,{error:'Select up to four existing companies for web research.'});
+   if(new Set(cs.map(c=>c.companyNumber.toUpperCase())).size!==cs.length||
+    cs.some(c=>!known.factory?.candidates.some(s=>s.companyNumber===c.companyNumber.toUpperCase()&&s.company===c.company&&s.sector===c.sector&&s.status==='unchecked'&&!s.webCheckedAt)))
+    return respond(res,409,{error:'A selected company is already researched, unavailable or not saved yet. Refresh the queue after cloud saving completes.'});
    if(!process.env.BRAVE_SEARCH_API_KEY)return respond(res,503,{error:'Add the Brave Search server-side key before running website research.'});
    const checks:ResearchItem[]=await batches(cs,4,async c=>{
     const companyNumber=c.companyNumber.toUpperCase();
@@ -106,23 +132,17 @@ export default async function handler(req:Request,res:ServerResponse){
      foundAt:now,reason:'Refreshed official registry screening. Foreign currency flows still require discovery.',
      priority:screening.priority,registryCheck:screening.registryCheck,researchMethod:'registry-only' as const,researchConfidence:'Low' as const};
    });
-   let webSearches=0,webErrors=0,webCompleted=0,rateLimited=false,authRejected=false;
-   for(const sector of ['recruitment','goods'] as const){
-    const subset=checks.filter(c=>c.sector===sector);
-    if(!subset.length)continue;
-    const out=await enrichWeb(subset,sector);
-    webSearches+=out.webSearches;webErrors+=out.webErrors;webCompleted+=out.webCompleted;
-    rateLimited=rateLimited||out.rateLimited;authRejected=authRejected||out.authRejected;
-   }
+   const web=await enrichWeb(checks,known.leads);
+   const {webSearches,webCompleted,rateLimited,authRejected}=web;
    if(authRejected)return respond(res,502,{error:'Brave rejected the API key (401/403). Check its subscription, permissions or billing status. No results saved.'});
    if(rateLimited&&webCompleted===0)return respond(res,429,{error:'Brave has rate-limited web research. Try later. No results saved.'});
-   if(webCompleted===0&&checks.some(c=>c.registryCheck.risk==='ok'))return respond(res,502,{error:'All Brave searches failed. Check the key/subscription and try again; no results saved.'});
+   if(webCompleted===0&&webSearches>0)return respond(res,502,{error:'All Brave searches failed. Check the key/subscription and try again; no results saved.'});
    return respond(res,200,{mode:'web-enrich',updates:checks.map(c=>({
     id:'ch:'+c.companyNumber,registryCheck:c.registryCheck,priority:c.priority,reason:c.reason,
     researchMethod:c.researchMethod,researchConfidence:c.researchConfidence,evidence:c.evidence||[],
     fxHypothesis:c.fxHypothesis||'No specific currency flow evidenced.',discoveryQuestion:c.discoveryQuestion||'Which overseas payments does this company make or receive?',
     webCheckedAt:c.webCheckedAt||'',webQueries:c.webQueries||0
-   })),webSearches,webErrors,webCompleted,rateLimited,webResearchEnabled:true});
+   })),...web});
   }
   if(input.mode==='recheck'){
    const cs=input.candidates;
@@ -148,7 +168,7 @@ export default async function handler(req:Request,res:ServerResponse){
     reason:'Companies House SIC '+source.sic+' ('+source.label+'). '+(result.registryCheck.flags.join(' ')||'Active registry profile verified.')+' Foreign currency payments and UK treasury autonomy unverified.',
     researchMethod:'registry-only',researchConfidence:'Low',foundAt:now};
   });
-  const web=await enrichWeb(items,profile);
+  const web=await enrichWeb(items,[...known.leads,...(known.factory?.candidates||[])]);
   items.sort((a,b)=>b.priority-a.priority||a.company.localeCompare(b.company));
   respond(res,200,{items,profile,sourceSic:source.sic,resultsScanned:raw.length,nextCursor:cursor+1,runAt:now,...web,
    registryExcluded:items.filter(x=>x.registryCheck.risk==='excluded').length,
