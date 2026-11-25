@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: £3m–£30m target and free company context
+
+Released base is PR #26 at `17a5140317b2028aa353ed6d3130b80944ae53fd`, Vercel READY `dpl_EPqc9199PGVzEUfNSVibqv2vuACy`, canonical https://salesos-up-next7.vercel.app/. The user chose £3m–£30m annual turnover initially, with later adjustment, after discussing HMRC/GLEIF first and news later. Work is isolated on `feat/free-company-context` in `/workspace/salesos-company-context`.
+
+Lead Research has an adjustable target, optional sourced annual GBP entity/group figures, zero-Brave discovery, and explicit cached free trade/ownership checks. Fresh server-side registry facts plus account-scoped saved context protect identity, duplicate/ownership holds and paid spending. Missing/group/stale turnover remains unknown and eligible; automatic accounts revenue extraction is not implemented. HMRC requires name plus postcode and samples recent goods-trade entries; GLEIF requires company number/authority plus legal name and reports available accounting parents without inferring treasury control. Context never upgrades FX confidence/readiness or generates outreach. New transfers retain research archive links; existing prospects are untouched. See [behaviour, limits and tests](FREE_COMPANY_CONTEXT.md).
+
+Run install/build/all suites and the complete isolated fictional browser suite plus final-head CI before the standing-authorised automatic release. Fresh private backup, exact source/deployment SHA/READY/alias and SELECT-only record/history/settings preservation remain mandatory. No migration or new paid service/key/infrastructure. Preserve earlier worktrees and PR #12. Track this release's PR for exact results; live protected production sign-in stays a manual check.
+
+---
+
 # Current update — 25 November 2026: screen before spending Brave credits
 
 Based on released main `a5da859` (PR #25), `feat/pre-search-screening` adds shared, conservative pre-search fit gates to new discovery and saved-company web research. Official profiles must be active private limited companies at least two years old, with completed non-dormant accounts, acceptable legal/filing checks and targeted temporary staffing/HR or equipment wholesale SICs. Generic placement-only, holding/head-office, young and unknown records are held with reasons. Existing research and CRM decisions are retained; older registry checks can be refreshed without Brave. See [rules, verification and limits](PRE_SEARCH_SCREENING.md).

@@ -2,13 +2,18 @@ import {useMemo,useState} from 'react';
 import type {State} from '../types';
 import {cloud} from '../lib/cloud';
 import {preSearchScreen,needsRegistryRefresh,sameResearchCompany} from '../lib/researchScreen';
-import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate} from '../lib/leadFactory';
+import {turnoverFit,turnoverTarget,needsCompanyContext,type TurnoverTarget,type TurnoverEvidence} from '../lib/companyContext';
+import {ResearchTarget,TurnoverEditor} from './ResearchTarget';
+import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
  state:State;
  onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number)=>string|void;
  onRegistryChecks:(rows:RegistryUpdate[])=>string|void;
  onWebResearch:(rows:WebResearchUpdate[])=>string|void;
+ onCompanyContext:(rows:ContextUpdate[])=>string|void;
+ onTarget:(value:TurnoverTarget)=>string|void;
+ onTurnover:(id:string,value:TurnoverEvidence|null)=>string|void;
  onAvailable:(id:string)=>string|void;
  onHold:(id:string,owner:string,lastActivity:string)=>string|void;
  onMove:(ids:string[])=>string|void;
@@ -16,31 +21,37 @@ type Props={
  onDupes:()=>void;onReserve:()=>void;
 };
 type Filter='ready'|'research'|'screen-held'|'flagged'|'cleared'|'all';
-export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
+export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onCompanyContext,onTarget,onTurnover,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
  const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('recruitment');
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
  const [filter,setFilter]=useState<Filter>('ready'),[search,setSearch]=useState('');
  const [verified,setVerified]=useState(false),[ownerId,setOwnerId]=useState(''),[owner,setOwner]=useState(''),[activity,setActivity]=useState('');
  const [selected,setSelected]=useState<Record<string,boolean>>({});
  const candidates=registry.candidates;
+ const target=turnoverTarget(registry.turnoverTarget);
  const ready=candidates.filter(c=>c.status==='unchecked'&&qualityTier(c)==='ready');
  const backlog=candidates.filter(c=>c.status==='unchecked'&&qualityTier(c)==='research');
  const flagged=candidates.filter(c=>c.status==='unchecked'&&['flagged','excluded'].includes(qualityTier(c)));
  const cleared=candidates.filter(c=>c.status==='cleared'&&qualityTier(c)==='ready');
  const held=candidates.filter(c=>c.status==='held');
  const unverified=candidates.filter(c=>c.status==='unchecked'&&needsRegistryRefresh(c.registryCheck)).slice(0,12);
- const screen=(c:Candidate)=>state.leads.some(l=>sameResearchCompany(c,l))
-  ?{eligible:false,reasons:['Already tracked in SalesOS; no search credits will be spent.']}:preSearchScreen(c.sector,c.registryCheck);
+ const screen=(c:Candidate)=>{
+  if(state.leads.some(l=>sameResearchCompany(c,l)))return {eligible:false,reasons:['Already tracked in SalesOS; no search credits will be spent.']};
+  const check=preSearchScreen(c.sector,c.registryCheck),fit=turnoverFit(c.turnover,target);
+  return {eligible:check.eligible&&fit.eligible,reasons:[...check.reasons,fit.reason]};
+ };
  const pendingWeb=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile);
- const eligibleWeb=pendingWeb.filter(c=>screen(c).eligible).sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company));
+ const rank=(c:Candidate)=>Number(turnoverFit(c.turnover,target).status==='in-range')*1000+Number(c.companyContext?.hmrc.status==='observed')*100+candidatePriority(c);
+ const eligibleWeb=pendingWeb.filter(c=>screen(c).eligible).sort((a,b)=>rank(b)-rank(a)||a.company.localeCompare(b.company));
  const webQueue=eligibleWeb.slice(0,4),screenHeld=pendingWeb.filter(c=>!screen(c).eligible);
+ const contextQueue=candidates.filter(c=>c.status==='unchecked'&&c.sector===profile&&screen(c).eligible&&needsCompanyContext(c.companyContext)).sort((a,b)=>rank(b)-rank(a)).slice(0,4);
  const webCompleted=candidates.filter(c=>c.status==='unchecked'&&!!c.webCheckedAt).length;
  const visible=useMemo(()=>candidates.filter(c=>(filter==='all'?c.status!=='dismissed'&&c.status!=='moved':
   filter==='screen-held'?c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile&&!screen(c).eligible:
   filter==='cleared'?c.status==='cleared':c.status==='unchecked'&&(
    filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):qualityTier(c)===filter))
   &&(!search||[c.company,c.companyNumber,c.reason].join(' ').toLowerCase().includes(search.toLowerCase())))
-  .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads]);
+  .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads,target.min,target.max]);
  const picked=cleared.filter(c=>selected[c.id]);
  function failed(message:string|void){if(message){setError(message);return true}setError('');return false}
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setStatus('Copied '+value)}catch{setStatus('Clipboard blocked; select company name manually.')} }
@@ -56,11 +67,11 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  async function run(){
   if(running)return;setRunning(true);setError('');setStatus('');
   try{
-   const result=await api({profile,cursor:registry.cursors[profile]||0});
+   const result=await api({mode:'registry-discover',profile,cursor:registry.cursors[profile]||0});
    if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor))throw Error('Invalid company research response.');
    if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor)))return;
    setFilter('ready');
-   setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked. '+(result.webResearchEnabled?result.webSearches+' Brave requests.':'No independent web verification connected.')+' Only strongly researched candidates appear in Salesforce clearance.');
+   setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Run free context checks before optional web research.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function rescreen(){
@@ -71,6 +82,15 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    if(failed(onRegistryChecks(result.checks as RegistryUpdate[])))return;
    setFilter('screen-held');
    setStatus('Rechecked '+result.checked+' existing companies using official registry profiles; '+result.ready+' passed legal/filing checks. Passing these checks does not prove FX exposure.');
+  }catch(e){setError((e as Error).message)}finally{setRunning(false)}
+ }
+ async function freeContext(){
+  if(running||!contextQueue.length)return;setRunning(true);setError('');setStatus('');
+  try{
+   const result=await api({mode:'free-context',candidates:contextQueue.map(c=>({company:c.company,companyNumber:c.companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated}))});
+   if(!Array.isArray(result.updates)||result.updates.length!==contextQueue.length)throw Error('Free checks returned an incomplete batch; existing evidence retained.');
+   if(failed(onCompanyContext(result.updates as ContextUpdate[])))return;
+   setFilter('research');setStatus('Free context saved for '+result.updates.length+' companies · 0 Brave requests · '+(result.providerErrors||0)+' provider errors. Missing matches remain unknown; FX needs and decision authority are unverified.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function webResearch(){
@@ -106,10 +126,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   </div>
   <section className="panel stack">
    <div className="section-between"><h2>Find and screen UK companies</h2><Badge tone="blue">Companies House</Badge></div>
+   <ResearchTarget key={target.min+':'+target.max} value={target} onSave={value=>!failed(onTarget(value))}/>
+   <p className="hint">Start with free registry checks, add free HMRC/GLEIF context, then use Brave for unresolved questions. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
    <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
-    <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':'Find next screened batch'}</button>
+    <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':'Find companies (no Brave)'}</button>
     <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
+    <button className="btn secondary" disabled={running||!contextQueue.length} onClick={()=>void freeContext()}>Free trade & ownership checks ({contextQueue.length} next)</button>
     <button className="btn primary" disabled={running||!webQueue.length} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
    <p className="hint">Selected sector: {eligibleWeb.length} saved companies pass the free filters; {screenHeld.length} held. Each manual research action takes up to four eligible companies and uses at most eight Brave requests. The server refreshes official facts and checks your saved workspace before searching. Existing companies, held duplicates and already researched candidates are skipped. Verify saved registry first for older discoveries. Searches use your Brave allowance; no background research or daily/monthly quota enforcement is enabled.</p>
    <div className="button-row"><button className="btn secondary small" onClick={()=>setFilter('screen-held')}>Review pre-search holds ({screenHeld.length})</button></div>
@@ -127,6 +150,15 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
      <div className="button-row"><Badge tone={tierColor(c)}>{tierLabel(c)}</Badge><Badge tone="muted">{candidatePriority(c)}/100 screening</Badge></div></div>
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
     {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{screen(c).eligible?'Passes pre-search filters:':'No Brave search yet — on hold:'}</strong> {screen(c).reasons.join(' ')}</p>}
+    {c.status==='unchecked'&&<TurnoverEditor key={c.turnover?.recordedAt||'empty'} value={c.turnover} onSave={value=>!failed(onTurnover(c.id,value))}/>}
+    {c.companyContext&&<details><summary>Trade & ownership context · checked {new Date(c.companyContext.checkedAt).toLocaleDateString('en-GB')}</summary><div className="stack">
+     <p className="hint"><a href={c.companyContext.hmrc.sourceUrl} target="_blank" rel="noopener noreferrer">HMRC</a>: {c.companyContext.hmrc.summary}</p>
+     {c.companyContext.hmrc.refreshErrorAt&&<p className="hint">HMRC refresh unavailable. Retained source result from {new Date(c.companyContext.hmrc.checkedAt||c.companyContext.checkedAt).toLocaleDateString('en-GB')}.</p>}
+     {c.companyContext.hmrc.status==='observed'&&<p className="hint">{c.companyContext.hmrc.directions?.join(' · ')} · Sample months: {c.companyContext.hmrc.months?.map(m=>String(m).slice(0,4)+'-'+String(m).slice(4)).join(', ')} · {c.companyContext.hmrc.products?.join('; ')}</p>}
+     <p className="hint"><a href={c.companyContext.gleif.sourceUrl} target="_blank" rel="noopener noreferrer">GLEIF</a>: {c.companyContext.gleif.summary}</p>
+     {c.companyContext.gleif.refreshErrorAt&&<p className="hint">GLEIF refresh unavailable. Retained source result from {new Date(c.companyContext.gleif.checkedAt||c.companyContext.checkedAt).toLocaleDateString('en-GB')}.</p>}
+     {c.companyContext.gleif.parents?.map(p=><p className="hint" key={p.kind}><a href={p.sourceUrl} target="_blank" rel="noopener noreferrer">{p.kind==='direct'?'Direct':'Ultimate'} accounting parent: {p.name}</a> · {p.country}</p>)}
+    </div></details>}
     {c.fxHypothesis&&<p className="hint"><strong>FX hypothesis:</strong> {c.fxHypothesis}</p>}
     {c.discoveryQuestion&&<p className="hint"><strong>Call discovery question:</strong> {c.discoveryQuestion}</p>}
     {c.webCheckedAt&&<small>Web checked {new Date(c.webCheckedAt).toLocaleDateString('en-GB')} · {c.webQueries||0} successful search queries</small>}

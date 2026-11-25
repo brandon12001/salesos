@@ -7,7 +7,7 @@ export type RegistryCheck={
  checkedAt:string; risk:RegistryRisk; flags:string[];
  companyStatus:string; statusDetail:string; accountsType:string;
  accountsOverdue:boolean; confirmationOverdue:boolean;
- sicCodes?:string[]; incorporated?:string; companyType?:string;
+ sicCodes?:string[]; incorporated?:string; companyType?:string; postalCode?:string;
 };
 export type CompanyProfile={
  company_name?:string; company_number?:string; company_status?:string; company_status_detail?:string;
@@ -15,6 +15,7 @@ export type CompanyProfile={
  confirmation_statement?:{overdue?:boolean}; has_insolvency_history?:boolean;
  has_been_liquidated?:boolean;
  sic_codes?:string[]; date_of_creation?:string; type?:string;
+ registered_office_address?:{postal_code?:string};
 };
 export const PROFILE_LIMIT=12;
 const HOLDING=/\b(HOLDINGS?|INVESTMENT(S)?|PROPERTY HOLDINGS?|GROUP HOLDCO)\b/i;
@@ -50,7 +51,7 @@ export function assessRegistry(name:string,number:string,profile:CompanyProfile|
  }
  return {...blank,risk,flags,companyStatus:status,statusDetail:detail,accountsType,accountsOverdue,confirmationOverdue,
   sicCodes:Array.isArray(profile.sic_codes)?profile.sic_codes.filter(c=>/^\d{5}$/.test(c)):[],
-  incorporated:profile.date_of_creation||'',companyType:profile.type||''};
+  incorporated:profile.date_of_creation||'',companyType:profile.type||'',postalCode:profile.registered_office_address?.postal_code||''};
 }
 export function screenedPriority(sector:'recruitment'|'goods',sic:string,incorporated:string,check:RegistryCheck){
  const base=registryBase(sector,sic,incorporated);

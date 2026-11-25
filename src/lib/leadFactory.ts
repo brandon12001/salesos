@@ -1,8 +1,9 @@
 import type {State,Lead} from '../types';
 import {core} from './core';
+import {turnoverTarget,validTurnover,validCompanyContext,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
 
 export type ResearchSector='recruitment'|'goods';
-export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string};
+export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string;postalCode?:string};
 export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>;webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
 export type RegistryUpdate={id:string;registryCheck:RegistryCheck;priority:number};
 export type WebResearchUpdate={id:string;registryCheck:RegistryCheck;priority:number;reason:string;researchMethod:'registry-only'|'web-rule-screen';researchConfidence:'Low'|'Medium';evidence:NonNullable<Discovery['evidence']>;webCheckedAt:string;webQueries:number;fxHypothesis:string;discoveryQuestion:string};
@@ -20,8 +21,9 @@ export function candidatePriority(c:Discovery){
  return Math.min(35,c.priority);
 }
 export type ClearanceStatus='unchecked'|'cleared'|'held'|'moved'|'dismissed';
-export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string};
-type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string};
+export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string;turnover?:TurnoverEvidence;companyContext?:CompanyContext};
+type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string;turnoverTarget?:TurnoverTarget};
+export type ContextUpdate={id:string;expectedCheckedAt:string;registryCheck:RegistryCheck;companyContext:CompanyContext};
 const MAX=600;
 export const researchProfiles=[{id:'recruitment',label:'Recruitment & contractor payroll'},{id:'goods',label:'Machinery & equipment distribution'}] as const;
 export function leadFactory(s:State):Registry{
@@ -65,7 +67,7 @@ export function addDiscoveries(s:State,rows:Discovery[],profile:ResearchSector,n
   if(records.length>=MAX)throw Error('Lead Research queue is full (600). Process or dismiss existing companies before scanning again.');
   batch.add(companyNumber);records.push({...row,company:row.company.trim(),companyNumber,id:'ch:'+companyNumber,status:'unchecked'});added++;
  }
- save(s,{version:1,candidates:records,cursors:{...current.cursors,[profile]:nextCursor},lastRunAt:new Date().toISOString()});
+ save(s,{...current,version:1,candidates:records,cursors:{...current.cursors,[profile]:nextCursor},lastRunAt:new Date().toISOString()});
  return {added,existing};
 }
 /** Re-screen an existing backlog in batches. Keep all user CRM decisions untouched. */
@@ -125,12 +127,15 @@ export function markAvailable(s:State,id:string){
  save(s,r);
 }
 function reserveData(c:Candidate,clearance:'cleared'|'hold',extra:Record<string,unknown>={}){
+ const context=c.companyContext;
+ const contextNote=context?' Public context checked '+context.checkedAt.slice(0,10)+': HMRC — '+context.hmrc.summary+' GLEIF — '+context.gleif.summary+' '+(context.gleif.parents||[]).map(p=>p.kind+' accounting parent: '+p.name+' ('+p.country+').').join(' '):'';
+ const sizeNote=c.turnover?' Recorded '+c.turnover.scope+' annual turnover: GBP '+c.turnover.amount+'; year ended '+c.turnover.periodEnd+'. Source: '+c.turnover.sourceUrl+'.':'';
  return {company:c.company,companyNumber:c.companyNumber,sector:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
  businessDescription:'Registered business classified under SIC '+c.sicCodes.join(', ')+'. Cross-border payments unverified.',
  standardisedIndustry:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
  leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:candidatePriority(c),
- researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.',
- researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl)].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:c.fxHypothesis||'Potential FX requirement not independently verified; qualify before prioritising outreach.',
+ researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.'+contextNote+sizeNote,
+ researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl),...(context?[context.hmrc.sourceUrl,context.gleif.sourceUrl,...(context.gleif.parents||[]).map(p=>p.sourceUrl)]:[]),...(c.turnover?[c.turnover.sourceUrl]:[])].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:c.fxHypothesis||'Potential FX requirement not independently verified; qualify before prioritising outreach.',
  crmClearance:clearance,crmCheckedAt:c.checkedAt||core.today(),crmNote:c.crmNote||'Manual Salesforce duplicate check recorded',readiness:1,
  readinessEvidence:'Unaware default for newly discovered company, not a verified buyer statement',
  nextMilestone:core.NEXT_MILESTONES[0],notes:'Lead Factory · sourced from Companies House. No contact or FX volume invented.',...extra};
@@ -166,4 +171,20 @@ export function dismissCandidate(s:State,id:string){
  const r=leadFactory(s),c=r.candidates.find(c=>c.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked candidates may be dismissed.');
  c.status='dismissed';save(s,r);
+}
+export function setTurnoverTarget(s:State,value:TurnoverTarget){const r=leadFactory(s);r.turnoverTarget=turnoverTarget(value);save(s,r)}
+export function setCandidateTurnover(s:State,id:string,value:TurnoverEvidence|null){
+ const r=leadFactory(s),c=r.candidates.find(c=>c.id===id);
+ if(!c||c.status!=='unchecked')throw Error('Only unchecked research candidates can have turnover evidence updated.');
+ if(value&&!validTurnover(value))throw Error('Record a sourced GBP annual turnover, year end and entity/group scope.');
+ if(value)c.turnover=value;else delete c.turnover;save(s,r);
+}
+export function applyCompanyContext(s:State,updates:ContextUpdate[]){
+ const r=leadFactory(s);
+ if(!Array.isArray(updates)||!updates.length||updates.length>4||new Set(updates.map(u=>u.id)).size!==updates.length)throw Error('Choose up to four unique companies.');
+ const cs=updates.map(u=>r.candidates.find(c=>c.id===u.id));
+ if(cs.some((c,i)=>!c||c.status!=='unchecked'||(c.companyContext?.checkedAt||'')!==updates[i].expectedCheckedAt||
+  !validCompanyContext(updates[i].companyContext)||!updates[i].registryCheck||!['ok','review','excluded','unverified'].includes(updates[i].registryCheck.risk)||!Array.isArray(updates[i].registryCheck.flags)))
+  throw Error('A context record changed or a source response was invalid. Refresh; existing evidence retained.');
+ cs.forEach((c,i)=>{c!.companyContext=updates[i].companyContext;c!.registryCheck=updates[i].registryCheck});save(s,r);
 }
