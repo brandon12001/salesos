@@ -30,8 +30,8 @@ export function queueStamp(s:State,l:Lead){return JSON.stringify([l.id,l.status,
 function recordedAt(at:string,now:Date){const n=Date.parse(at);return Number.isFinite(n)&&n<=+now;}
 function validRecord(record:QueueRecord|undefined,now:Date):record is QueueRecord{return !!record&&category(record.category)&&['evidence','contactId','interestBaseline','fxBaseline','researchBaseline','observedAt','at'].every(k=>typeof record[k as keyof QueueRecord]==='string')&&!!record.evidence.trim()&&recordedAt(record.at,now)&&(dateAge(record.observedAt,now)??-1)>=0&&(record.category==='standard'||record.attested===true);}
 function relevantContact(s:State,l:Lead,c:Contact){return !!c.name.trim()&&contactAllowed(s,l,c)&&c.roleStatus==='decision_maker';}
-function conversation(s:State,l:Lead,now:Date){
- return s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['Meaningful conversation','Callback requested','Meeting booked'].includes(a.outcome)&&recordedAt(a.at,now)&&l.contacts.some(c=>c.id===a.contactId&&relevantContact(s,l,c))).sort((a,b)=>b.at.localeCompare(a.at))[0];
+function conversation(s:State,l:Lead,now:Date,requireDecisionMaker=true){
+ return s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['Meaningful conversation','Callback requested','Meeting booked'].includes(a.outcome)&&recordedAt(a.at,now)&&l.contacts.some(c=>c.id===a.contactId&&(requireDecisionMaker?relevantContact(s,l,c):!!c.name.trim()&&contactAllowed(s,l,c)))).sort((a,b)=>b.at.localeCompare(a.at))[0];
 }
 export function goldGaps(s:State,l:Lead,now:Date){
  const gaps:string[]=[],age=dateAge(l.researchDate,now),prep=callPreparation(s,l);
@@ -47,10 +47,11 @@ export function goldGaps(s:State,l:Lead,now:Date){
 function signals(s:State,l:Lead,now:Date){
  const call=conversation(s,l,now);
  const readiness=s.readinessHistory.find(h=>h.leadId===l.id&&h.to===l.readiness&&h.evidence===l.readinessEvidence&&h.at===l.readinessUpdatedAt&&recordedAt(h.at,now));
- const interest=!!call&&!!readiness&&(l.readiness||0)>=3&&!!l.readinessEvidence.trim();
+ const interestCall=readiness&&(l.readiness||0)>=3&&l.readinessEvidence.trim()?conversation(s,l,now,false):null;
+ const interest=!!interestCall;
  const impact=commercialFor(s,l).impact;
  const qualified=!!call&&impact.status==='confirmed'&&!!impact.value.trim()&&(dateAge(impact.observedAt||'',now)??-1)>=0&&recordedAt(l.fx.updatedAt||'',now)&&l.fx.flows.some(f=>f.confidence==='confirmed'&&f.amount>0&&!!f.currency&&['annual','quarterly','monthly','weekly'].includes(f.period));
- return {call,interest,qualified};
+ return {call,interest,interestCall,qualified};
 }
 export function classifyWork(s:State,l:Lead,now:Date):WorkClassification{
  const record=data(s).records[l.id],valid=validRecord(record,now),facts=signals(s,l,now);
@@ -58,7 +59,7 @@ export function classifyWork(s:State,l:Lead,now:Date):WorkClassification{
  // A correction acknowledges all existing signals; only NEW confirmed evidence can
  // promote it again. Failed dials, copying, schedules and free-text notes cannot.
  if(valid&&record.category==='opportunity')return result('opportunity','Buyer interest explicitly recorded',record.evidence,record.observedAt,record.contactId);
- if(facts.interest&&(!valid||record.interestBaseline!==interestStamp(l)))return result('opportunity','Buyer-confirmed interest and a relevant conversation',l.readinessEvidence,l.readinessUpdatedAt,facts.call!.contactId||'');
+ if(facts.interest&&(!valid||record.interestBaseline!==interestStamp(l)))return result('opportunity','Buyer-confirmed interest and a relevant conversation',l.readinessEvidence,l.readinessUpdatedAt,facts.interestCall!.contactId||'');
  if(valid&&record.category==='qualified')return result('qualified','Meaningful FX activity explicitly confirmed',record.evidence,record.observedAt,record.contactId);
  if(facts.qualified&&(!valid||record.fxBaseline!==fxStamp(s,l)))return result('qualified','Recurring FX activity and commercial impact confirmed',commercialFor(s,l).impact.value,l.fx.updatedAt||'',facts.call!.contactId||'');
  if(valid&&record.category==='gold'){

@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: dedicated open Opportunities
+
+PR #30 is released at `58082964829d9685b33428bda9e525b6fd7cc078`, Vercel READY `dpl_6oCG5WyQZKVpqyfzNNXbG7uLoKZK`, canonical https://salesos-up-next7.vercel.app/. Routine contact repair is now outside Focus; records/history remain intact. The user additionally requested an obvious all-opportunities page and conversion after positive responses. Work is isolated on `feat/open-opportunities` in `/workspace/salesos-open-opportunities`.
+
+A dedicated page includes future/missing/blocked next actions and existing evidenced interest. Explicit interested call capture and actual meetings create opportunity evidence in the same call transaction; manual inbound responses have no fabricated outreach. Stage/readiness and XP are independent. Next-step notes and optional tasks preserve promises, ownership/contact restrictions and dedupe; stale stamps/cloud conflicts protect edits. See [scope and safeguards](OPPORTUNITIES.md).
+
+No migration, new paid API or real prospect test mutation. Run install/build/all 26 suites, full isolated browser and final-head CI before standing-authorised release. Back up the latest production workspace privately, verify exact tested tree/production READY/canonical alias and SELECT-only preservation of prospects, history, settings and existing private budget. Preserve earlier worktrees/PR #12; live protected sign-in remains manual.
+
+---
+
 # Current update — 25 November 2026: keep contact repair outside Focus
 
 Released base PR #29 is `448cbce740620a394e65158834d1eefe858a9048`. The user asked to remove “Resolve contact details” tasks from Focus for now. `fix/focus-outreach-only` in `/workspace/salesos-focus-outreach` filters routine research tasks from both Focus engines, session plans and queue counts, including already-viewed pending suggestions. Contact Resolution/Task Queue retain the original pending records. Explicit promises, callbacks and meetings remain protected. No deletion, completion, snoozing, production prospect edit, setting migration or core engine rewrite.
