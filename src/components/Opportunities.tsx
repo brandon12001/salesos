@@ -39,7 +39,7 @@ function OpportunityEditor({state,leadId,positive,onSave,onClose}:{state:State;l
   const allowed=l?.contacts.filter(c=>c.name.trim()&&contactAllowed(state,l,c))||[],next=state.tasks.filter(t=>t.leadId===l?.id&&t.status==='pending').sort((a,b)=>Number(protectedTask(b))-Number(protectedTask(a))||a.dueAt.localeCompare(b.dueAt))[0];
   const preferred=next?.contactId||(l?opportunityEvidence(state,l,new Date())?.contactId:null)||l?.primaryContactId;
   const contactId=positive?(allowed.length===1?allowed[0].id:''):allowed.find(c=>c.id===preferred)?.id||(allowed.length===1?allowed[0].id:'');
-  return {contactId,evidence:'',observedAt:localDate(new Date()),nextStep:l?opportunityPlan(state,l.id).nextStep:'',barrier:l?.barrier||'',date:'',time:'',kind:'call'};
+  return {contactId,evidence:'',observedAt:localDate(new Date()),nextStep:l?opportunityPlan(state,l.id).nextStep:'',barrier:l?.barrier||'',date:'',time:'',kind:next?.type==='email'?'email':next?.type==='deal'?'deal':'call'};
  };
  const [id,setId]=useState(first?.id||''),[input,setInput]=useState(()=>initial(first)),[expected,setExpected]=useState(()=>first?opportunityStamp(state,first):''),[error,setError]=useState('');
  const lead=state.leads.find(l=>l.id===id),promise=state.tasks.find(t=>t.leadId===id&&t.status==='pending'&&protectedTask(t));

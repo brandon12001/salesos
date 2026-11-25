@@ -18,7 +18,7 @@ export function opportunityEvidence(s:State,l:Lead,now:Date){
  // rows remain visible with restrictions; history never grants outreach clearance.
  const calls=s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['Meaningful conversation','Callback requested','Meeting booked'].includes(a.outcome)&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now&&l.contacts.some(c=>c.id===a.contactId&&c.name.trim())).sort((a,b)=>b.at.localeCompare(a.at));
  const meeting=calls.find(a=>a.outcome==='Meeting booked');
- const milestone=s.activities.filter(a=>a.leadId===l.id&&a.type==='Pipeline'&&['Meeting Booked','Successful Meeting','Onboarding','Account Open','First Trade'].includes(String(a.newStage))&&a.notes.trim()&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now).sort((a,b)=>b.at.localeCompare(a.at))[0];
+ const milestone=s.activities.filter(a=>a.leadId===l.id&&a.type==='Pipeline'&&typeof a.newStage==='string'&&['Meeting Booked','Successful Meeting','Onboarding','Account Open','First Trade'].includes(a.newStage)&&typeof a.notes==='string'&&a.notes.trim()&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now).sort((a,b)=>b.at.localeCompare(a.at))[0];
  const history=s.readinessHistory.find(h=>h.leadId===l.id&&h.to===l.readiness&&h.to>=3&&h.evidence===l.readinessEvidence&&h.at===l.readinessUpdatedAt&&h.evidence.trim()&&Number.isFinite(Date.parse(h.at))&&Date.parse(h.at)<=+now);
  const candidates=[...(milestone?[{evidence:milestone.notes,at:milestone.at,contactId:milestone.contactId||''}]:[]),...(meeting?[{evidence:meeting.notes||'Buyer agreed to a meeting (recorded call).',at:meeting.at,contactId:meeting.contactId||''}]:[]),...(history&&calls[0]?[{evidence:history.evidence,at:history.at,contactId:calls[0].contactId||''}]:[])].sort((a,b)=>b.at.localeCompare(a.at));
  const source=candidates[0],correction=queueEvents(s,l.id)[0];
@@ -53,17 +53,16 @@ export function saveOpportunity(s:State,id:string,input:OpportunityInput,expecte
   const contact=l.contacts.find(c=>c.id===input.contactId);if(!contact||!contact.name.trim()||!contactAllowed(s,l,contact))throw Error('Choose a named, permitted contact.');
   if(typeof input.evidence!=='string'||!input.evidence.trim()||input.evidence.length>2000||!validDate(input.observedAt)||input.observedAt>localDate(now))throw Error('Record the actual positive response and a non-future evidence date.');
  }else if(!opportunityEvidence(s,l,now))throw Error('Record a positive response before updating an opportunity.');
- const pending=s.tasks.filter(t=>t.leadId===id&&t.status==='pending'),promise=pending.find(protectedTask);
+ const pending=s.tasks.filter(t=>t.leadId===id&&t.status==='pending'),promise=pending.find(protectedTask),owned=pending.find(t=>t.origin==='opportunity'&&t.dedupeKey==='opportunity-next:'+id)||pending.find(t=>t.type==='deal'&&t.origin==='progression'&&t.dedupeKey==='progression:'+id&&!protectedTask(t));
  if(input.date&&promise&&(promise.dueAt!==input.date||(promise.dueTime||'')!==input.time))throw Error('A promised action already exists. Reschedule that action explicitly instead of creating a competing follow-up.');
  let route:ReturnType<typeof channel>=null;
  if(input.date&&!promise){
   const restriction=leadRestriction(s,l,now);if(restriction)throw Error(restriction);
   const contact=l.contacts.find(c=>c.id===input.contactId);if(input.contactId&&(!contact||!contactAllowed(s,l,contact)))throw Error('Choose a permitted contact, or clear the contact for an internal review.');
-  route=input.kind==='deal'?null:channel(s,l,input.kind,input.contactId||null);if(input.kind!=='deal'&&!route)throw Error('No permitted contact method for that action. Review the contact or choose an internal review.');
+  route=input.kind==='deal'?null:channel(s,l,input.kind,input.contactId||null,owned?.type===input.kind&&owned.contactId===input.contactId?owned.methodId:null);if(input.kind!=='deal'&&!route)throw Error('No permitted contact method for that action. Review the contact or choose an internal review.');
  }
  if(positive)recordQueueEvidence(s,id,{category:'opportunity',contactId:input.contactId,evidence:input.evidence,observedAt:input.observedAt,attested:true},queueStamp(s,l),now);
  if(input.date&&!promise){
-  const owned=pending.find(t=>t.origin==='opportunity'&&t.dedupeKey==='opportunity-next:'+id)||pending.find(t=>t.type==='deal'&&t.origin==='progression'&&t.dedupeKey==='progression:'+id&&!protectedTask(t));
   if(owned){
    if(owned.dueAt!==input.date||owned.dueTime!==input.time)core.snoozeTask(s,owned,input.date,input.time);
    Object.assign(owned,{type:input.kind,title:input.nextStep.trim(),description:input.nextStep.trim(),objective:input.nextStep.trim(),contactId:route?.contact.id||input.contactId||null,methodId:route?.method.id||null});
