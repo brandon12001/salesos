@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: screen before spending Brave credits
+
+Based on released main `a5da859` (PR #25), `feat/pre-search-screening` adds shared, conservative pre-search fit gates to new discovery and saved-company web research. Official profiles must be active private limited companies at least two years old, with completed non-dormant accounts, acceptable legal/filing checks and targeted temporary staffing/HR or equipment wholesale SICs. Generic placement-only, holding/head-office, young and unknown records are held with reasons. Existing research and CRM decisions are retained; older registry checks can be refreshed without Brave. See [rules, verification and limits](PRE_SEARCH_SCREENING.md).
+
+The server refreshes authoritative profile facts and reads the caller's own RLS-protected saved workspace before spending. Existing prospects/held duplicates/opt-outs and previously tracked discoveries are skipped; saved research requires a persisted unchecked/unresearched selection. Four companies/eight request attempts per action remain the maximum. No scheduler, daily/monthly quota ledger, new paid service, migration, outreach, activation or production record edit. Concurrent identical research from two sessions is still a quota risk; this is not a transactional credit reservation system.
+
+Run install/build/all unit/API suites and the complete isolated fictional browser suite plus final-head CI before the standing-authorised automatic release. Take a fresh private recoverable backup, verify exact production deployment SHA/READY/alias, and SELECT-only record/settings preservation. Live signed-in acceptance remains the user's separate check; do not spend real Brave credits for automated tests. Track the release PR for exact results.
+
+---
+
 # Current update — 25 November 2026: Focus performance
 
 PR #24 is released at `7f4c6ddf4cd7bfcbc228de70ae3b8ab3a69bd332`, Vercel READY `dpl_GyfttgkSKxkGRm1rUo56ZaCJ7awa`, canonical https://salesos-up-next7.vercel.app/. Manual Cold Call Mode and passive minute tracking are preserved.
