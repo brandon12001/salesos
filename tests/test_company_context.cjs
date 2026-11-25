@@ -1,0 +1,68 @@
+const assert=require('node:assert/strict'),cp=require('node:child_process'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const core=require('./core.cjs');global.window={SalesCore:core};
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'salesos-company-context-'));
+const p=cp.spawnSync(process.execPath,['node_modules/typescript/bin/tsc','--target','es2022','--module','commonjs','--strict','--skipLibCheck','--outDir',dir,'--rootDir','.','api/lead-research.ts','src/lib/leadFactory.ts'],{encoding:'utf8'});if(p.status)throw Error(p.stdout||p.stderr);
+const f=require(path.join(dir,'src/lib/leadFactory.js')),lib=require(path.join(dir,'src/lib/companyContext.js'));
+const {freeCompanyContext}=require(path.join(dir,'server/freeCompanyContext.js')),handler=require(path.join(dir,'api/lead-research.js')).default;
+const now=new Date().toISOString(),period=String(Number(now.slice(0,4))-1)+'-12-31';
+const turnover={amount:3e6,currency:'GBP',periodMonths:12,scope:'entity',periodEnd:period,recordedAt:now,sourceUrl:'https://fictional.example/annual-accounts'};
+assert.deepEqual(lib.turnoverTarget(),{min:3e6,max:30e6});
+for(const amount of [3e6,30e6])assert.equal(lib.turnoverFit({...turnover,amount}).status,'in-range');
+for(const amount of [0,2999999,30000001])assert.equal(lib.turnoverFit({...turnover,amount}).eligible,false);
+for(const value of [undefined,{...turnover,scope:'group'},{...turnover,currency:'USD'},{...turnover,periodEnd:'2020-01-01'},{...turnover,periodMonths:6}])assert.equal(lib.turnoverFit(value).status,'unknown');
+assert.throws(()=>lib.turnoverTarget({min:31e6,max:30e6}),/valid/);assert.equal(lib.validTurnover({...turnover,sourceUrl:'javascript:alert(1)'}),false);
+const c={company:'Fictional Machinery Limited',companyNumber:'15000001',sector:'goods',sicCodes:['46620'],incorporated:'2016-01-01',postalCode:'SW1A 1AA',status:'unchecked'};
+const registry={risk:'ok',checkedAt:now,flags:[],companyStatus:'active',statusDetail:'',accountsType:'small',accountsOverdue:false,confirmationOverdue:false,companyType:'ltd',sicCodes:c.sicCodes,incorporated:c.incorporated,postalCode:c.postalCode};
+const lei='12345678901234567890',parent='22345678901234567890';
+const record={id:lei,attributes:{entity:{registeredAt:{id:'RA000585'},registeredAs:c.companyNumber,legalName:{name:c.company},status:'ACTIVE'},registration:{status:'ISSUED'}},relationships:{'direct-parent':{links:{related:'https://api.gleif.org/api/v1/lei-records/'+lei+'/direct-parent'}}}};
+let requests=[],mismatch=false,outage=false,noMatches=false,badGLEIF=false,leads=[],savedCandidates=[c],target,brave=0;
+const original=global.fetch;
+global.fetch=async(url,options={})=>{
+ const u=new URL(url);requests.push(u);
+ if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fixture-user'})};
+ if(u.pathname==='/rest/v1/salesos_workspaces')return {ok:true,json:async()=>[{leads,factory:{candidates:savedCandidates,turnoverTarget:target}}]};
+ if(u.hostname==='api.company-information.service.gov.uk')return {ok:true,json:async()=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',type:'ltd',date_of_creation:c.incorporated,sic_codes:c.sicCodes,registered_office_address:{postal_code:c.postalCode},accounts:{last_accounts:{type:'small'}}})};
+ if(u.hostname==='api.search.brave.com'){brave++;return {ok:true,status:200,json:async()=>({web:{results:[]}})}}
+ assert.equal(options.headers.Authorization,undefined,'account token never forwarded to free sources');
+ assert.equal(options.redirect,'error','no untrusted provider redirects followed');
+ if(outage)throw Error('Fictional outage');
+ if(u.hostname==='api.uktradeinfo.com'){
+  if(u.pathname==='/Trader')return {ok:true,json:async()=>({value:noMatches?[]:[{CompanyName:c.company,PostCode:mismatch?'ZZ1 1ZZ':c.postalCode,TraderId:123}]})};
+  assert.equal(u.pathname,'/Trade');assert.equal(u.searchParams.has('$orderby'),false,'provider forbids this operation');assert.equal(u.searchParams.get('$top'),'12');
+  return {ok:true,json:async()=>({value:[{TraderId:123,TradeTypeId:1,MonthId:Number(now.slice(0,4)+now.slice(5,7)),Commodity:{Hs2Description:'Machinery'}},{TraderId:999,TradeTypeId:2,MonthId:202601}]})};
+ }
+ assert.equal(u.hostname,'api.gleif.org');
+ if(u.pathname.endsWith('/direct-parent'))return {ok:true,json:async()=>({data:{id:parent,attributes:{entity:{status:'ACTIVE',legalName:{name:'Fictional Parent Inc'},legalAddress:{country:'US'}},registration:{status:'ISSUED'}}}})};
+ assert.equal(u.searchParams.get('filter[entity.registeredAt]'),'RA000585');assert.equal(u.searchParams.get('filter[entity.registeredAs]'),c.companyNumber);
+ return {ok:true,json:async()=>({data:noMatches?[]:[badGLEIF?{...record,attributes:{...record.attributes,entity:{...record.attributes.entity,registeredAs:'99999999'}}}:record]})};
+};
+async function invoke(body){const res={statusCode:200,setHeader(){},end(s){this.body=JSON.parse(s)}};await handler({method:'POST',headers:{authorization:'Bearer fixture-token'},body},res);return res}
+(async()=>{try{
+ let context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'observed');assert.deepEqual(context.hmrc.directions,['Imports observed']);assert.equal(context.gleif.parents[0].name,'Fictional Parent Inc');assert.equal(lib.validCompanyContext(context),true);
+ record.relationships['direct-parent'].links.related='https://untrusted.example/steal';requests=[];context=await freeCompanyContext(c);assert.equal(context.gleif.parents.length,0);assert.ok(requests.every(u=>['api.uktradeinfo.com','api.gleif.org'].includes(u.hostname)),'provider links cannot redirect lookups to an arbitrary origin');record.relationships['direct-parent'].links.related='https://api.gleif.org/api/v1/lei-records/'+lei+'/direct-parent';
+ mismatch=true;badGLEIF=true;requests=[];context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'unknown');assert.equal(context.gleif.status,'unknown');assert.ok(!requests.some(u=>u.pathname==='/Trade'),'postcode mismatch does not claim another trader’s activity');
+ mismatch=false;badGLEIF=false;outage=true;context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'error');assert.equal(context.gleif.status,'error');outage=false;
+ noMatches=true;context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'unknown');assert.equal(context.gleif.status,'unknown');noMatches=false;
+ requests=[];await freeCompanyContext({...c,sector:'recruitment'});assert.ok(!requests.some(u=>u.hostname==='api.uktradeinfo.com'),'goods data never used as recruitment evidence');
+ process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake';process.env.COMPANIES_HOUSE_API_KEY='fake';delete process.env.BRAVE_SEARCH_API_KEY;
+ let r=await invoke({mode:'free-context',candidates:[c]});assert.equal(r.statusCode,200);assert.equal(brave,0);assert.equal(r.body.updates[0].companyContext.hmrc.status,'observed');
+ savedCandidates=[{...c,companyContext:r.body.updates[0].companyContext}];requests=[];r=await invoke({mode:'free-context',candidates:[c]});assert.equal(r.statusCode,200);assert.ok(!requests.some(u=>u.hostname==='api.gleif.org'||u.hostname==='api.uktradeinfo.com'),'persisted fresh context avoids provider requests');
+ const prior={...savedCandidates[0].companyContext,checkedAt:'2020-01-01T00:00:00Z'};savedCandidates=[{...c,companyContext:prior}];outage=true;r=await invoke({mode:'free-context',candidates:[c]});outage=false;
+ assert.equal(r.statusCode,200);assert.equal(r.body.providerErrors,2);assert.equal(r.body.updates[0].companyContext.hmrc.status,'observed');assert.deepEqual(r.body.updates[0].companyContext.gleif.parents,prior.gleif.parents);assert.ok(r.body.updates[0].companyContext.hmrc.refreshErrorAt,'failed refresh retains old facts with explicit source dates/error');
+ savedCandidates=[{...c,turnover:{...turnover,amount:31e6}}];process.env.BRAVE_SEARCH_API_KEY='fake';r=await invoke({mode:'web-enrich',candidates:[c]});assert.equal(r.statusCode,200);assert.equal(brave,0,'saved outside-range turnover gates Brave server-side');assert.match(r.body.updates[0].reason,/outside.*target/);
+ requests=[];r=await invoke({mode:'free-context',candidates:[c]});assert.equal(r.statusCode,200);assert.ok(!requests.some(u=>['api.uktradeinfo.com','api.gleif.org'].includes(u.hostname)),'out-of-range candidate does not spend free provider quota either');
+ savedCandidates=[{...c,turnover:{...turnover,amount:31e6,scope:'group'}}];r=await invoke({mode:'web-enrich',candidates:[c]});assert.equal(brave,2,'group revenue cannot exclude company');
+ target={min:5e6,max:20e6};savedCandidates=[{...c,turnover:{...turnover,amount:4e6}}];let before=brave;r=await invoke({mode:'web-enrich',candidates:[c]});assert.equal(brave,before,'adjusted saved target enforced');
+ const s=core.newState();f.addDiscoveries(s,[{...c,sourceUrl:'https://find-and-update.company-information.service.gov.uk/company/'+c.companyNumber,priority:25,reason:'Fictional registry fixture',foundAt:now,registryCheck:registry}],'goods',1);
+ const pristine=JSON.stringify({leads:s.leads,tasks:s.tasks,activities:s.activities,settings:s.settings,history:s.readinessHistory});
+ f.setTurnoverTarget(s,{min:3e6,max:30e6});f.setCandidateTurnover(s,'ch:'+c.companyNumber,turnover);
+ context=await freeCompanyContext(c);const update={id:'ch:'+c.companyNumber,expectedCheckedAt:'',registryCheck:registry,companyContext:context};f.applyCompanyContext(s,[update]);
+ assert.equal(f.qualityTier(f.leadFactory(s).candidates[0]),'research','trade/ownership context never grants sales clearance or strong FX confidence');
+ assert.throws(()=>f.applyCompanyContext(s,[update]),/changed/,'competing context updates cannot silently overwrite');
+ assert.equal(JSON.stringify({leads:s.leads,tasks:s.tasks,activities:s.activities,settings:s.settings,history:s.readinessHistory}),pristine);
+ f.addDiscoveries(s,[],'goods',2);assert.deepEqual(f.leadFactory(s).turnoverTarget,{min:3e6,max:30e6},'new discoveries preserve target');
+ const restored=core.normalize(JSON.parse(JSON.stringify(s)));assert.deepEqual(f.leadFactory(restored).candidates[0].companyContext,context);assert.deepEqual(f.leadFactory(restored).candidates[0].turnover,turnover);
+ const candidate=f.leadFactory(s).candidates[0];candidate.researchMethod='web-rule-screen';candidate.evidence=[{label:'Fictional supplier payments clue',sourceUrl:'https://fictional.example/trade',excerpt:'Fictional evidence for unit setup only',strength:'strong'}];candidate.priority=70;
+ f.markAvailable(s,candidate.id);f.moveCleared(s,[candidate.id]);assert.match(s.leads[0].researchRationale,/Fictional Parent Inc/);assert.match(s.leads[0].researchRationale,/GBP 3000000/);assert.equal(s.tasks.length,0,'research context transfer never creates outreach');assert.deepEqual(candidate.companyContext,context);
+ console.log('PASS: £3m–£30m entity turnover gates, adjustable target, unknown/group handling, exact HMRC/GLEIF matching, outages, cache, no Brave use, stale update guards and JSON preservation.');
+}catch(e){console.error(e);process.exitCode=1}finally{global.fetch=original}})();
