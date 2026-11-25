@@ -62,9 +62,13 @@ export function parsePhoneHistory(text:string,date:string){
  const distinct=rows.filter(row=>{if(unique.has(row.key)){warnings.push('Repeated number within the same minute at '+row.time+' to '+row.number+' was skipped to avoid double-counting; review separate genuine calls manually.');return false}unique.add(row.key);return true});
  return {rows:distinct,incoming,other,warnings};
 }
+// These options never change. Reuse the formatters rather than rebuilding the
+// timezone database for every historical call on each queue/count calculation.
+const callTimeFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const callDayFormatter=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'});
 function localParts(at:string){
  const d=new Date(at);if(!Number.isFinite(+d))return null;
- const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d);
+ const parts=callTimeFormatter.formatToParts(d);
  const part=(name:string)=>parts.find(p=>p.type===name)?.value||'';
  return {date:[part('year'),part('month'),part('day')].join('-'),minutes:Number(part('hour'))*60+Number(part('minute'))};
 }
@@ -131,7 +135,7 @@ export function importPhoneLog(s:State,rows:PhoneCallRow[],selections:ImportSele
  return {linked,unlogged,skipped,added:entries.length};
 }
 export function minuteKpi(s:State,now:Date){
- const todayParts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/London',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
+ const todayParts=callDayFormatter.formatToParts(now);
  const field=(name:string)=>todayParts.find(p=>p.type===name)?.value||'';
  const day=[field('year'),field('month'),field('day')].join('-');
  const imports=registry(s).records.filter(r=>r.date===day);

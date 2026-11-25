@@ -1,0 +1,21 @@
+// Bounded-work regression: one history scan per queue count, no stale mutable-state cache.
+const assert=require('node:assert/strict'),fs=require('node:fs'),cp=require('node:child_process'),os=require('node:os'),path=require('node:path'),vm=require('node:vm');
+const at='2026-11-25T10:00:00Z';class FixedDate extends Date{constructor(...args){super(...(args.length?args:[at]))}static now(){return Date.parse(at)}}
+let id=0;const box={module:{exports:{}},console,Date:FixedDate,crypto:{randomUUID:()=>`performance-${++id}`}};vm.runInNewContext(fs.readFileSync('public/legacy/core.js','utf8'),box);const core=box.module.exports;global.window={SalesCore:core};
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'salesos-performance-'));const compile=cp.spawnSync(process.execPath,['node_modules/typescript/bin/tsc','--target','es2022','--module','commonjs','--strict','--skipLibCheck','--outDir',dir,'--rootDir','src','src/lib/workQueues.ts'],{encoding:'utf8'});if(compile.status)throw Error(compile.stdout||compile.stderr);
+const OriginalFormat=Intl.DateTimeFormat;let constructors=0,conversions=0,limit=Infinity;
+Intl.DateTimeFormat=function(...args){constructors++;const format=new OriginalFormat(...args),parts=format.formatToParts.bind(format);format.formatToParts=date=>{if(++conversions>limit)throw Error('Queue counting repeatedly converted the same call history');return parts(date)};return format};
+const q=require(path.join(dir,'lib/workQueues.js')),k=require(path.join(dir,'lib/callLogImport.js'));Intl.DateTimeFormat=OriginalFormat;
+const clone=x=>JSON.parse(JSON.stringify(x)),now=new Date(at),s=core.newState();s.settings={...s.settings,coldCallMode:1,kpiFirstMode:0,intelligenceMode:2};
+for(let i=0;i<442;i++)core.createLead(s,{company:'Fictional Performance '+i,contact:'Fictional Buyer '+i,mobile:'07700900123',crmClearance:'cleared',crmCheckedAt:'2026-11-25',leadPool:i<170?'active':'reserve'});
+for(let i=0;i<600;i++)s.activities.push({id:'historical-'+i,taskId:'old-call-'+i,leadId:s.leads[i%170].id,type:'Call',callOutcome:'no_answer',outcome:'No answer',at,durationMins:0,xp:2,notes:''});
+try{
+ const original=clone(s),classes=q.queueClassifications(s,now),tasks=q.legacyActionableTasks(s,now),initialConstructors=constructors;
+ for(const enabled of [0,1]){s.settings.kpiFirstMode=enabled;conversions=0;limit=602;const counts=q.queueCounts(s,tasks,classes,now);assert.equal(counts.counts.standard,170);assert.equal(counts.commitments,0);assert.ok(conversions<=601,'Call history is converted once, not once per task');assert.equal(constructors,initialConstructors,'Timezone formatters are reused');limit=Infinity;}
+ s.settings.kpiFirstMode=0;assert.deepEqual(clone(s),original);
+ // Changes on the SAME object must refresh totals: do not cache by state identity.
+ assert.equal(k.minuteKpi(s,now).calls,600);s.activities.push({id:'next-call',taskId:'next-task',leadId:s.leads[0].id,type:'Call',callOutcome:'connected',outcome:'Meaningful conversation',at,durationMins:2.5,xp:15});const next=k.minuteKpi(s,now);assert.equal(next.calls,601);assert.equal(next.recordedSeconds,150);s.activities[s.activities.length-1].durationMins=3;assert.equal(k.minuteKpi(s,now).recordedSeconds,180);
+ console.log('PASS: 442-company/600-call queue counts use one history pass and reused timezone formatters; same-object activity changes are not stale');
+ const dates=core.newState();const call=(id,at)=>({id,taskId:id,type:'Call',callOutcome:'no_answer',outcome:'No answer',at,durationMins:0});dates.activities=[call('summer-current','2026-06-30T23:30:00Z'),call('summer-before','2026-06-30T22:30:00Z')];assert.equal(k.minuteKpi(dates,new Date('2026-07-01T00:05:00Z')).calls,1);dates.activities=[call('winter-before','2026-11-24T23:30:00Z')];assert.equal(k.minuteKpi(dates,new Date('2026-11-25T00:05:00Z')).calls,0);dates.activities=[call('bst','2026-10-25T00:30:00Z'),call('gmt','2026-10-25T01:30:00Z')];assert.equal(k.minuteKpi(dates,new Date('2026-10-25T12:00:00Z')).calls,2);
+ console.log('PASS: London summer/winter midnight and repeated DST-hour call totals remain correct');
+}catch(e){console.error(e);process.exitCode=1}finally{Intl.DateTimeFormat=OriginalFormat;fs.rmSync(dir,{recursive:true,force:true})}

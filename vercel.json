@@ -16,7 +16,8 @@
       "fix/pinned-phone-copy": false,
       "fix/compact-focus-screen": false,
       "fix/call-task-clarity": false,
-      "fix/restore-cold-call-toggle": false
+      "fix/restore-cold-call-toggle": false,
+      "fix/focus-performance": false
     }
   },
   "functions": {

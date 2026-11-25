@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "test:engine": "node tests/test_core.cjs",
     "test:import": "node tests/test_importer.cjs",
-    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues && npm run test:kpi-first && npm run test:call-log && npm run test:lead-factory && npm run test:lead-research-api && npm run test:lead-research-web && npm run test:lead-research-esm && npm run test:rule-score && npm run test:registry-quality",
+    "test": "npm run test:engine && npm run test:import && npm run test:reserve && npm run test:autosave && npm run test:intelligence && npm run test:focus && npm run test:salesforce-contacts && npm run test:research-feedback && npm run test:industry && npm run test:company-enrichment && npm run test:call-preparation && npm run test:work-queues && npm run test:kpi-first && npm run test:call-log && npm run test:lead-factory && npm run test:lead-research-api && npm run test:lead-research-web && npm run test:lead-research-esm && npm run test:rule-score && npm run test:registry-quality && npm run test:performance",
     "test:reserve": "node tests/test_reserve.cjs",
     "test:autosave": "node tests/test_autosave.cjs",
     "test:browser": "node tests/browser/run.cjs",
@@ -28,7 +28,8 @@
     "test:lead-research-esm": "node tests/test_lead_research_esm.cjs",
     "test:lead-research-web": "node tests/test_lead_research_web.cjs",
     "test:rule-score": "node tests/test_rule_score.cjs",
-    "test:registry-quality": "node tests/test_registry_quality.cjs"
+    "test:registry-quality": "node tests/test_registry_quality.cjs",
+    "test:performance": "node tests/test_performance.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.119.0",

@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: Focus performance
+
+PR #24 is released at `7f4c6ddf4cd7bfcbc228de70ae3b8ab3a69bd332`, Vercel READY `dpl_GyfttgkSKxkGRm1rUo56ZaCJ7awa`, canonical https://salesos-up-next7.vercel.app/. Manual Cold Call Mode and passive minute tracking are preserved.
+
+The user reports slow task navigation/call logging. `fix/focus-performance`, based on that main in `/workspace/salesos-performance`, removes repeated daily-minute calculations inside queue counting, reuses London timezone formatters, and memoizes unchanged Focus statistics (including the twice-rendered industry supply). A synthetic 442-company/600-call diagnostic reduced queue counting from ~5.85 seconds to ~5 milliseconds. No production records were used or changed; no business rules, data formats, APIs, settings or screen design change. See [measurement, regression coverage and limits](FOCUS_PERFORMANCE.md).
+
+Run build, all available unit/API/performance suites and the complete fictional browser suite, including large-workspace interaction checks and final-head CI. Existing state changes/time ticks must refresh derived values; do not add a stale state-identity cache to legacy mutable functions. Standing automatic release is authorised after fresh private backup, exact tested-tree deployment/alias and SELECT-only workspace preservation checks. Preserve PR #12 and other branches/worktrees. No migration or production record edit is required.
+
+---
+
 # Current update — 25 November 2026: restore manual Cold Call Mode
 
 The user prefers the original on/off Cold Call Mode over the “100-minute focus” badge. `fix/restore-cold-call-toggle` is based on current main `aea1d3a` (PRs #19–#23 Lead Factory/research are preserved). The toolbar always shows Cold call mode again. An explicit toggle atomically saves `coldCallMode` and disables the older `kpiFirstMode` queue gate, so OFF makes the full eligible queue available immediately and ON stays calls-only even after 100 minutes. Due promises/meetings, industry/queue filters and all contact/ownership checks retain their existing priority. Unchanged legacy settings remain compatible until the user chooses a mode; no automatic workspace migration occurs on load.
