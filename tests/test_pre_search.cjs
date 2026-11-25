@@ -18,14 +18,14 @@ assert.equal(needsRegistryRefresh({...check,checkedAt:new Date().toISOString()})
 process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake-public';process.env.COMPANIES_HOUSE_API_KEY='fake-ch';process.env.BRAVE_SEARCH_API_KEY='fake-brave';
 const candidate=(i,sector='recruitment')=>({company:'Fictional Trading '+i+' Ltd',companyNumber:String(12000000+i),sector,sicCodes:[sector==='goods'?'46620':'78200'],incorporated:'2016-01-01',status:'unchecked'});
 const profile=c=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',type:'ltd',sic_codes:c.sicCodes,date_of_creation:c.incorporated,accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}});
-let candidates=[],leads=[],overrides={},calls=[],brave=0,unavailable=false,providerStatus=200;
+let candidates=[],leads=[],overrides={},calls=[],brave=0,unavailable=false,missingWorkspace=false,providerStatus=200;
 const original=global.fetch;
 global.fetch=async(url,options)=>{
  const u=new URL(url);calls.push({url:u,options});
  if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fixture-user'})};
  if(u.pathname==='/rest/v1/salesos_workspaces'){
   assert.equal(u.searchParams.get('user_id'),'eq.fixture-user');assert.equal(options.headers.Authorization,'Bearer fixture-token');
-  return {ok:!unavailable,json:async()=>[{leads,factory:{candidates}}]};
+  return {ok:!unavailable,json:async()=>missingWorkspace?[]:[{leads,factory:{candidates}}]};
  }
  if(u.pathname.startsWith('/company/')){const c=candidates.find(c=>c.companyNumber===u.pathname.split('/').pop());return {ok:true,json:async()=>({...profile(c),...overrides[c.companyNumber]})}}
  if(u.pathname==='/advanced-search/companies')return {ok:true,status:200,json:async()=>({items:candidates.map(c=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',company_type:'ltd',sic_codes:c.sicCodes,date_of_creation:c.incorporated}))})};
@@ -52,6 +52,7 @@ async function saved(rows){return invoke({mode:'web-enrich',candidates:rows})}
  candidates[0].status='held';r=await saved(candidates);assert.equal(r.statusCode,409);assert.equal(brave,before);candidates[0].status='unchecked';
  r=await saved([candidates[0],candidates[0]]);assert.equal(r.statusCode,409);assert.equal(brave,before,'duplicate batch costs zero');
  unavailable=true;r=await saved(candidates);assert.equal(r.statusCode,503);assert.equal(brave,before,'cloud screening outage fails closed');unavailable=false;
+ missingWorkspace=true;r=await invoke({profile:'recruitment',cursor:0});assert.equal(r.statusCode,503);assert.equal(brave,before,'missing workspace is not assumed empty');missingWorkspace=false;
  candidates=Array.from({length:4},(_,i)=>candidate(i+1,i%2?'goods':'recruitment'));r=await saved(candidates);
  assert.equal(r.statusCode,200);assert.equal(brave-before,8,'four eligible companies, mixed sectors, at most eight requests');assert.equal(r.body.webCompleted,4);
  before=brave;providerStatus=429;r=await saved(candidates);assert.equal(r.statusCode,429);assert.ok(brave-before<=2,'in-flight pair stops later sectors/batches on rate limit');providerStatus=200;

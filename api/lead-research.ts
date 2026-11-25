@@ -108,7 +108,7 @@ export default async function handler(req:Request,res:ServerResponse){
    const saved=await fetch(url.replace(/\/$/,'')+'/rest/v1/salesos_workspaces?'+query,{headers:{apikey:publishable,Authorization:'Bearer '+token},signal:AbortSignal.timeout(9000)});
    if(!saved.ok)return respond(res,503,{error:'Could not check your saved companies. No search credits spent; retry when cloud saving is available.'});
    const rows=await saved.json() as WorkspaceScreen[];
-   if(!Array.isArray(rows)||rows.length>1||(rows[0]&&(!Array.isArray(rows[0].leads)||(rows[0].factory!==null&&!Array.isArray(rows[0].factory?.candidates)))))
+   if(!Array.isArray(rows)||rows.length!==1||!Array.isArray(rows[0]?.leads)||(rows[0].factory!==null&&!Array.isArray(rows[0].factory?.candidates)))
     return respond(res,503,{error:'Saved company screening was unavailable. No search credits spent.'});
    if(rows[0])known=rows[0];
   }
