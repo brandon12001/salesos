@@ -1,10 +1,11 @@
 import type {State,Lead} from '../types';
 import {core} from './core';
-import {turnoverTarget,validTurnover,validCompanyContext,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
+import {preSearchScreen} from './researchScreen';
+import {turnoverTarget,turnoverFit,validTurnover,validCompanyContext,hmrcQualified,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
 
 export type ResearchSector='recruitment'|'goods';
 export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string;postalCode?:string};
-export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>;webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
+export type Discovery={company:string;companyNumber:string;sector:ResearchSector;sicCodes:string[];incorporated:string;sourceUrl:string;priority:number;reason:string;foundAt:string;registryCheck?:RegistryCheck;companyContext?:CompanyContext;turnover?:TurnoverEvidence;researchMethod?:'registry-only'|'web-rule-screen';researchConfidence?:'Low'|'Medium';evidence?:Array<{label:string;sourceUrl:string;excerpt:string;strength:'strong'|'supporting'}>;webCheckedAt?:string;webQueries?:number;fxHypothesis?:string;discoveryQuestion?:string};
 export type RegistryUpdate={id:string;registryCheck:RegistryCheck;priority:number};
 export type WebResearchUpdate={id:string;registryCheck:RegistryCheck;priority:number;reason:string;researchMethod:'registry-only'|'web-rule-screen';researchConfidence:'Low'|'Medium';evidence:NonNullable<Discovery['evidence']>;webCheckedAt:string;webQueries:number;fxHypothesis:string;discoveryQuestion:string};
 export type QualityTier='ready'|'research'|'flagged'|'excluded';
@@ -13,7 +14,7 @@ export function qualityTier(c:Discovery):QualityTier{
  if(c.registryCheck?.risk==='review')return 'flagged';
  if(c.registryCheck?.risk!=='ok')return 'research';
  const strong=(c.evidence||[]).some(e=>e.strength==='strong'&&/^https:\/\//.test(e.sourceUrl));
- return c.researchMethod==='web-rule-screen'&&strong?'ready':'research';
+ return c.researchMethod==='web-rule-screen'&&strong||hmrcQualified(c)&&preSearchScreen(c.sector,c.registryCheck).eligible?'ready':'research';
 }
 export function candidatePriority(c:Discovery){
  if(c.registryCheck?.risk==='excluded')return 0;
@@ -25,7 +26,8 @@ export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:str
 type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string;turnoverTarget?:TurnoverTarget};
 export type ContextUpdate={id:string;expectedCheckedAt:string;registryCheck:RegistryCheck;companyContext:CompanyContext};
 const MAX=600;
-export const researchProfiles=[{id:'recruitment',label:'Recruitment & contractor payroll'},{id:'goods',label:'Machinery & equipment distribution'}] as const;
+export function clearanceReady(s:State,c:Discovery){return qualityTier(c)==='ready'&&turnoverFit(c.turnover,leadFactory(s).turnoverTarget).eligible}
+export const researchProfiles=[{id:'recruitment',label:'Recruitment & contractor payroll'},{id:'goods',label:'Machinery & equipment · HMRC first'}] as const;
 export function leadFactory(s:State):Registry{
  const raw=s.meta.leadFactory as Registry|undefined;
  if(raw&&raw.version===1&&Array.isArray(raw.candidates)&&raw.cursors&&typeof raw.cursors==='object')return raw;
@@ -45,6 +47,7 @@ function ensureValid(d:Discovery){
   if(d.priority>75&&hosts.size<2)throw Error('Scores over 75 require independent websites.');
  }
  if(d.sourceUrl!==`https://find-and-update.company-information.service.gov.uk/company/${reg(d.companyNumber)}`)throw Error('Research source must be the official Companies House legal-entity record.');
+ if(d.companyContext&&!validCompanyContext(d.companyContext))throw Error('Invalid dated company context.');
  if(d.registryCheck){
   if(!['ok','review','excluded','unverified'].includes(d.registryCheck.risk)||!Array.isArray(d.registryCheck.flags)||!isDate(d.registryCheck.checkedAt.slice(0,10)))throw Error('Invalid official registry screening.');
   if(d.priority>35&&qualityTier(d)!=='ready')throw Error('High research priority requires an operational company and strong source-linked evidence.');
@@ -56,8 +59,8 @@ function inExisting(s:State,d:Discovery){
  return s.leads.some(l=>reg(l.companyNumber)===r||(nameKey(l.company)===n&&(reg(l.companyNumber)===''||reg(l.companyNumber)===r)));
 }
 function save(s:State,r:Registry){s.meta={...s.meta,leadFactory:r}}
-export function addDiscoveries(s:State,rows:Discovery[],profile:ResearchSector,nextCursor:number){
- if(!['recruitment','goods'].includes(profile)||!Array.isArray(rows)||rows.length>100||!Number.isSafeInteger(nextCursor)||nextCursor<0||nextCursor>10000)throw Error('Invalid research batch.');
+export function addDiscoveries(s:State,rows:Discovery[],profile:ResearchSector,nextCursor:number,cursorKey:ResearchSector|'hmrc-goods'=profile){
+ if(!['recruitment','goods'].includes(profile)||!['recruitment','goods','hmrc-goods'].includes(cursorKey)||cursorKey==='hmrc-goods'&&profile!=='goods'||!Array.isArray(rows)||rows.length>100||!Number.isSafeInteger(nextCursor)||nextCursor<0||nextCursor>10000)throw Error('Invalid research batch.');
  rows.forEach(ensureValid);
  const current=leadFactory(s),records=current.candidates.slice(),seen=new Set(records.map(c=>reg(c.companyNumber))),batch=new Set<string>();
  let added=0,existing=0;
@@ -67,7 +70,7 @@ export function addDiscoveries(s:State,rows:Discovery[],profile:ResearchSector,n
   if(records.length>=MAX)throw Error('Lead Research queue is full (600). Process or dismiss existing companies before scanning again.');
   batch.add(companyNumber);records.push({...row,company:row.company.trim(),companyNumber,id:'ch:'+companyNumber,status:'unchecked'});added++;
  }
- save(s,{...current,version:1,candidates:records,cursors:{...current.cursors,[profile]:nextCursor},lastRunAt:new Date().toISOString()});
+ save(s,{...current,version:1,candidates:records,cursors:{...current.cursors,[cursorKey]:nextCursor},lastRunAt:new Date().toISOString()});
  return {added,existing};
 }
 /** Re-screen an existing backlog in batches. Keep all user CRM decisions untouched. */
@@ -110,6 +113,7 @@ export function applyWebResearch(s:State,updates:WebResearchUpdate[]){
  if(targets.some(c=>!!c?.webCheckedAt))throw Error('A company was already researched while this request ran. Refresh instead of overwriting its evidence.');
  for(let i=0;i<updates.length;i++){
   const c=targets[i]!,u=updates[i];
+  if(u.webQueries===0){c.registryCheck=u.registryCheck;continue}
   c.registryCheck=u.registryCheck;c.priority=u.priority;c.reason=u.reason;
   c.researchMethod=u.researchMethod;c.researchConfidence=u.researchConfidence;c.evidence=u.evidence;
   c.fxHypothesis=u.fxHypothesis;c.discoveryQuestion=u.discoveryQuestion;
@@ -121,7 +125,7 @@ export function applyWebResearch(s:State,updates:WebResearchUpdate[]){
 export function markAvailable(s:State,id:string){
  const r=leadFactory(s),c=r.candidates.find(x=>x.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked research candidates can be cleared.');
- if(qualityTier(c)!=='ready')throw Error('Company needs verified active registry status and source-backed international payment evidence before Salesforce clearance.');
+ if(!clearanceReady(s,c))throw Error('Company needs verified active registry status, supported research evidence and eligible turnover before Salesforce clearance.');
  if(inExisting(s,c))throw Error('This company already exists in SalesOS; review it rather than clearing another copy.');
  c.status='cleared';c.checkedAt=core.today();c.crmNote='Manually checked Salesforce duplicate search; no matching owned company found.';
  save(s,r);
@@ -146,7 +150,7 @@ function alreadyInLeads(s:State,c:Candidate){
 export function markOwned(s:State,id:string,owner:string,lastActivityAt=''){
  const r=leadFactory(s),c=r.candidates.find(x=>x.id===id);
  if(!c||c.status!=='unchecked')throw Error('Only unchecked candidates can be marked as owned.');
- if(qualityTier(c)!=='ready')throw Error('Research this company before starting Salesforce ownership checks.');
+ if(!clearanceReady(s,c))throw Error('Research this company before starting Salesforce ownership checks.');
  if(!owner.trim()||owner.trim().length>120)throw Error('Record the Salesforce owner name.');
  if(lastActivityAt&&(!isDate(lastActivityAt)||lastActivityAt>core.today()))throw Error('Last qualifying activity date must be a valid past date, or left blank.');
  if(alreadyInLeads(s,c))throw Error('Company already exists in SalesOS. Review its Salesforce ownership there.');
@@ -158,7 +162,7 @@ export function markOwned(s:State,id:string,owner:string,lastActivityAt=''){
 export function moveCleared(s:State,ids:string[]){
  if(!Array.isArray(ids)||!ids.length||ids.length>600||new Set(ids).size!==ids.length)throw Error('Choose one or more unique cleared companies.');
  const r=leadFactory(s),records=ids.map(id=>r.candidates.find(c=>c.id===id));
- if(records.some(c=>!c||c.status!=='cleared'||!c.checkedAt||qualityTier(c)!=='ready'||inExisting(s,c)))throw Error('A selected company lacks current research evidence, is not cleared, or is already in SalesOS. Refresh the queue.');
+ if(records.some(c=>!c||c.status!=='cleared'||!c.checkedAt||!clearanceReady(s,c)||inExisting(s,c)))throw Error('A selected company lacks current research evidence, is not cleared, or is already in SalesOS. Refresh the queue.');
  let moved=0;
  for(const c of records as Candidate[]){
   const lead=core.createLead(s,reserveData(c,'cleared')) as Lead&{duplicate?:Lead};
@@ -183,7 +187,7 @@ export function applyCompanyContext(s:State,updates:ContextUpdate[]){
  const r=leadFactory(s);
  if(!Array.isArray(updates)||!updates.length||updates.length>4||new Set(updates.map(u=>u.id)).size!==updates.length)throw Error('Choose up to four unique companies.');
  const cs=updates.map(u=>r.candidates.find(c=>c.id===u.id));
- if(cs.some((c,i)=>!c||c.status!=='unchecked'||(c.companyContext?.checkedAt||'')!==updates[i].expectedCheckedAt||
+ if(cs.some((c,i)=>!c||!['unchecked','cleared'].includes(c.status)||(c.companyContext?.checkedAt||'')!==updates[i].expectedCheckedAt||
   !validCompanyContext(updates[i].companyContext)||!updates[i].registryCheck||!['ok','review','excluded','unverified'].includes(updates[i].registryCheck.risk)||!Array.isArray(updates[i].registryCheck.flags)))
   throw Error('A context record changed or a source response was invalid. Refresh; existing evidence retained.');
  cs.forEach((c,i)=>{c!.companyContext=updates[i].companyContext;c!.registryCheck=updates[i].registryCheck});save(s,r);

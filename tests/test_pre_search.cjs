@@ -4,6 +4,7 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'salesos-pre-search-'));
 const build=cp.spawnSync(process.execPath,['node_modules/typescript/bin/tsc','--target','es2022','--module','commonjs','--strict','--skipLibCheck','--outDir',dir,'--rootDir','.','api/lead-research.ts'],{encoding:'utf8'});
 if(build.status)throw Error(build.stdout||build.stderr);
 const handler=require(path.join(dir,'api/lead-research.js')).default;
+const hmrcFixture=require('./hmrc_fixture.cjs');
 const {preSearchScreen,needsRegistryRefresh}=require(path.join(dir,'src/lib/researchScreen.js'));
 const now='2026-11-25T12:00:00Z',check={risk:'ok',checkedAt:now,accountsType:'micro-entity',companyType:'ltd',incorporated:'2024-11-25',sicCodes:['78200']};
 assert.equal(preSearchScreen('recruitment',check,now).eligible,true,'exact two-year boundary and micro accounts allowed; size not guessed');
@@ -17,7 +18,7 @@ assert.equal(needsRegistryRefresh(undefined),true);
 assert.equal(needsRegistryRefresh({...check,checkedAt:new Date().toISOString()}),false);
 process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake-public';process.env.COMPANIES_HOUSE_API_KEY='fake-ch';process.env.BRAVE_SEARCH_API_KEY='fake-brave';
 const candidate=(i,sector='recruitment')=>({company:'Fictional Trading '+i+' Ltd',companyNumber:String(12000000+i),sector,sicCodes:[sector==='goods'?'46620':'78200'],incorporated:'2016-01-01',status:'unchecked'});
-const profile=c=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',type:'ltd',sic_codes:c.sicCodes,date_of_creation:c.incorporated,accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}});
+const profile=c=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',type:'ltd',sic_codes:c.sicCodes,date_of_creation:c.incorporated,registered_office_address:{postal_code:'SW1A 1AA'},accounts:{last_accounts:{type:'small'},next_accounts:{overdue:false}},confirmation_statement:{overdue:false}});
 let candidates=[],leads=[],overrides={},calls=[],brave=0,unavailable=false,missingWorkspace=false,providerStatus=200;
 const original=global.fetch;
 global.fetch=async(url,options)=>{
@@ -25,7 +26,7 @@ global.fetch=async(url,options)=>{
  if(u.pathname==='/auth/v1/user')return {ok:true,json:async()=>({id:'fixture-user'})};
  if(u.pathname==='/rest/v1/salesos_workspaces'){
   assert.equal(u.searchParams.get('user_id'),'eq.fixture-user');assert.equal(options.headers.Authorization,'Bearer fixture-token');
-  return {ok:!unavailable,json:async()=>missingWorkspace?[]:[{leads,factory:{candidates}}]};
+  return {ok:!unavailable,json:async()=>missingWorkspace?[]:[{leads,factory:{candidates:candidates.map(c=>c.sector==='goods'?{...c,companyContext:hmrcFixture(c.company)}:c)}}]};
  }
  if(u.pathname.startsWith('/company/')){const c=candidates.find(c=>c.companyNumber===u.pathname.split('/').pop());return {ok:true,json:async()=>({...profile(c),...overrides[c.companyNumber]})}}
  if(u.pathname==='/advanced-search/companies')return {ok:true,status:200,json:async()=>({items:candidates.map(c=>({company_name:c.company,company_number:c.companyNumber,company_status:'active',company_type:'ltd',sic_codes:c.sicCodes,date_of_creation:c.incorporated}))})};

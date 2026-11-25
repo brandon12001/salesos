@@ -19,7 +19,8 @@
       "fix/restore-cold-call-toggle": false,
       "fix/focus-performance": false,
       "feat/pre-search-screening": false,
-      "feat/free-company-context": false
+      "feat/free-company-context": false,
+      "feat/hmrc-first-qualification": false
     }
   },
   "functions": {
