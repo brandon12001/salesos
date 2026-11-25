@@ -113,10 +113,11 @@ export function focusDecision(s:State,d:Decision,now:Date,classes=queueClassific
 }
 export function queueCounts(s:State,tasks:Task[],classes:Map<string,WorkClassification>,now:Date){
  const counts={opportunity:0,qualified:0,gold:0,standard:0},seen=new Set<string>();let commitments=0;
+ const phase=callKpi(s,now),callsOnly=phase.enabled?phase.active:s.settings.coldCallMode===1;
  for(const t of filteredIndustryTasks(s,tasks)){
   if(seen.has(t.id)||!isDue(t,now)||taskRestriction(s,t,now,false,s.settings.intelligenceMode===1))continue;seen.add(t.id);
   if(protectedTask(t)){commitments++;continue;}
-  if((callKpi(s,now).enabled?callKpi(s,now).active:s.settings.coldCallMode===1)&&!['call','callback'].includes(t.type))continue;
+  if(callsOnly&&!['call','callback'].includes(t.type))continue;
   counts[classes.get(t.leadId||'')?.category||'standard']++;
  }
  return {counts,commitments,total:Object.values(counts).reduce((n,c)=>n+c,0)+commitments};
