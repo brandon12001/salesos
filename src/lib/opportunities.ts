@@ -18,8 +18,9 @@ export function opportunityEvidence(s:State,l:Lead,now:Date){
  // rows remain visible with restrictions; history never grants outreach clearance.
  const calls=s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['Meaningful conversation','Callback requested','Meeting booked'].includes(a.outcome)&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now&&l.contacts.some(c=>c.id===a.contactId&&c.name.trim())).sort((a,b)=>b.at.localeCompare(a.at));
  const meeting=calls.find(a=>a.outcome==='Meeting booked');
+ const milestone=s.activities.filter(a=>a.leadId===l.id&&a.type==='Pipeline'&&['Meeting Booked','Successful Meeting','Onboarding','Account Open','First Trade'].includes(String(a.newStage))&&a.notes.trim()&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now).sort((a,b)=>b.at.localeCompare(a.at))[0];
  const history=s.readinessHistory.find(h=>h.leadId===l.id&&h.to===l.readiness&&h.to>=3&&h.evidence===l.readinessEvidence&&h.at===l.readinessUpdatedAt&&h.evidence.trim()&&Number.isFinite(Date.parse(h.at))&&Date.parse(h.at)<=+now);
- const candidates=[...(meeting?[{evidence:meeting.notes||'Buyer agreed to a meeting (recorded call).',at:meeting.at,contactId:meeting.contactId||''}]:[]),...(history&&calls[0]?[{evidence:history.evidence,at:history.at,contactId:calls[0].contactId||''}]:[])].sort((a,b)=>b.at.localeCompare(a.at));
+ const candidates=[...(milestone?[{evidence:milestone.notes,at:milestone.at,contactId:milestone.contactId||''}]:[]),...(meeting?[{evidence:meeting.notes||'Buyer agreed to a meeting (recorded call).',at:meeting.at,contactId:meeting.contactId||''}]:[]),...(history&&calls[0]?[{evidence:history.evidence,at:history.at,contactId:calls[0].contactId||''}]:[])].sort((a,b)=>b.at.localeCompare(a.at));
  const source=candidates[0],correction=queueEvents(s,l.id)[0];
  if(source&&(!correction||Date.parse(correction.at)<Date.parse(source.at)))return source;
  return null;
