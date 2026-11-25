@@ -1,3 +1,11 @@
+# Current update — 25 November 2026: keep contact repair outside Focus
+
+Released base PR #29 is `448cbce740620a394e65158834d1eefe858a9048`. The user asked to remove “Resolve contact details” tasks from Focus for now. `fix/focus-outreach-only` in `/workspace/salesos-focus-outreach` filters routine research tasks from both Focus engines, session plans and queue counts, including already-viewed pending suggestions. Contact Resolution/Task Queue retain the original pending records. Explicit promises, callbacks and meetings remain protected. No deletion, completion, snoozing, production prospect edit, setting migration or core engine rewrite.
+
+Run install/build/all suites and full fictional browser checks plus final-head CI. Standing automatic release applies after fresh private recoverable workspace backup and exact tested-tree/production READY/alias verification. SELECT-only preservation checks must retain all prospects, history, settings and the existing private search-budget ledger. No SQL migration is needed. Preserve previous worktrees and PR #12; live protected sign-in remains manual. Track the release PR for exact results.
+
+---
+
 # Current update — 25 November 2026: trade activity and search budget
 
 Released base PR #28 is `7237dc863a4e7f645bf4c1fbeb74d5c28b6d156b`, Vercel READY `dpl_7xjmP8aZNEUeNrdokR5NWhLYr8Po`, canonical https://salesos-up-next7.vercel.app/. The user accepted better trade-frequency ranking and a search-budget guard. Work is isolated on `feat/research-budget-ranking` in `/workspace/salesos-research-budget`.
