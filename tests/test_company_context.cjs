@@ -15,7 +15,7 @@ const c={company:'Fictional Machinery Limited',companyNumber:'15000001',sector:'
 const registry={risk:'ok',checkedAt:now,flags:[],companyStatus:'active',statusDetail:'',accountsType:'small',accountsOverdue:false,confirmationOverdue:false,companyType:'ltd',sicCodes:c.sicCodes,incorporated:c.incorporated,postalCode:c.postalCode};
 const lei='12345678901234567890',parent='22345678901234567890';
 const record={id:lei,attributes:{entity:{registeredAt:{id:'RA000585'},registeredAs:c.companyNumber,legalName:{name:c.company},status:'ACTIVE'},registration:{status:'ISSUED'}},relationships:{'direct-parent':{links:{related:'https://api.gleif.org/api/v1/lei-records/'+lei+'/direct-parent'}}}};
-let requests=[],mismatch=false,outage=false,noMatches=false,badGLEIF=false,leads=[],savedCandidates=[c],target,brave=0;
+let requests=[],mismatch=false,wrongLegalType=false,outage=false,noMatches=false,badGLEIF=false,leads=[],savedCandidates=[c],target,brave=0;
 const original=global.fetch;
 global.fetch=async(url,options={})=>{
  const u=new URL(url);requests.push(u);
@@ -27,7 +27,7 @@ global.fetch=async(url,options={})=>{
  assert.equal(options.redirect,'error','no untrusted provider redirects followed');
  if(outage)throw Error('Fictional outage');
  if(u.hostname==='api.uktradeinfo.com'){
-  if(u.pathname==='/Trader')return {ok:true,json:async()=>({value:noMatches?[]:[{CompanyName:c.company,PostCode:mismatch?'ZZ1 1ZZ':c.postalCode,TraderId:123}]})};
+  if(u.pathname==='/Trader')return {ok:true,json:async()=>({value:noMatches?[]:[{CompanyName:c.company.replace('Limited',wrongLegalType?'PLC':'LTD'),PostCode:mismatch?'ZZ1 1ZZ':c.postalCode,TraderId:123}]})};
   assert.equal(u.pathname,'/Trade');assert.equal(u.searchParams.has('$orderby'),false,'provider forbids this operation');assert.equal(u.searchParams.get('$top'),'12');
   return {ok:true,json:async()=>({value:[{TraderId:123,TradeTypeId:1,MonthId:Number(now.slice(0,4)+now.slice(5,7)),Commodity:{Hs2Description:'Machinery'}},{TraderId:999,TradeTypeId:2,MonthId:202601}]})};
  }
@@ -39,6 +39,7 @@ global.fetch=async(url,options={})=>{
 async function invoke(body){const res={statusCode:200,setHeader(){},end(s){this.body=JSON.parse(s)}};await handler({method:'POST',headers:{authorization:'Bearer fixture-token'},body},res);return res}
 (async()=>{try{
  let context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'observed');assert.deepEqual(context.hmrc.directions,['Imports observed']);assert.equal(context.gleif.parents[0].name,'Fictional Parent Inc');assert.equal(lib.validCompanyContext(context),true);
+ wrongLegalType=true;requests=[];context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'unknown');assert.ok(!requests.some(u=>u.pathname==='/Trade'),'PLC parent cannot substitute for similarly named Ltd at the same postcode');wrongLegalType=false;
  record.relationships['direct-parent'].links.related='https://untrusted.example/steal';requests=[];context=await freeCompanyContext(c);assert.equal(context.gleif.parents.length,0);assert.ok(requests.every(u=>['api.uktradeinfo.com','api.gleif.org'].includes(u.hostname)),'provider links cannot redirect lookups to an arbitrary origin');record.relationships['direct-parent'].links.related='https://api.gleif.org/api/v1/lei-records/'+lei+'/direct-parent';
  mismatch=true;badGLEIF=true;requests=[];context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'unknown');assert.equal(context.gleif.status,'unknown');assert.ok(!requests.some(u=>u.pathname==='/Trade'),'postcode mismatch does not claim another trader’s activity');
  mismatch=false;badGLEIF=false;outage=true;context=await freeCompanyContext(c);assert.equal(context.hmrc.status,'error');assert.equal(context.gleif.status,'error');outage=false;

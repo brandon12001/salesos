@@ -10,6 +10,9 @@ async function get(url:string){
  if(!r.ok)throw Error('Provider unavailable');return r.json();
 }
 const postcode=(s:string)=>String(s||'').toUpperCase().replace(/\s/g,'');
+// HMRC has no Companies House number: retain legal type and "The" so a
+// similarly named, co-located parent/PLC cannot stand in for the Ltd entity.
+const traderName=(s:unknown)=>typeof s==='string'?s.toLowerCase().replace(/\blimited\b/g,'ltd').replace(/[^a-z0-9]/g,''):'';
 async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
  if(c.sector!=='goods')return {status:'not-applicable',sourceUrl:hmrcSource,summary:'HMRC goods-trade data does not cover recruitment services.'};
  if(!c.postalCode)return {status:'unknown',sourceUrl:hmrcSource,summary:'Registry postcode unavailable; no HMRC company match asserted.'};
@@ -19,7 +22,7 @@ async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
   const qs=new URLSearchParams({'$filter':"startswith(tolower(CompanyName),'"+prefix+"')",'$select':'TraderId,CompanyName,PostCode','$top':'10'});
   const found=await get(HMRC+'/Trader?'+qs);
   if(!Array.isArray(found.value))throw Error('Invalid trader response');
-  const matches=found.value.filter((x:any)=>researchNameKey(x.CompanyName)===researchNameKey(c.company)&&postcode(x.PostCode)===postcode(c.postalCode!));
+  const matches=found.value.filter((x:any)=>traderName(x.CompanyName)===traderName(c.company)&&postcode(x.PostCode)===postcode(c.postalCode!));
   if(matches.length!==1||!Number.isSafeInteger(matches[0].TraderId)||matches[0].TraderId<=0)
    return {status:'unknown',sourceUrl:hmrcSource,summary:'No unique HMRC name-and-postcode match in the bounded search. Coverage is incomplete; this is not evidence of no overseas trade.'};
   const id=matches[0].TraderId;
