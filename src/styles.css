@@ -229,3 +229,4 @@
  .focus-heading-right { max-width: 45%; }
  .focus-heading-right .badge { white-space: normal; text-align: center; overflow-wrap: anywhere; }
 }
+.sidebar nav{min-height:0;overflow-y:auto;overscroll-behavior:contain}.sidebar-heading,.sidebar-footer{flex-shrink:0}
