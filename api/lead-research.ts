@@ -1,8 +1,9 @@
 import {ruleScore,type SearchHit,type Signal} from './rule-score.js';
 import {assessRegistry,screenedPriority,PROFILE_LIMIT,type CompanyProfile,type RegistryCheck} from './registry-quality.js';
 import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js';
-import {turnoverFit,turnoverTarget,needsCompanyContext,retainContextOnFailure,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from '../src/lib/companyContext.js';
+import {turnoverFit,turnoverTarget,needsCompanyContext,retainContextOnFailure,hmrcQualified,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from '../src/lib/companyContext.js';
 import {freeCompanyContext} from '../server/freeCompanyContext.js';
+import {discoverHMRC} from '../server/hmrcDiscovery.js';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 
 type Request=IncomingMessage&{body?:unknown};
@@ -52,7 +53,8 @@ async function enrichWeb(items:ResearchItem[],blocked:KnownCompany[]=[],known?:W
  const screened=items.map(c=>{
   const registry=preSearchScreen(c.sector,c.registryCheck),saved=known?.factory?.candidates.find(k=>sameResearchCompany(k,c));
   const fit=turnoverFit(saved?.turnover,target);
-  return {c,gate:{eligible:registry.eligible&&fit.eligible,reasons:[...registry.reasons,fit.reason]}};
+  const tradeOK=c.sector!=='goods'||hmrcQualified({...c,companyContext:saved?.companyContext});
+  return {c,gate:{eligible:registry.eligible&&fit.eligible&&tradeOK,reasons:[...registry.reasons,fit.reason,...(!tradeOK?['A recent matched HMRC trade record is required before optional goods web research. Run free checks first; missing data does not disqualify the company.']:[])]}};
  });
  const eligible=screened.filter(({c,gate})=>gate.eligible&&!blocked.some(b=>sameResearchCompany(c,b)))
   .map(({c})=>c).sort((a,b)=>b.priority-a.priority).slice(0,MAX_WEB_COMPANIES);
@@ -128,7 +130,7 @@ export default async function handler(req:Request,res:ServerResponse){
      typeof x.incorporated!=='string'||x.incorporated.length>15))
     return respond(res,400,{error:'Select up to four existing companies for web research.'});
    if(new Set(cs.map(c=>c.companyNumber.toUpperCase())).size!==cs.length||
-    cs.some(c=>!known.factory?.candidates.some(s=>s.companyNumber===c.companyNumber.toUpperCase()&&s.company===c.company&&s.sector===c.sector&&s.status==='unchecked'&&(input.mode==='free-context'||!s.webCheckedAt))))
+    cs.some(c=>!known.factory?.candidates.some(s=>s.companyNumber===c.companyNumber.toUpperCase()&&s.company===c.company&&s.sector===c.sector&&(s.status==='unchecked'||input.mode==='free-context'&&s.status==='cleared')&&(input.mode==='free-context'||!s.webCheckedAt))))
     return respond(res,409,{error:'A selected company is already researched, unavailable or not saved yet. Refresh the queue after cloud saving completes.'});
    if(input.mode==='web-enrich'&&!process.env.BRAVE_SEARCH_API_KEY)return respond(res,503,{error:'Add the Brave Search server-side key before running website research.'});
    const checks:ResearchItem[]=await batches(cs,4,async c=>{
@@ -145,7 +147,7 @@ export default async function handler(req:Request,res:ServerResponse){
      const saved=known.factory!.candidates.find(k=>k.companyNumber===c.companyNumber)!;
      const eligible=preSearchScreen(c.sector,c.registryCheck).eligible&&turnoverFit(saved.turnover,known.factory?.turnoverTarget).eligible;
      const companyContext=!eligible?saved.companyContext||{checkedAt:now,hmrc:{status:'unknown' as const,sourceUrl:'https://www.uktradeinfo.com/search/traders/',summary:'Pre-search filters require review; lookup not run.'},gleif:{status:'unknown' as const,sourceUrl:'https://www.gleif.org/en/lei-data/gleif-api',summary:'Pre-search filters require review; lookup not run.'}}:
-      saved.companyContext&&!needsCompanyContext(saved.companyContext)?saved.companyContext:retainContextOnFailure(saved.companyContext,await freeCompanyContext({...c,postalCode:c.registryCheck.postalCode},new Date(now)));
+      saved.companyContext&&!needsCompanyContext(saved.companyContext)?saved.companyContext:retainContextOnFailure(saved.companyContext,await freeCompanyContext({...c,postalCode:c.registryCheck.postalCode},new Date(now),saved.companyContext));
      return {id:'ch:'+c.companyNumber,expectedCheckedAt:saved.companyContext?.checkedAt||'',registryCheck:c.registryCheck,companyContext};
     });
     return respond(res,200,{mode:'free-context',updates,braveSearches:0,providerErrors:updates.reduce((n,u)=>n+Number(u.companyContext.hmrc.status==='error'||!!u.companyContext.hmrc.refreshErrorAt)+Number(u.companyContext.gleif.status==='error'||!!u.companyContext.gleif.refreshErrorAt),0)});
@@ -167,6 +169,10 @@ export default async function handler(req:Request,res:ServerResponse){
    if(!Array.isArray(cs)||!cs.length||cs.length>PROFILE_LIMIT||cs.some(x=>!x||!validNumber(x.companyNumber)||!['recruitment','goods'].includes(x.sector)||typeof x.company!=='string'||!x.company.trim()||x.company.length>220||!Array.isArray(x.sicCodes)||x.sicCodes.length>6||x.sicCodes.some(z=>!/^\d{5}$/.test(z))||typeof x.incorporated!=='string'||x.incorporated.length>15))return respond(res,400,{error:'Select up to 12 valid registered companies to re-screen.'});
    const checks=await batches(cs,4,async c=>({id:'ch:'+c.companyNumber.toUpperCase(),...await screen(c.company,c.companyNumber.toUpperCase(),c.sector,c.sicCodes[0]||'',c.incorporated,chAuth,now)}));
    return respond(res,200,{mode:'recheck',checks,checked:checks.length,ready:checks.filter(x=>x.registryCheck.risk==='ok').length});
+  }
+  if(input.mode==='hmrc-discover'){
+   if(input.profile!=='goods'||!Number.isSafeInteger(input.cursor)||input.cursor!<0||input.cursor!>9999)return respond(res,400,{error:'Select the goods profile and a valid HMRC scan cursor.'});
+   return respond(res,200,await discoverHMRC(input.cursor!,new Date(now),chAuth,chGet,[...known.leads,...(known.factory?.candidates||[])]));
   }
   if(!input||!input.profile||!Object.hasOwn(SOURCES,input.profile)||!Number.isSafeInteger(input.cursor)||input.cursor!<0||input.cursor!>9999)return respond(res,400,{error:'Select a research sector and valid scan cursor.'});
   const profile=input.profile as Sector,cursor=input.cursor!,choices=SOURCES[profile],source=choices[cursor%choices.length],page=Math.floor(cursor/choices.length);

@@ -1,9 +1,24 @@
 export type TurnoverTarget={min:number;max:number};
 export const DEFAULT_TURNOVER_TARGET:TurnoverTarget={min:3_000_000,max:30_000_000};
 export type TurnoverEvidence={amount:number;currency:'GBP';periodEnd:string;periodMonths:12;scope:'entity'|'group';sourceUrl:string;recordedAt:string};
-export type HMRCContext={status:'observed'|'unknown'|'error'|'not-applicable';sourceUrl:string;summary:string;checkedAt?:string;refreshErrorAt?:string;traderId?:number;months?:number[];directions?:string[];products?:string[]};
-export type GLEIFContext={status:'matched'|'unknown'|'error';sourceUrl:string;summary:string;checkedAt?:string;refreshErrorAt?:string;lei?:string;registrationStatus?:string;parents?:Array<{kind:'direct'|'ultimate';name:string;lei:string;country:string;sourceUrl:string}>};
+export type HMRCContext={status:'observed'|'unknown'|'error'|'not-applicable';sourceUrl:string;summary:string;checkedAt?:string;refreshErrorAt?:string;traderId?:number;months?:number[];directions?:string[];products?:string[];matchedName?:string;matchedPostcode?:string};
+export type GLEIFContext={status:'matched'|'unknown'|'error';sourceUrl:string;summary:string;checkedAt?:string;refreshErrorAt?:string;deferred?:boolean;lei?:string;registrationStatus?:string;parents?:Array<{kind:'direct'|'ultimate';name:string;lei:string;country:string;sourceUrl:string}>};
 export type CompanyContext={checkedAt:string;hmrc:HMRCContext;gleif:GLEIFContext};
+export const hmrcNameKey=(s:unknown)=>typeof s==='string'?s.toLowerCase().replace(/\blimited\b/g,'ltd').replace(/[^a-z0-9]/g,''):'';
+export const hmrcPostcode=(s:unknown)=>typeof s==='string'?s.toUpperCase().replace(/\s/g,''):'';
+export function hmrcWindow(now=new Date()){
+ const m=now.getUTCFullYear()*12+now.getUTCMonth()-11;
+ return {from:Math.floor(m/12)*100+m%12+1,to:now.getUTCFullYear()*100+now.getUTCMonth()+1};
+}
+/** Research fit only: never confirms currency, FX volume or buying interest. */
+export function hmrcQualified(c:{company:string;sector:string;registryCheck?:{postalCode?:string};companyContext?:CompanyContext},now=Date.now()){
+ const h=c.companyContext?.hmrc,stamp=Date.parse(h?.checkedAt||''),window=hmrcWindow(new Date(now));
+ if(c.sector!=='goods'||h?.status!=='observed'||!Number.isSafeInteger(h.traderId)||h.traderId!<=0||
+  !Number.isFinite(stamp)||stamp>now+300000||now-stamp>7*86400000||!hmrcPostcode(c.registryCheck?.postalCode)||
+  hmrcNameKey(h.matchedName)!==hmrcNameKey(c.company)||hmrcPostcode(h.matchedPostcode)!==hmrcPostcode(c.registryCheck?.postalCode)||
+  !Array.isArray(h.months)||!h.months.some(m=>Number.isInteger(m)&&m>=window.from&&m<=window.to&&m%100>=1&&m%100<=12))return false;
+ try{const u=new URL(h.sourceUrl),match=u.searchParams.get('$filter')?.match(/^TraderId eq (\d+) and MonthId ge (\d{6}) and MonthId le (\d{6})$/);return u.origin==='https://api.uktradeinfo.com'&&u.pathname==='/Trade'&&!!match&&Number(match[1])===h.traderId&&h.months.some(m=>m>=Number(match[2])&&m<=Number(match[3])&&m>=window.from&&m<=window.to)}catch{return false}
+}
 export function validDate(value:string){const n=Date.parse(value+'T00:00:00Z');return /^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(n)&&new Date(n).toISOString().slice(0,10)===value}
 export function publicSource(value:string){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&!['localhost','127.0.0.1','[::1]'].includes(u.hostname)}catch{return false}}
 export function turnoverTarget(value?:TurnoverTarget):TurnoverTarget{
@@ -27,7 +42,7 @@ export function turnoverFit(evidence?:TurnoverEvidence,target?:TurnoverTarget,no
 export function needsCompanyContext(value?:CompanyContext,now=Date.now()){
  const date=Date.parse(value?.checkedAt||'');
  const ttl=value?.hmrc?.status==='error'||value?.gleif?.status==='error'||value?.hmrc?.refreshErrorAt||value?.gleif?.refreshErrorAt?86400000:7*86400000;
- return !Number.isFinite(date)||date>now+300000||now-date>ttl;
+ return !Number.isFinite(date)||date>now+300000||now-date>ttl||value?.gleif.deferred===true||value?.hmrc.status==='observed'&&(!value.hmrc.matchedName||!value.hmrc.matchedPostcode);
 }
 /** A provider outage must not erase a previously observed source result. */
 export function retainContextOnFailure(previous:CompanyContext|undefined,next:CompanyContext):CompanyContext{

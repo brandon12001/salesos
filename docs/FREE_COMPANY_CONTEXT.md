@@ -29,7 +29,7 @@ All outbound hosts and paths are constructed from fixed provider origins; provid
 
 The API refreshes official registry facts before context lookup, processes at most two companies concurrently and reuses saved fresh context. A company has at most two HMRC calls and three GLEIF calls, with 4.5-second request timeouts. Cached/context fields are optional v3-compatible metadata; no schema migration, API key, paid provider, new infrastructure or production prospect edit is required.
 
-Context enriches research cards without raising the existing FX quality tier. New authorised reserve/duplicate transfers retain context and size notes/source links in their research archive, while the original research-candidate metadata stays linked. Existing real prospects are not backfilled or tested against providers.
+The HMRC-first follow-up now lets current matched goods-trade evidence qualify company research fit for manual ownership checking without Brave. This does not raise FX confidence, Buyer Readiness or pipeline stage. See [HMRC-first qualification](HMRC_FIRST.md). New authorised reserve/duplicate transfers retain context and size notes/source links in their research archive, while the original research-candidate metadata stays linked. Existing real prospects are not backfilled or tested against providers.
 
 ## Verification
 

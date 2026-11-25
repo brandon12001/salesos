@@ -43,7 +43,7 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  let after=await state(a);for(const key of ['leads','tasks','activities','settings','readinessHistory'])assert.deepEqual(after[key],before[key],key+' preserved');
  assert.equal(after.meta.leadFactory.candidates.length,6);assert.equal(after.meta.leadFactory.candidates[0].registryCheck.risk,'review');
  await a.reload();await saved(a);await nav(a,'Lead Research');assert.equal(await a.getByRole('button',{name:'Research saved companies on web (0 next)',exact:true}).isDisabled(),true);
- await a.getByLabel('Research sector',{exact:true}).selectOption('goods');assert.equal(await a.getByRole('button',{name:'Research saved companies on web (1 next)',exact:true}).isEnabled(),true);
+ await a.getByLabel('Research sector',{exact:true}).selectOption('goods');assert.equal(await a.getByRole('button',{name:'Research saved companies on web (0 next)',exact:true}).isDisabled(),true,'HMRC proof precedes goods Brave searches');assert.equal(await a.getByRole('button',{name:'Free trade & ownership checks (1 next)',exact:true}).isEnabled(),true);
  await a.setViewportSize({width:390,height:844});assert.ok(await a.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'research controls fit mobile width');
  await a.setViewportSize({width:1440,height:1000});await a.unroute('**/api/lead-research');
  console.log('PASS: pre-search holds/reasons, sector queue, zero-search refresh downgrade, reload and prospect/history preservation in fictional browser.');

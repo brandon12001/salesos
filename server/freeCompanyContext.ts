@@ -1,18 +1,29 @@
 import {researchNameKey} from '../src/lib/researchScreen.js';
 import type {CompanyContext,HMRCContext,GLEIFContext} from '../src/lib/companyContext.js';
+import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified} from '../src/lib/companyContext.js';
 type Company={company:string;companyNumber:string;sector:'recruitment'|'goods';postalCode?:string};
 const HMRC='https://api.uktradeinfo.com',GLEIF='https://api.gleif.org/api/v1';
 const hmrcSource='https://www.uktradeinfo.com/search/traders/';
 const gleifSource='https://www.gleif.org/en/lei-data/gleif-api';
-async function get(url:string){
+export async function freeGet(url:string){
  // URLs are assembled from fixed provider origins, never from provider links.
  const r=await fetch(url,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(4500)});
  if(!r.ok)throw Error('Provider unavailable');return r.json();
 }
-const postcode=(s:string)=>String(s||'').toUpperCase().replace(/\s/g,'');
-// HMRC has no Companies House number: retain legal type and "The" so a
-// similarly named, co-located parent/PLC cannot stand in for the Ltd entity.
-const traderName=(s:unknown)=>typeof s==='string'?s.toLowerCase().replace(/\blimited\b/g,'ltd').replace(/[^a-z0-9]/g,''):'';
+const get=freeGet;
+export function hmrcTradeQuery(id:number,now:Date){
+ const {from,to}=hmrcWindow(now);
+ return new URLSearchParams({'$filter':`TraderId eq ${id} and MonthId ge ${from} and MonthId le ${to}`,'$top':'12','$select':'TraderId,TradeTypeId,MonthId,CommodityId','$expand':'Commodity($select=Hs2Code,Hs2Description)'});
+}
+export function hmrcTradeContext(trader:{TraderId:number;CompanyName:string;PostCode:string},rows:any[],now:Date):HMRCContext{
+ const id=trader.TraderId,{from,to}=hmrcWindow(now);
+ const sample=rows.slice(0,12).filter((x:any)=>x.TraderId===id&&Number.isInteger(x.MonthId)&&x.MonthId>=from&&x.MonthId<=to&&x.MonthId%100>=1&&x.MonthId%100<=12&&[1,2].includes(x.TradeTypeId));
+ if(!sample.length)return {status:'unknown',sourceUrl:hmrcSource,traderId:id,checkedAt:now.toISOString(),summary:'Trader matched, but no recent goods-trade entries returned. Missing data does not establish inactivity.'};
+ return {status:'observed',sourceUrl:HMRC+'/Trade?'+hmrcTradeQuery(id,now),traderId:id,checkedAt:now.toISOString(),matchedName:trader.CompanyName,matchedPostcode:trader.PostCode,
+  months:[...new Set<number>(sample.map(x=>x.MonthId))].sort().reverse(),directions:[...new Set<string>(sample.map(x=>x.TradeTypeId===1?'Imports observed':'Exports observed'))],
+  products:[...new Set<string>(sample.map(x=>String(x.Commodity?.Hs2Description||'').slice(0,160)).filter(Boolean))].slice(0,4),
+  summary:'Recent goods-trade entries matched by legal name and registry postcode. Research fit evidenced; payment currencies, amounts and treasury authority are unverified.'};
+}
 async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
  if(c.sector!=='goods')return {status:'not-applicable',sourceUrl:hmrcSource,summary:'HMRC goods-trade data does not cover recruitment services.'};
  if(!c.postalCode)return {status:'unknown',sourceUrl:hmrcSource,summary:'Registry postcode unavailable; no HMRC company match asserted.'};
@@ -22,20 +33,14 @@ async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
   const qs=new URLSearchParams({'$filter':"startswith(tolower(CompanyName),'"+prefix+"')",'$select':'TraderId,CompanyName,PostCode','$top':'10'});
   const found=await get(HMRC+'/Trader?'+qs);
   if(!Array.isArray(found.value))throw Error('Invalid trader response');
-  const matches=found.value.filter((x:any)=>traderName(x.CompanyName)===traderName(c.company)&&postcode(x.PostCode)===postcode(c.postalCode!));
+  const matches=found.value.filter((x:any)=>hmrcNameKey(x.CompanyName)===hmrcNameKey(c.company)&&hmrcPostcode(x.PostCode)===hmrcPostcode(c.postalCode!));
   if(matches.length!==1||!Number.isSafeInteger(matches[0].TraderId)||matches[0].TraderId<=0)
    return {status:'unknown',sourceUrl:hmrcSource,summary:'No unique HMRC name-and-postcode match in the bounded search. Coverage is incomplete; this is not evidence of no overseas trade.'};
   const id=matches[0].TraderId;
-  const month=now.getUTCFullYear()*12+now.getUTCMonth()-11,from=Math.floor(month/12)*100+month%12+1,to=now.getUTCFullYear()*100+now.getUTCMonth()+1;
-  const query=new URLSearchParams({'$filter':`TraderId eq ${id} and MonthId ge ${from} and MonthId le ${to}`,'$top':'12','$select':'TraderId,TradeTypeId,MonthId,CommodityId','$expand':'Commodity($select=Hs2Code,Hs2Description)'});
+  const query=hmrcTradeQuery(id,now);
   const result=await get(HMRC+'/Trade?'+query);
   if(!Array.isArray(result.value))throw Error('Invalid trade response');
-  const sample=result.value.slice(0,12).filter((x:any)=>x.TraderId===id&&Number.isInteger(x.MonthId)&&x.MonthId>=from&&x.MonthId<=to&&x.MonthId%100>=1&&x.MonthId%100<=12&&[1,2].includes(x.TradeTypeId));
-  if(!sample.length)return {status:'unknown',sourceUrl:hmrcSource,traderId:id,summary:'Trader matched, but no recent goods-trade entries returned. Missing data does not establish inactivity.'};
-  const months=[...new Set<number>(sample.map((x:any)=>x.MonthId))].sort().reverse();
-  const directions=[...new Set<string>(sample.map((x:any)=>x.TradeTypeId===1?'Imports observed':'Exports observed'))];
-  const products=[...new Set<string>(sample.map((x:any)=>String(x.Commodity?.Hs2Description||'').slice(0,160)).filter(Boolean))].slice(0,4);
-  return {status:'observed',sourceUrl:hmrcSource,traderId:id,months,directions,products,summary:'Recent goods-trade entries matched by legal name and registry postcode. Bounded sample; payment currencies, amounts and treasury authority are unverified.'};
+  return hmrcTradeContext(matches[0],result.value,now);
  }catch{return {status:'error',sourceUrl:hmrcSource,summary:'HMRC lookup unavailable; no negative conclusion drawn. Retry after the provider recovers.'}}
 }
 async function gleif(c:Company):Promise<GLEIFContext>{
@@ -64,7 +69,8 @@ async function gleif(c:Company):Promise<GLEIFContext>{
   return {status:'matched',sourceUrl,lei,registrationStatus:status,parents,summary:parents.length?'Reported accounting parent relationship(s). This does not establish who controls FX decisions.'+(incomplete?' Some parent lookups failed; ownership context is incomplete.':''):incomplete?'LEI matched; parent lookup unavailable. Ownership remains unknown.':'LEI matched; no usable parent relationship returned. Do not assume independent treasury.'};
  }catch{return {status:'error',sourceUrl:gleifSource,summary:'GLEIF lookup unavailable; ownership remains unknown.'}}
 }
-export async function freeCompanyContext(c:Company,now=new Date()):Promise<CompanyContext>{
- const [trade,ownership]=await Promise.all([hmrc(c,now),gleif(c)]);
- return {checkedAt:now.toISOString(),hmrc:{...trade,checkedAt:now.toISOString()},gleif:{...ownership,checkedAt:now.toISOString()}};
+export async function freeCompanyContext(c:Company,now=new Date(),previous?:CompanyContext):Promise<CompanyContext>{
+ const cached=!previous?.hmrc.refreshErrorAt&&hmrcQualified({...c,registryCheck:{postalCode:c.postalCode},companyContext:previous},now.getTime());
+ const [trade,ownership]=await Promise.all([cached?previous!.hmrc:hmrc(c,now),gleif(c)]);
+ return {checkedAt:now.toISOString(),hmrc:{...trade,checkedAt:trade.checkedAt||now.toISOString()},gleif:{...ownership,checkedAt:now.toISOString()}};
 }

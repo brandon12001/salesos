@@ -2,13 +2,13 @@ import {useMemo,useState} from 'react';
 import type {State} from '../types';
 import {cloud} from '../lib/cloud';
 import {preSearchScreen,needsRegistryRefresh,sameResearchCompany} from '../lib/researchScreen';
-import {turnoverFit,turnoverTarget,needsCompanyContext,type TurnoverTarget,type TurnoverEvidence} from '../lib/companyContext';
+import {turnoverFit,turnoverTarget,needsCompanyContext,hmrcQualified,type TurnoverTarget,type TurnoverEvidence} from '../lib/companyContext';
 import {ResearchTarget,TurnoverEditor} from './ResearchTarget';
-import {leadFactory,researchProfiles,qualityTier,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
+import {leadFactory,researchProfiles,qualityTier,clearanceReady,candidatePriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
  state:State;
- onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number)=>string|void;
+ onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number,cursorKey?:ResearchSector|'hmrc-goods')=>string|void;
  onRegistryChecks:(rows:RegistryUpdate[])=>string|void;
  onWebResearch:(rows:WebResearchUpdate[])=>string|void;
  onCompanyContext:(rows:ContextUpdate[])=>string|void;
@@ -29,10 +29,10 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  const [selected,setSelected]=useState<Record<string,boolean>>({});
  const candidates=registry.candidates;
  const target=turnoverTarget(registry.turnoverTarget);
- const ready=candidates.filter(c=>c.status==='unchecked'&&qualityTier(c)==='ready');
- const backlog=candidates.filter(c=>c.status==='unchecked'&&qualityTier(c)==='research');
+ const ready=candidates.filter(c=>c.status==='unchecked'&&clearanceReady(state,c));
+ const backlog=candidates.filter(c=>c.status==='unchecked'&&(qualityTier(c)==='research'||qualityTier(c)==='ready'&&!clearanceReady(state,c)));
  const flagged=candidates.filter(c=>c.status==='unchecked'&&['flagged','excluded'].includes(qualityTier(c)));
- const cleared=candidates.filter(c=>c.status==='cleared'&&qualityTier(c)==='ready');
+ const cleared=candidates.filter(c=>c.status==='cleared'&&clearanceReady(state,c));
  const held=candidates.filter(c=>c.status==='held');
  const unverified=candidates.filter(c=>c.status==='unchecked'&&needsRegistryRefresh(c.registryCheck)).slice(0,12);
  const screen=(c:Candidate)=>{
@@ -40,16 +40,17 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   const check=preSearchScreen(c.sector,c.registryCheck),fit=turnoverFit(c.turnover,target);
   return {eligible:check.eligible&&fit.eligible,reasons:[...check.reasons,fit.reason]};
  };
+ const webScreen=(c:Candidate)=>{const base=screen(c);return c.sector==='goods'&&!hmrcQualified(c)?{eligible:false,reasons:[...base.reasons,'Run free HMRC checks first. A recent matched goods-trade record is required before optional Brave research. Missing data remains unknown.']}:base};
  const pendingWeb=candidates.filter(c=>c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile);
  const rank=(c:Candidate)=>Number(turnoverFit(c.turnover,target).status==='in-range')*1000+Number(c.companyContext?.hmrc.status==='observed')*100+candidatePriority(c);
- const eligibleWeb=pendingWeb.filter(c=>screen(c).eligible).sort((a,b)=>rank(b)-rank(a)||a.company.localeCompare(b.company));
- const webQueue=eligibleWeb.slice(0,4),screenHeld=pendingWeb.filter(c=>!screen(c).eligible);
- const contextQueue=candidates.filter(c=>c.status==='unchecked'&&c.sector===profile&&screen(c).eligible&&needsCompanyContext(c.companyContext)).sort((a,b)=>rank(b)-rank(a)).slice(0,4);
+ const eligibleWeb=pendingWeb.filter(c=>webScreen(c).eligible).sort((a,b)=>rank(b)-rank(a)||a.company.localeCompare(b.company));
+ const webQueue=eligibleWeb.slice(0,4),screenHeld=pendingWeb.filter(c=>!webScreen(c).eligible);
+ const contextQueue=candidates.filter(c=>['unchecked','cleared'].includes(c.status)&&c.sector===profile&&(screen(c).eligible||c.status==='cleared'&&needsRegistryRefresh(c.registryCheck)&&turnoverFit(c.turnover,target).eligible&&!state.leads.some(l=>sameResearchCompany(c,l)))&&needsCompanyContext(c.companyContext)).sort((a,b)=>rank(b)-rank(a)).slice(0,4);
  const webCompleted=candidates.filter(c=>c.status==='unchecked'&&!!c.webCheckedAt).length;
  const visible=useMemo(()=>candidates.filter(c=>(filter==='all'?c.status!=='dismissed'&&c.status!=='moved':
-  filter==='screen-held'?c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile&&!screen(c).eligible:
+  filter==='screen-held'?c.status==='unchecked'&&!c.webCheckedAt&&c.sector===profile&&!webScreen(c).eligible:
   filter==='cleared'?c.status==='cleared':c.status==='unchecked'&&(
-   filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):qualityTier(c)===filter))
+   filter==='flagged'?['flagged','excluded'].includes(qualityTier(c)):filter==='ready'?clearanceReady(state,c):qualityTier(c)==='research'||qualityTier(c)==='ready'&&!clearanceReady(state,c)))
   &&(!search||[c.company,c.companyNumber,c.reason].join(' ').toLowerCase().includes(search.toLowerCase())))
   .sort((a,b)=>candidatePriority(b)-candidatePriority(a)||a.company.localeCompare(b.company)).slice(0,100),[candidates,filter,search,profile,state.leads,target.min,target.max]);
  const picked=cleared.filter(c=>selected[c.id]);
@@ -67,11 +68,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  async function run(){
   if(running)return;setRunning(true);setError('');setStatus('');
   try{
-   const result=await api({mode:'registry-discover',profile,cursor:registry.cursors[profile]||0});
+   const cursorKey=profile==='goods'?'hmrc-goods':profile;
+   const result=await api({mode:profile==='goods'?'hmrc-discover':'registry-discover',profile,cursor:registry.cursors[cursorKey]||0});
    if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor))throw Error('Invalid company research response.');
-   if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor)))return;
+   if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor,cursorKey)))return;
    setFilter('ready');
-   setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Run free context checks before optional web research.');
+   if(profile==='goods')setStatus('HMRC-first scan: '+result.resultsScanned+' traders · '+(result.tradeQualified||0)+' trade-evidenced companies · '+(result.unmatched||0)+' unmatched · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Manual ownership checks still required.'+(result.sourceExhausted?' End of this source scan.':''));
+   else setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Run free context checks before optional web research.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function rescreen(){
@@ -90,7 +93,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    const result=await api({mode:'free-context',candidates:contextQueue.map(c=>({company:c.company,companyNumber:c.companyNumber,sector:c.sector,sicCodes:c.sicCodes,incorporated:c.incorporated}))});
    if(!Array.isArray(result.updates)||result.updates.length!==contextQueue.length)throw Error('Free checks returned an incomplete batch; existing evidence retained.');
    if(failed(onCompanyContext(result.updates as ContextUpdate[])))return;
-   setFilter('research');setStatus('Free context saved for '+result.updates.length+' companies · 0 Brave requests · '+(result.providerErrors||0)+' provider errors. Missing matches remain unknown; FX needs and decision authority are unverified.');
+   setFilter(profile==='goods'?'ready':'research');setStatus('Free context saved for '+result.updates.length+' companies · 0 Brave requests · '+(result.providerErrors||0)+' provider errors. Missing matches remain unknown; FX needs and decision authority are unverified.');
   }catch(e){setError((e as Error).message)}finally{setRunning(false)}
  }
  async function webResearch(){
@@ -113,13 +116,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   if(!window.confirm('Move '+ids.length+' researched and Salesforce-cleared companies to Lead Reserve? No calls will be generated automatically.'))return;
   if(!failed(onMove(ids))){setSelected({});setStatus('Moved '+ids.length+' eligible companies to reserve. No outbound tasks generated.')}
  }
- const tierLabel=(c:Candidate)=>qualityTier(c)==='ready'?'International signal found':qualityTier(c)==='excluded'?'Excluded by registry':qualityTier(c)==='flagged'?'Registry concerns':'Needs FX evidence';
+ const tierLabel=(c:Candidate)=>qualityTier(c)==='ready'?(hmrcQualified(c)?'HMRC trade evidenced':'International signal found'):qualityTier(c)==='excluded'?'Excluded by registry':qualityTier(c)==='flagged'?'Registry concerns':'Needs FX evidence';
  const tierColor=(c:Candidate):'green'|'amber'|'muted'=>qualityTier(c)==='ready'?'green':qualityTier(c)==='excluded'?'amber':'muted';
  return <div className="page-content">
   <div className="page-heading"><div><span className="eyebrow">RULES-BASED · NO AI</span><h1>Lead Research & Clearance</h1><p>Only businesses with acceptable registry records and independent cross-border evidence reach your Salesforce-checking list. All existing discoveries are retained for research.</p></div>
    <div className="button-row"><button className="btn secondary" onClick={onDupes}><Icon name="archive"/> Duplicate Queue</button><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Lead Reserve</button></div></div>
   <div className="metrics-grid">
-   <div className="metric"><span>Worth a Salesforce check</span><strong>{ready.length}</strong><small>Registry verified + strong web clue</small></div>
+   <div className="metric"><span>Worth a Salesforce check</span><strong>{ready.length}</strong><small>Registry + HMRC trade or strong web clue</small></div>
    <div className="metric"><span>Research backlog</span><strong>{backlog.length}</strong><small>{webCompleted} checked on the web; evidence still uncertain</small></div>
    <div className="metric"><span>Registry flags / exclusions</span><strong>{flagged.length}</strong><small>Overdue filings, holding companies or closure concerns</small></div>
    <div className="metric"><span>Salesforce-cleared / duplicates</span><strong>{cleared.length} / {held.length}</strong><small>Transfer or manager review</small></div>
@@ -127,10 +130,10 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
   <section className="panel stack">
    <div className="section-between"><h2>Find and screen UK companies</h2><Badge tone="blue">Companies House</Badge></div>
    <ResearchTarget key={target.min+':'+target.max} value={target} onSave={value=>!failed(onTarget(value))}/>
-   <p className="hint">Start with free registry checks, add free HMRC/GLEIF context, then use Brave for unresolved questions. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
+   <p className="hint">Goods discovery starts with HMRC machinery/electrical trade records, then verifies company identity and registry fit. A recent matched trade record qualifies research fit for manual ownership checking without Brave. Recruitment keeps its existing web-evidence route. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
    <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
-    <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':'Find companies (no Brave)'}</button>
+    <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':profile==='goods'?'Find HMRC traders (no Brave)':'Find companies (no Brave)'}</button>
     <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
     <button className="btn secondary" disabled={running||!contextQueue.length} onClick={()=>void freeContext()}>Free trade & ownership checks ({contextQueue.length} next)</button>
     <button className="btn primary" disabled={running||!webQueue.length} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
@@ -149,7 +152,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
     <div className="section-between"><div><strong>{c.company}</strong><p className="hint">{c.companyNumber} · {c.sector==='recruitment'?'Recruitment':'Machinery distribution'} · Incorporated {c.incorporated||'unknown'}</p></div>
      <div className="button-row"><Badge tone={tierColor(c)}>{tierLabel(c)}</Badge><Badge tone="muted">{candidatePriority(c)}/100 screening</Badge></div></div>
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
-    {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{screen(c).eligible?'Passes pre-search filters:':'No Brave search yet — on hold:'}</strong> {screen(c).reasons.join(' ')}</p>}
+    {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{webScreen(c).eligible?'Passes research filters:':'No Brave search yet — on hold:'}</strong> {webScreen(c).reasons.join(' ')}</p>}
     {c.status==='unchecked'&&<TurnoverEditor key={c.turnover?.recordedAt||'empty'} value={c.turnover} onSave={value=>!failed(onTurnover(c.id,value))}/>}
     {c.companyContext&&<details><summary>Trade & ownership context · checked {new Date(c.companyContext.checkedAt).toLocaleDateString('en-GB')}</summary><div className="stack">
      <p className="hint"><a href={c.companyContext.hmrc.sourceUrl} target="_blank" rel="noopener noreferrer">HMRC</a>: {c.companyContext.hmrc.summary}</p>
@@ -162,13 +165,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
     {c.fxHypothesis&&<p className="hint"><strong>FX hypothesis:</strong> {c.fxHypothesis}</p>}
     {c.discoveryQuestion&&<p className="hint"><strong>Call discovery question:</strong> {c.discoveryQuestion}</p>}
     {c.webCheckedAt&&<small>Web checked {new Date(c.webCheckedAt).toLocaleDateString('en-GB')} · {c.webQueries||0} successful search queries</small>}
-    {c.evidence?.length?<div className="stack"><small>Public web clues (not confirmed FX)</small>{c.evidence.slice(0,4).map((e,i)=><p className="hint" key={e.sourceUrl+i}><strong>{e.label}</strong> · <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">Source</a> · {e.excerpt}</p>)}</div>:<p className="hint">No source-backed cross-border payments evidence. Keep in research rather than checking Salesforce.</p>}
+    {c.evidence?.length?<div className="stack"><small>Public web clues (not confirmed FX)</small>{c.evidence.slice(0,4).map((e,i)=><p className="hint" key={e.sourceUrl+i}><strong>{e.label}</strong> · <a href={e.sourceUrl} target="_blank" rel="noopener noreferrer">Source</a> · {e.excerpt}</p>)}</div>:<p className="hint">FX payment currencies, volumes and UK decision authority remain unconfirmed. HMRC trade fit or strong web evidence permits only a manual ownership check.</p>}
     <div className="button-row"><a className="btn secondary small" href={c.sourceUrl} target="_blank" rel="noopener noreferrer">Companies House <Icon name="external" size={13}/></a>
      <button className="btn secondary small" onClick={()=>void copy(c.company)}><Icon name="copy"/> Copy name</button>
-     {c.status==='unchecked'&&qualityTier(c)==='ready'&&<><button className="btn primary small" disabled={!verified} onClick={()=>accept(c)}>Available — checked</button>
+     {c.status==='unchecked'&&clearanceReady(state,c)&&<><button className="btn primary small" disabled={!verified} onClick={()=>accept(c)}>Available — checked</button>
       <button className="btn secondary small" onClick={()=>{setOwnerId(ownerId===c.id?'':c.id);setOwner('');setActivity('')}}>Already owned</button></>}
      {c.status==='unchecked'&&<button className="btn quiet small" onClick={()=>{if(window.confirm('Dismiss '+c.company+' from research?'))failed(onDismiss(c.id))}}>Dismiss</button>}
-     {c.status==='cleared'&&qualityTier(c)==='ready'&&<><label className="check-row"><input type="checkbox" checked={!!selected[c.id]} onChange={e=>setSelected(s=>({...s,[c.id]:e.target.checked}))}/> Select</label><button className="btn primary small" onClick={()=>move([c.id])}>Move to reserve</button></>}
+     {c.status==='cleared'&&clearanceReady(state,c)&&<><label className="check-row"><input type="checkbox" checked={!!selected[c.id]} onChange={e=>setSelected(s=>({...s,[c.id]:e.target.checked}))}/> Select</label><button className="btn primary small" onClick={()=>move([c.id])}>Move to reserve</button></>}
      {c.status==='held'&&<Badge tone="amber">Owned by {c.crmOwner||'colleague'}</Badge>}{c.status==='moved'&&<Badge tone="green">In reserve</Badge>}</div>
     {ownerId===c.id&&<div className="panel stack"><label className="field">Salesforce owner<input value={owner} onChange={e=>setOwner(e.target.value)} maxLength={120} placeholder="Actual CRM owner"/></label>
      <label className="field">Last qualifying activity (optional)<input type="date" value={activity} max={new Date().toISOString().slice(0,10)} onChange={e=>setActivity(e.target.value)}/></label>

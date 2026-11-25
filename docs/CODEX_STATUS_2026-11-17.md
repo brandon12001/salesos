@@ -1,3 +1,13 @@
+# Current update — 25 November 2026: HMRC-first goods qualification
+
+Released base is PR #27 at `32ae1df7220b3a5daabbc3e82116eefd5d4ac0be`, Vercel READY `dpl_CsiDvCYFpQxTghUJ5rAUUSih6UrF`, canonical https://salesos-up-next7.vercel.app/. Work is isolated on `feat/hmrc-first-qualification` in `/workspace/salesos-hmrc-first` following the user's request to start with HMRC import/export data and use it as qualification.
+
+Goods discovery now starts with four distinct recorded machinery/electrical traders (chapters 84/85), then verifies a unique Companies House name/postcode match and the existing equipment SIC/age/filing checks. Current source-linked matched trade qualifies company research fit for manual ownership checking without Brave. Missing/ambiguous results remain unknown/research; no FX volumes/currencies, interest, Gold, readiness or pipeline progress are inferred. Recruitment and existing independent web evidence remain compatible. Paid goods enrichment is server-gated on recent HMRC proof. Separate source cursors, duplicate/hold skips, explicit clearance, source-refresh guards and archive preservation remain. See [scope, safeguards and tests](HMRC_FIRST.md).
+
+Run install/build/all available suites and full isolated fictional browser checks plus final-head CI before the standing-authorised automatic release. Take a fresh private recoverable backup and verify exact source/deployment SHA/READY/alias and SELECT-only record/history/settings preservation. No production data edit, migration, new paid provider/key or Focus redesign. Preserve all existing promises and older worktrees/PR #12. Track the release PR for exact results; live protected sign-in remains a separate manual check.
+
+---
+
 # Current update — 25 November 2026: £3m–£30m target and free company context
 
 Released base is PR #26 at `17a5140317b2028aa353ed6d3130b80944ae53fd`, Vercel READY `dpl_EPqc9199PGVzEUfNSVibqv2vuACy`, canonical https://salesos-up-next7.vercel.app/. The user chose £3m–£30m annual turnover initially, with later adjustment, after discussing HMRC/GLEIF first and news later. Work is isolated on `feat/free-company-context` in `/workspace/salesos-company-context`.
