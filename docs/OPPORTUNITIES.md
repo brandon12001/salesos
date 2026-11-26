@@ -21,6 +21,14 @@ Update next step records human-entered notes and an optional dated call, email o
 
 Promised callbacks/meetings and explicit commitments are never replaced by a competing plan. When a promise exists the editor displays it and leaves the exact task/schedule unchanged; explicit rescheduling remains through the existing workflow. Recording actual interest pauses/cancels only obsolete routine cold sequence/follow-up tasks, preserving other work and commitments. No automatic replenishment is invoked for opportunity-page edits.
 
+## Neglected-opportunity review
+
+The existing **Needs attention** view also includes read-only warnings for no pending next action, overdue follow-ups, and seven calendar days without a recorded buyer conversation or positive response. Overdue promises appear before ordinary overdue work, then missing actions and quiet records. Cards show the exact reason, using the existing update-next-step and due-outcome controls to resolve it.
+
+A date-only task due today is due, not overdue; a timed action becomes overdue only after its exact time. Quiet age uses the latest actual observed positive-evidence date or logged meaningful/callback/meeting conversation, following the same local calendar as task scheduling (including London daylight-saving changes). Editing plans, failed dials, outbound emails and copying details do not reset it. A future promised action or permitted scheduled follow-up suppresses the quiet warning, so an agreed wait is respected. Closed/opt-out/First Trade rows have no warnings; reserve, ownership-held or paused prospects do not receive quiet outreach prompts. Existing contact/ownership restrictions stay visible and enforceable.
+
+These warnings refresh on the existing page timer and derive from saved state; no task, activity, readiness/stage change, network research, notification or extra infrastructure is created. Focus's existing protected-commitment priority is preserved. No database migration or backfill is required.
+
 ## Persistence, conflicts and verification
 
 Optional version-1 next-step notes live under `meta.opportunities`; evidence uses the existing `meta.workQueues` records. Both are part of normal cloud saves and JSON backups. Draft stamps include lead/evidence/contact/notes and pending tasks, so a changed opportunity is rejected instead of silently overwritten. The existing cloud revision-conflict/outbox recovery protects competing sessions. Future metadata versions fail closed on edits.

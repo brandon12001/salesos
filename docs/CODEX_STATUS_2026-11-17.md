@@ -1,3 +1,13 @@
+# Current update — 26 November 2026: neglected-opportunity review
+
+PR #31 is released at `02929927d2e1d231b6b51c1aa88c0180864676fc`, Vercel READY `dpl_T4idQJQzHTjPwcAgxYEfssLpBhf1`, canonical https://salesos-up-next7.vercel.app/. The user approved neglected-opportunity detection. Work is isolated on `feat/opportunity-attention` in `/workspace/salesos-opportunity-attention`.
+
+Existing Opportunities cards now show missing next actions, overdue follow-ups and seven calendar days without a recorded buyer conversation or positive response. Needs attention includes these records and puts overdue promises first. Permitted future work and promises suppress quiet warnings; closed records have no prompts and reserve/held/paused prospects get no stale outreach prompt. Date-only tasks due today are not overdue. Notes, copied details, failed dials and sent emails never reset buyer engagement. Viewing creates no activity or tasks; existing edit/eligibility and Focus priority rules remain unchanged. See [Opportunities](OPPORTUNITIES.md).
+
+No schema, storage, dependency, API or production-data edit. Run install/build/all 26 suites and full isolated fictional browser plus final-head CI before standing-authorised release. Create a fresh private recoverable workspace backup; verify intended repo/team/project, exact tested/merged tree, production READY/canonical alias and SELECT-only preservation of records/history/settings/private search budget. Live protected production sign-in remains user-manual. Preserve older worktrees/PR #12.
+
+---
+
 # Current update — 25 November 2026: dedicated open Opportunities
 
 PR #30 is released at `58082964829d9685b33428bda9e525b6fd7cc078`, Vercel READY `dpl_6oCG5WyQZKVpqyfzNNXbG7uLoKZK`, canonical https://salesos-up-next7.vercel.app/. Routine contact repair is now outside Focus; records/history remain intact. The user additionally requested an obvious all-opportunities page and conversion after positive responses. Work is isolated on `feat/open-opportunities` in `/workspace/salesos-open-opportunities`.
