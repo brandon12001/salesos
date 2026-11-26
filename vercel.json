@@ -23,7 +23,8 @@
       "feat/hmrc-first-qualification": false,
       "feat/research-budget-ranking": false,
       "fix/focus-outreach-only": false,
-      "feat/open-opportunities": false
+      "feat/open-opportunities": false,
+      "feat/opportunity-attention": false
     }
   },
   "functions": {

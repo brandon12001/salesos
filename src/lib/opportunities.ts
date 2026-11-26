@@ -2,10 +2,12 @@ import type {State,Lead,Task} from '../types';
 import {core} from './core';
 import {classifyWork,queueEvents,queueStamp,recordQueueEvidence} from './workQueues';
 import {contactAllowed,channel,leadRestriction,taskRestriction} from './intelligence/eligibility';
-import {isDue,localDate,protectedTask,validDate} from './intelligence/evidence';
+import {dateAge,isDue,localDate,protectedTask,scheduledAt,validDate} from './intelligence/evidence';
 type Plan={nextStep:string;barrier:string;updatedAt:string};
 type Plans={version:1;records:Record<string,Plan>};
 export type OpportunityInput={contactId:string;evidence:string;observedAt:string;nextStep:string;barrier:string;date:string;time:string;kind:'call'|'email'|'deal'};
+type Attention={kind:'missing-action'|'overdue'|'stale';message:string};
+export const OPPORTUNITY_STALE_DAYS=7;
 function plans(s:State):Plans{const p=s.meta.opportunities as Plans|undefined;return p?.version===1&&p.records&&typeof p.records==='object'&&!Array.isArray(p.records)?p:{version:1,records:{}};}
 export function opportunityPlan(s:State,id:string):Plan{
  const p=plans(s).records[id];if(p&&typeof p.nextStep==='string'&&typeof p.barrier==='string'&&typeof p.updatedAt==='string')return p;
@@ -34,9 +36,21 @@ export function opportunityRows(s:State,now:Date){
   const gaps:string[]=[];if(!plan.nextStep&&!pending.some(protectedTask))gaps.push('Confirm the next agreed step');if(!next)gaps.push('Schedule a next action');if(!contact||!contactAllowed(s,l,contact))gaps.push('Review the contact');
   const restriction=leadRestriction(s,l,now,next||undefined);if(!closed&&restriction)gaps.push(restriction);
   const engagement=s.activities.filter(a=>a.leadId===l.id&&a.type==='Call'&&['Meaningful conversation','Callback requested','Meeting booked'].includes(a.outcome)&&Number.isFinite(Date.parse(a.at))&&Date.parse(a.at)<=+now).sort((a,b)=>b.at.localeCompare(a.at))[0];
+  const attention:Attention[]=[],today=localDate(now);
+  const overdue=pending.find(t=>validDate(t.dueAt)&&(t.dueAt<today||t.dueAt===today&&!!t.dueTime&&+scheduledAt(t)<+now));
+  // A saved plan edit, failed dial or copy is not a new buyer response. Use the
+  // actual observed evidence date, and respect explicitly scheduled future work.
+  const engagementDate=engagement?localDate(new Date(engagement.at)):'',evidenceDate=validDate(evidence.at)?evidence.at:localDate(new Date(evidence.at));
+  const lastEngagedDate=[engagementDate,evidenceDate].filter(validDate).sort().at(-1)||'',quietDays=dateAge(lastEngagedDate,now);
+  const waiting=pending.some(t=>validDate(t.dueAt)&&!isDue(t,now)&&(protectedTask(t)||t.type!=='research'&&!taskRestriction(s,t,now,true,false)));
+  if(!closed){
+   if(!next)attention.push({kind:'missing-action',message:'No next action scheduled'});
+   if(overdue)attention.push({kind:'overdue',message:`${protectedTask(overdue)?'Promised action':'Follow-up'} overdue since ${overdue.dueAt}${overdue.dueTime?' '+overdue.dueTime:''}`});
+   if(l.status==='Active'&&!restriction&&!waiting&&quietDays!==null&&quietDays>=OPPORTUNITY_STALE_DAYS)attention.push({kind:'stale',message:`No recorded buyer conversation or positive response for ${quietDays} days`});
+  }
   const actionRestriction=next?taskRestriction(s,next,now,false,s.settings.intelligenceMode===1):'';if(!closed&&next&&isDue(next,now)&&actionRestriction&&!gaps.includes(actionRestriction))gaps.push(actionRestriction);
   const routeContact=next?.contactId||contact?.id,routeContactName=l.contacts.find(c=>c.id===routeContact)?.name||'',phone=!restriction?channel(s,l,'call',routeContact,next&&['call','callback'].includes(next.type)?next.methodId:null)?.method.value||'':'';
-  return [{lead:l,evidence,contact,next,commitment,plan,closed,gaps,phone,routeContactName,lastContact:engagement?.at||'',due:!!next&&isDue(next,now),canWork:!!next&&!closed&&!actionRestriction}];
+  return [{lead:l,evidence,contact,next,commitment,plan,closed,gaps,attention,lastEngagedDate,attentionRank:overdue&&protectedTask(overdue)?0:overdue?1:!next?2:attention.length?3:4,phone,routeContactName,lastContact:engagement?.at||'',due:!!next&&isDue(next,now),canWork:!!next&&!closed&&!actionRestriction}];
  }).sort((a,b)=>Number(a.closed)-Number(b.closed)||Number(b.due)-Number(a.due)||Number(!b.next)-Number(!a.next)||(a.next?.dueAt||'9999').localeCompare(b.next?.dueAt||'9999')||a.lead.company.localeCompare(b.lead.company));
 }
 function writable(s:State){const raw=s.meta.opportunities as {version?:unknown}|undefined;if(raw&&raw.version!==1)throw Error('Opportunity notes version is not supported.');}
