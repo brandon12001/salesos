@@ -5,6 +5,7 @@ import {commercialFor,dateAge,isDue,protectedTask} from './intelligence/evidence
 import {contactAllowed,taskRestriction,usableMethod} from './intelligence/eligibility';
 import {filteredIndustryTasks,filterIndustryDecision} from './industryFocus';
 import {callPreparation} from './callPreparation';
+import {callbackRetryContext} from './callTaskContext';
 import {callKpi} from './kpiFirst';
 
 export const WORK_QUEUES=[{id:'opportunity',label:'Opportunities'},{id:'qualified',label:'Qualified'},{id:'gold',label:'Gold'},{id:'standard',label:'Standard'}] as const;
@@ -91,6 +92,7 @@ export function recordQueueEvidence(s:State,leadId:string,input:QueueEvidence,ex
 export function queueEvents(s:State,id:string){return data(s).events.filter(e=>e&&e.leadId===id&&category(e.category)&&category(e.from)&&typeof e.evidence==='string'&&typeof e.observedAt==='string').slice().reverse();}
 export function queueClassifications(s:State,now:Date){return new Map(s.leads.map(l=>[l.id,classifyWork(s,l,now)]));}
 export function commercialPurpose(s:State,l:Lead,t:Task,now:Date,classification=classifyWork(s,l,now)){
+ const callback=callbackRetryContext(s,l,t);if(callback)return callback;
  if(protectedTask(t)||l.stage!=='Prospecting'||!['sequence','followup','intelligence'].includes(t.origin)||!['call','email','linkedin_connect','linkedin_message'].includes(t.type))return null;
  if(classification.category==='opportunity')return {rule:'progress-interest',title:t.title,objective:'Confirm the next step the buyer wants to evaluate and agree a specific buyer milestone.',success:'The buyer confirms a meaningful evaluation step, owner and next action; interest is not an agreement to switch.',reason:classification.evidence||'Genuine buyer interest is recorded; progress the discussion rather than restart cold qualification.'};
  if(classification.category==='qualified')return {rule:'develop-qualified',title:t.title,objective:'Explore the confirmed FX activity, current problems, timing and reasons to consider another provider.',success:'A buyer-confirmed problem, motivation or timing is established, or lack of interest is recorded without assuming a sale.',reason:classification.evidence||'Meaningful FX activity is confirmed; establish whether there is a reason to consider change.'};
@@ -103,11 +105,13 @@ export function focusTaskAllowed(t:Task){return t.type!=='research'||protectedTa
 function viewTasks(s:State,tasks:Task[],classes:Map<string,WorkClassification>,now:Date){
  const selected=selectedQueue(s),seen=new Set<string>();
  const phase=callKpi(s,now),callsOnly=phase.enabled?phase.active:s.settings.coldCallMode===1;
+ const retryIds=new Set(tasks.filter(t=>{if(t.type!=='call'||(!t.dedupeKey?.startsWith('retry:')&&!t.sourceActivityIds?.length))return false;const l=s.leads.find(l=>l.id===t.leadId);return l&&callbackRetryContext(s,l,t)}).map(t=>t.id));
+ const order=(t:Task)=>{const value=rank(classes.get(t.leadId||'')?.category||'standard');return value<2?value:retryIds.has(t.id)?2:value+1};
  return filteredIndustryTasks(s,tasks).filter(t=>{
   if(!focusTaskAllowed(t)||seen.has(t.id))return false;seen.add(t.id);
   if(protectedTask(t))return true;
   return (!callsOnly||['call','callback'].includes(t.type))&&(selected==='recommended'||(classes.get(t.leadId||'')?.category||'standard')===selected);
- }).sort((a,b)=>Number(protectedTask(b))-Number(protectedTask(a))||(protectedTask(a)?a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59'):rank(classes.get(a.leadId||'')?.category||'standard')-rank(classes.get(b.leadId||'')?.category||'standard')));
+ }).sort((a,b)=>Number(protectedTask(b))-Number(protectedTask(a))||(protectedTask(a)?a.dueAt.localeCompare(b.dueAt)||(a.dueTime||'23:59').localeCompare(b.dueTime||'23:59'):order(a)-order(b)));
 }
 export function legacyActionableTasks(s:State,now:Date){return (core.due(s,now) as Task[]).filter(t=>!taskRestriction(s,t,now,false,false));}
 export function legacyWorkTasks(s:State,now:Date,classes=queueClassifications(s,now)){return viewTasks(s,legacyActionableTasks(s,now),classes,now);}

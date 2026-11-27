@@ -29,7 +29,7 @@ export function restrictedRoutineEmail(s:State,t:Task,now:Date){
 export function callableDueTasks(s:State,now:Date){
  return s.tasks.filter(t=>['call','callback'].includes(t.type)&&isDue(t,now)&&core.isEligibleTask(s,t)&&!taskRestriction(s,t,now,false,s.settings.intelligenceMode===1));
 }
-export function reserveCallCandidates(s:State,now:Date,minimum=60){
+export function reserveCallCandidates(s:State,now:Date,minimum=s.settings.reserveMinScore??60){
  if(!callKpi(s,now).active)return [];
  return (core.reserveRank(s) as import('../types').Lead[]).filter(l=>
   !core.reserveEligibility(s,l,minimum)&&!!channel(s,l,'call'));
@@ -54,6 +54,6 @@ export function replenishCallSupply(s:State,now:Date,explicit=false):CallRefill{
  const slots=reserveActivationSlots(s);
  const amount=Math.min(RESERVE_REFILL_BATCH,candidates.length,slots,explicit?Math.max(needed,1):needed);
  if(!amount)return {activated:0,skipped:0,names:[],available,remainingReserve};
- const result=core.activateReserve(s,candidates.slice(0,amount).map(l=>l.id),{minScore:60}) as {activated:number;skipped:number;names:string[]};
+ const result=core.activateReserve(s,candidates.slice(0,amount).map(l=>l.id),{minScore:s.settings.reserveMinScore??60}) as {activated:number;skipped:number;names:string[]};
  return {...result,available,remainingReserve};
 }

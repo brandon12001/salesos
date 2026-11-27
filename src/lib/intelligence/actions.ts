@@ -34,7 +34,7 @@ export function prepareAction(s:State,recommendation:Recommendation,now:Date):Ta
  const existing=s.tasks.find(t=>t.dedupeKey===fresh.task.dedupeKey&&t.status==='pending');if(existing)return existing;
  const source=fresh.sourceTaskId?s.tasks.find(t=>t.id===fresh.sourceTaskId):null;
  if(source&&(source.isCommitment||source.type==='callback'||source.type==='meeting'))throw Error('An agreed commitment cannot be replaced.');
- if(source&&['sequence','followup'].includes(source.origin))core.cancelTasks(s,l,(t:Task)=>t.id===source.id,'User chose an alternative Intelligence action');
+ if(source&&['sequence','followup','callback_retry'].includes(source.origin))core.cancelTasks(s,l,(t:Task)=>t.id===source.id,'User chose an alternative Intelligence action');
  return core.addTask(s,l,fresh.task.type,fresh.task.title,fresh.task.dueAt,{...fresh.task,id:undefined}) as Task;
 }
 export function recordDecision(s:State,before:State,r:Recommendation,t:Task,now:Date){

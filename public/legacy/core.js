@@ -150,7 +150,7 @@
     const previous=l.stage;
     if(previous===newStage)return {changed:false,xp:0};
     l.stage=newStage;l.status='Active';l.reachedStages=[...new Set([...l.reachedStages,newStage])];l.sequenceState='paused';
-    cancelTasks(s,l,t=>!t.isCommitment&&['sequence','stage','sequence_review','repair','insight'].includes(t.origin),'Pipeline stage changed');
+    cancelTasks(s,l,t=>!t.isCommitment&&(['stage','sequence_review','repair','insight'].includes(t.origin)||supersededOutreach(s,t)),'Pipeline stage changed');
     const xpMap={'Discovery Complete':50,'Meeting Booked':100,'Successful Meeting':150,'Onboarding':200,'Account Open':250,'First Trade':500};
     const xp=stageIndex(newStage)>stageIndex(previous)?reward(s,l,`stage:${newStage}`,xpMap[newStage]||0,evidence):0;
     l.lastProgressAt=new Date().toISOString();l.lastProgressEvidence=evidence||`Confirmed stage: ${newStage}`;
@@ -240,6 +240,30 @@
     const c=getContact(l,contactId)||preferredContact(l,'call')||preferredContact(l,'email');
     return addTask(s,l,'callback','Promised follow-up · '+l.company,date,{origin:'commitment',dueTime:time,contactId:c?.id||null,description:reason,objective:'Complete the agreed follow-up and establish the next milestone',successCriteria:'Follow-up action delivered as agreed',isCommitment:true,dedupeKey:`commitment:${l.id}:${date}:${time}:${c?.id||'none'}`});
   }
+  // Trace only explicit retry links plus actual failed-call records. A recent
+  // callback elsewhere on a company never makes an unrelated cold task warm.
+  function callbackSource(s,t){
+    if(!t?.leadId||!t.contactId||!['call','callback','research'].includes(t.type))return null;
+    const contactId=t.contactId,seen=new Set();let current=t;
+    while(current&&!seen.has(current.id)&&seen.size<100){
+      if(current.leadId!==t.leadId||current.contactId!==contactId)return null;
+      seen.add(current.id);
+      if(current.type==='callback'||current.type==='call'&&current.isCommitment)return current;
+      const prefix=`retry:${t.leadId}:`;
+      let attempt;
+      if(current.dedupeKey?.startsWith(prefix)){
+        const parent=getTask(s,current.dedupeKey.slice(prefix.length));if(!parent||parent.status!=='completed')return null;
+        attempt=s.activities.slice().reverse().find(a=>a.type==='Call'&&a.taskId===parent.id);
+      }else if(['repair','repair_followup'].includes(current.origin)){
+        attempt=s.activities.slice().reverse().find(a=>current.sourceActivityIds?.includes(a.id)&&a.type==='Call');
+      }
+      if(!attempt||attempt.leadId!==t.leadId||attempt.contactId!==contactId||!['no_answer','gatekeeper','answered_no_conversation','bad_number','No answer','Gatekeeper','Answered — No Conversation','Bad or invalid number'].includes(attempt.callOutcome||attempt.outcome)||attempt.answerReason==='Declined to speak')return null;
+      const parent=getTask(s,attempt.taskId);if(!parent||parent.status!=='completed')return null;
+      current=parent;
+    }
+    return null;
+  }
+  function supersededOutreach(s,t){return !t.isCommitment&&t.type!=='callback'&&(['sequence','followup','callback_retry'].includes(t.origin)||!!callbackSource(s,t))}
   function logCall(s,t,opts={}){
     const l=getLead(s,t?.leadId);if(!l||!t||t.status!=='pending')return {error:'Task no longer pending.'};
     let c=getContact(l,opts.contactId||t.contactId)||preferredContact(l,'call')||l.contacts[0]||null;
@@ -257,28 +281,35 @@
     if(readinessOutcome&&opts.readiness!==undefined&&opts.readiness!==null&&opts.readiness!==''&&Number(opts.readiness)!==l.readiness){setReadiness(s,l,Number(opts.readiness),opts.evidence,{barrier:opts.barrier,nextMilestone:opts.nextMilestone})}
     else if(connected){if(opts.barrier!==undefined)l.barrier=String(opts.barrier||'');if(opts.nextMilestone)l.nextMilestone=String(opts.nextMilestone)}
     if(outcome==='answered_no_conversation'&&opts.reason==='Declined to speak'){
-      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&['sequence','followup'].includes(x.origin),'Review respectful approach after declined conversation');
+      l.sequenceState='paused';cancelTasks(s,l,x=>supersededOutreach(s,x),'Review respectful approach after declined conversation');
       if(active(l))addTask(s,l,'review','Review whether a further approach is appropriate',businessAdd(today(),5),{origin:'answered_review',description:'The contact declined to speak; this is not an opt-out. Review timing and relevance before further outreach.',dedupeKey:`answered_review:${l.id}:${t.id}`});
     }else if(outcome==='no_answer'||outcome==='gatekeeper'||outcome==='answered_no_conversation'){
-      if(t.origin==='sequence')nextSequence(s,l,t);
+      const callback=callbackSource(s,{...t,contactId:c?.id||t.contactId||null});
+      if(callback&&active(l)){
+        cancelTasks(s,l,x=>!x.isCommitment&&x.type==='call'&&x.contactId===c?.id&&!!callbackSource(s,x),'Superseded by the next requested-callback attempt');
+        const retry=addTask(s,l,'call','Retry requested callback',businessAdd(today(),2),{origin:'callback_retry',contactId:c?.id||null,methodId:t.methodId||null,description:`Follow up the callback recorded for ${callback.dueAt}${callback.dueTime?' '+callback.dueTime:''}. ${callback.description||''}`.trim(),objective:'Reconnect about the previously agreed callback and confirm the next step',successCriteria:'Record the actual outcome and agree the next action if the contact is reached',dedupeKey:`retry:${l.id}:${t.id}`});
+        const attempt=s.activities.slice().reverse().find(a=>a.type==='Call'&&a.taskId===t.id);if(retry&&attempt)retry.sourceActivityIds=[attempt.id];
+      }else if(t.origin==='sequence')nextSequence(s,l,t);
       else if(active(l))addTask(s,l,'call','Retry contact — vary call time',businessAdd(today(),2),{origin:'followup',contactId:c?.id||null,objective:'Establish contact',dedupeKey:`retry:${l.id}:${t.id}`});
     }else if(outcome==='wrong_person'||outcome==='left_company'){
       if(c){c.roleStatus=outcome==='left_company'?'left_company':'not_responsible';if(outcome==='left_company')c.active=false}
-      cancelTasks(s,l,x=>x.origin==='sequence'&&x.contactId===c?.id,'Contact not relevant');
+      cancelTasks(s,l,x=>supersededOutreach(s,x)&&x.contactId===c?.id,'Contact not relevant');
       l.sequenceState='blocked';addRepair(s,l,opts.referredName?`Referred to ${opts.referredName}. Find their details and confirm FX responsibility.`:'Identify the person responsible for corporate FX and find a usable number.',today(),c?.id);
     }else if(outcome==='bad_number'){
       if(c){const m=c.methods.find(x=>x.id===(opts.methodId||t.methodId))||anyPhone(c);if(m)invalidateMethod(s,l,c,m.id,'Failed call: bad or incorrect number')}
       l.sequenceState='blocked';const alternative=preferredContact(l,'call');
-      if(alternative){let m=anyPhone(alternative);addTask(s,l,'call','Try alternative contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
-      else addRepair(s,l,'Find a new valid number, email-only route, or a different finance decision-maker.',today(),c?.id);
+      let repair;
+      if(alternative){let m=anyPhone(alternative);repair=addTask(s,l,'call','Try alternative contact number',today(),{origin:'repair_followup',contactId:alternative.id,methodId:m?.id,dedupeKey:`repair_call:${l.id}`})}
+      else repair=addRepair(s,l,'Find a new valid number, email-only route, or a different finance decision-maker.',today(),c?.id);
+      const attempt=s.activities.slice().reverse().find(a=>a.type==='Call'&&a.taskId===t.id);if(repair&&attempt&&repair.contactId===c?.id)repair.sourceActivityIds=[attempt.id];
     }else if(outcome==='callback'){
-      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&(x.origin==='sequence'||x.origin==='followup'),'Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
+      l.sequenceState='paused';cancelTasks(s,l,x=>supersededOutreach(s,x),'Agreed callback supersedes sequence');scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
     }else if(outcome==='meeting_booked'){
-      l.sequenceState='paused';
+      l.sequenceState='paused';cancelTasks(s,l,x=>supersededOutreach(s,x),'Meeting booked supersedes outreach');
       if(stageIndex(l.stage)<stageIndex('Meeting Booked'))advanceStage(s,l,'Meeting Booked',opts.notes||'Meeting booked',opts.callbackDate||'',opts.callbackTime||'');
       else if(opts.callbackDate)addTask(s,l,'meeting','Attend follow-up meeting',opts.callbackDate,{origin:'commitment',dueTime:opts.callbackTime||'',isCommitment:true,description:opts.notes||'',dedupeKey:`meeting:${l.id}:${opts.callbackDate}:${opts.callbackTime||''}`});
     }else if(outcome==='connected'){
-      l.sequenceState='paused';cancelTasks(s,l,x=>!x.isCommitment&&(x.origin==='sequence'||x.origin==='followup'),'Meaningful conversation');
+      l.sequenceState='paused';cancelTasks(s,l,x=>supersededOutreach(s,x),'Meaningful conversation');
       if(opts.callbackDate)scheduleCallback(s,l,opts.callbackDate,opts.callbackTime||'',opts.notes,c?.id);
       if(active(l)&&!s.tasks.some(x=>x.leadId===l.id&&x.status==='pending'&&(x.isCommitment||x.origin==='stage'))){
         let due=opts.callbackDate||businessAdd(today(),2);
@@ -331,7 +362,7 @@
     markCompleted(s,t,'Contact Resolution','Resolved: '+mode,opts.notes||'',10);
     l.sequenceState='paused';
     if(mode==='email')addTask(s,l,'email','Email to identify or reach the FX decision-maker',today(),{origin:'repair_followup',contactId:c.id,methodId:bestMethod(c,'email').id,dedupeKey:`repair_email:${l.id}`});
-    else if(c&&anyPhone(c))addTask(s,l,'call','Call updated FX contact',today(),{origin:'repair_followup',contactId:c.id,methodId:anyPhone(c).id,dedupeKey:`repair_call:${l.id}`});
+    else if(c&&anyPhone(c)){const call=addTask(s,l,'call','Call updated FX contact',today(),{origin:'repair_followup',contactId:c.id,methodId:anyPhone(c).id,dedupeKey:`repair_call:${l.id}`});if(call&&c.id===t.contactId&&t.sourceActivityIds)call.sourceActivityIds=[...t.sourceActivityIds];}
     else if(c&&bestMethod(c,'email'))addTask(s,l,'email','Email new contact',today(),{origin:'repair_followup',contactId:c.id,methodId:bestMethod(c,'email').id,dedupeKey:`repair_email:${l.id}`});
     else addRepair(s,l,'New contact still needs a usable phone or email',businessAdd(today(),2),c?.id);
     return {ok:true};
@@ -378,7 +409,7 @@
     if(t.type==='linkedin_message'&&!((c?.linkedinConnected&&bestMethod(c,'linkedin'))||preferredContact(l,'linkedin_message')?.linkedinConnected))return false;
     return true;
   }
-  function taskTier(t){if(t.isCommitment||t.type==='callback')return 5;if(t.type==='meeting')return 5;if(t.type==='deal')return 4;if(t.type==='research')return 2;if(['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type))return 2;return 1}
+  function taskTier(t){if(t.isCommitment||t.type==='callback')return 5;if(t.type==='meeting')return 5;if(t.type==='deal')return 4;if(t.type==='call'&&t.origin==='callback_retry')return 3;if(t.type==='research')return 2;if(['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type))return 2;return 1}
   function taskScore(s,t){const l=getLead(s,t.leadId);if(!l)return t.type==='leadgen'?20:0;
     const p=potentialForLead(l,s.settings);
     const age=clamp(daysBetween(today(),t.dueAt),0,25);
@@ -609,5 +640,5 @@
   }
   function normalize(v){if(v?.version===2)return migrateV2(v);if(!v||v.version!==3||!Array.isArray(v.leads))return null;let s=newState();s={...s,...v,version:3,settings:{...DEFAULT_SETTINGS,...v.settings},sequence:Array.isArray(v.sequence)&&v.sequence.length?v.sequence:copy(STEPS),leads:v.leads.map(buildLead),tasks:Array.isArray(v.tasks)?v.tasks:[],activities:Array.isArray(v.activities)?v.activities:[],readinessHistory:Array.isArray(v.readinessHistory)?v.readinessHistory:[],milestoneHistory:Array.isArray(v.milestoneHistory)?v.milestoneHistory:[],suppression:Array.isArray(v.suppression)?v.suppression:[]};return s}
   function checkInvariants(s){const errors=[];for(const l of s.leads){if(!STAGES.includes(l.stage))errors.push('Invalid pipeline stage');if(!STATUSES.includes(l.status))errors.push('Invalid outcome status');if(l.readiness!==null&&(!Number.isInteger(l.readiness)||l.readiness<1||l.readiness>8))errors.push('Invalid Buyer Readiness');if(l.leadPool==='reserve'&&s.tasks.some(t=>t.leadId===l.id&&t.status==='pending'))errors.push('Reserved prospect has pending sales tasks');if(l.status==='Take Me Off the List'&&pending(s).some(t=>t.leadId===l.id))errors.push('Suppressed lead has actionable tasks')}return errors}
-  return {KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,addCalendarMonths,validPastDate,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,reserveEligibility,reserveRank,reserveReviewDue,reclaimReviewDate,dupeQueue,dupeState,reviewReserveCRM,logReclaimRequest,recordReclaimDecision,activateReserve,autoReplenishReserve,updateFX,migrateV2,normalize,checkInvariants};
+  return {callbackSource,KEY,OLD_KEY,STAGES,READINESS,STATUSES,STEPS,DEFAULT_SETTINGS,NEXT_MILESTONES,OBJECTIVES,STAGE_TASK,STAGE_PROB,uid,today,addDays,businessAdd,addCalendarMonths,validPastDate,daysBetween,phoneDial,companyKey,num,clamp,newState,buildLead,buildContact,method,getLead,getTask,getContact,methods,bestMethod,anyPhone,canContact,preferredContact,isSuppressed,log,reward,cancelTasks,active,addTask,addRepair,createSequenceStep,startSequence,nextSequence,stageTask,advanceStage,setReadiness,addSuppression,changeStatus,createLead,addContact,addMethod,invalidateMethod,markCompleted,scheduleCallback,logCall,completeTask,snoozeTask,skipTask,resolveContact,isDue,potentialForLead,pipelineValue,isEligibleTask,taskTier,taskScore,pending,due,nextTask,xpStats,activityToday,insights,leadSupply,reserveEligibility,reserveRank,reserveReviewDue,reclaimReviewDate,dupeQueue,dupeState,reviewReserveCRM,logReclaimRequest,recordReclaimDecision,activateReserve,autoReplenishReserve,updateFX,migrateV2,normalize,checkInvariants};
 });

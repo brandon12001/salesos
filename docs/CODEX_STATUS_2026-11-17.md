@@ -1,3 +1,15 @@
+# Current update — 27 November 2026: callback continuity and reserve supply
+
+PR #34 is released at `ba582dbda8734933ecf26d1df253cac4588b6a80`, Vercel READY `dpl_FdBRpE7vfijZozbARFw8DXMsKJX8`, canonical https://salesos-up-next7.vercel.app/. The user reported missed requested callbacks reverting to cold outreach, asked for adjacent progression gaps to be closed, then reported inability to activate reserve prospects. Work is isolated on `fix/callback-retry-context` in `/workspace/salesos-callback-retry`.
+
+Explicit callback lineage now retains the agreed context across misses and same-person number repairs; existing generic retries are recognised without rewriting production data. Suggested attempts do not become fabricated commitments or opportunity interest. Actual promises gate them; superseded retries are cleared after fresh engagement/agreements. Reserve rows and batches use consistent minimum-score checks, show actionable blockers and support a call-only view. See [callback and reserve rules](CALLBACK_RETRIES.md).
+
+SELECT-only diagnosis of production revision 349: 175 reserve companies, 86 ownership-held; no eligible activations at minimum score 60. At 55, 12 callable companies pass the other checks (14 including email-only). These are diagnostic counts, not a recommendation to fabricate suitability. No production thresholds, clearance, prospects or activity were changed. Automatic replenishment remains OFF. The user can explicitly review/save their threshold and activate a batch after release.
+
+No migration, new dependency, paid service or external research. Run build/all 28 suites and full fictional local browser plus final-head CI. Follow standing automatic-release authorisation with fresh private workspace/search-budget backup, exact tested/merged tree and Vercel READY/canonical alias plus SELECT-only preservation. Live-account sign-in remains manual. Preserve other worktrees/PR #12.
+
+---
+
 # Current update — 27 November 2026: ready-to-send routine copy
 
 PR #33 is released at `be20cd5df562ad8680f34514abf15d5de5e9d14e`, Vercel READY `dpl_xM9un8sBf4mxk37BetkK4uwmx6d9`, canonical https://salesos-up-next7.vercel.app/. The user wants to trust routine drafts without daily editing. Work is isolated on `feat/ready-email-copy` in `/workspace/salesos-ready-email`.
