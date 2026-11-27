@@ -1,3 +1,5 @@
+import {lushaStatus,searchSeniorContacts,revealSeniorContacts,LushaError} from '../server/lushaContacts.js';
+import type {ContactWorkspace} from '../src/lib/contactResearchRules.js';
 import {budgetClient,BudgetError} from '../server/searchBudget.js';
 import {ruleScore,type SearchHit,type Signal} from './rule-score.js';
 import {assessRegistry,screenedPriority,PROFILE_LIMIT,type CompanyProfile,type RegistryCheck} from './registry-quality.js';
@@ -117,12 +119,28 @@ export default async function handler(req:Request,res:ServerResponse){
   const auth=await fetch(url.replace(/\/$/,'')+'/auth/v1/user',{headers:{apikey:publishable,Authorization:'Bearer '+token},signal:AbortSignal.timeout(9000)});
   if(!auth.ok)return respond(res,401,{error:'Your SalesOS session has expired.'});
   const user=await auth.json() as {id?:string};if(!user.id)return respond(res,401,{error:'SalesOS session is not authorised.'});
-  const input=await bodyOf(req) as {mode?:string;profile?:Sector;cursor?:number;remaining?:number;stopOn?:string;revision?:number;confirmed?:boolean;candidates?:Array<{company:string;companyNumber:string;sector:Sector;sicCodes:string[];incorporated:string}>};
+  const input=await bodyOf(req) as {mode?:string;ids?:string[];selections?:Array<{id:string;contactId:string}>;profile?:Sector;cursor?:number;remaining?:number;stopOn?:string;revision?:number;confirmed?:boolean;candidates?:Array<{company:string;companyNumber:string;sector:Sector;sicCodes:string[];incorporated:string}>};
   const budget=budgetClient(url,publishable,token);
   if(input.mode==='budget-status')return respond(res,200,{budget:await budget('status')});
   if(input.mode==='budget-config'){
    if(input.confirmed!==true||!Number.isInteger(input.remaining)||input.remaining!<0||input.remaining!>1000||!Number.isSafeInteger(input.revision)||input.revision!<0||typeof input.stopOn!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(input.stopOn))return respond(res,400,{error:'Confirm your remaining allowance (0-1000), stop date and latest budget revision.'});
    return respond(res,200,{budget:await budget('configure',input.remaining!,input.stopOn,input.revision!)});
+  }
+  if(['lusha-status','lusha-search','lusha-reveal'].includes(input.mode||'')){
+   // Reuse the administrator-provisioned owner check, without reserving or
+   // changing a single Brave request. Other signed-in accounts cannot use this key.
+   try{await budget('status')}catch{throw new LushaError('Lusha authorisation could not be verified for the provisioned SalesOS account. No Lusha quota used.',503)}
+   const lushaKey=process.env.LUSHA_API_KEY||'';
+   if(input.mode==='lusha-status')return respond(res,200,await lushaStatus(lushaKey));
+   if(!lushaKey)return respond(res,503,{error:'Add LUSHA_API_KEY in Vercel Production to connect the existing Lusha account.'});
+   const query=new URLSearchParams({select:'leads:payload->leads,factory:payload->meta->leadFactory,settings:payload->settings,suppression:payload->suppression',user_id:'eq.'+user.id,limit:'1'});
+   const saved=await fetch(url.replace(/\/$/,'')+'/rest/v1/salesos_workspaces?'+query,{headers:{apikey:publishable,Authorization:'Bearer '+token},signal:AbortSignal.timeout(9000)});
+   if(!saved.ok)return respond(res,503,{error:'Could not read the saved workspace. No Lusha requests sent.'});
+   const rows=await saved.json() as ContactWorkspace[];
+   if(!Array.isArray(rows)||rows.length!==1||!Array.isArray(rows[0].leads)||!Array.isArray(rows[0].suppression)||!rows[0].settings||rows[0].factory!==null&&!Array.isArray(rows[0].factory?.candidates))return respond(res,503,{error:'Company and suppression screening unavailable. No Lusha requests sent.'});
+   if(input.mode==='lusha-search')return respond(res,200,await searchSeniorContacts(rows[0],input.ids||[],lushaKey));
+   if(!Array.isArray(input.selections)||!input.selections.length||input.selections.length>4||input.selections.some(x=>!x||typeof x.id!=='string'||typeof x.contactId!=='string'||!x.contactId||x.contactId.length>180))return respond(res,400,{error:'Select one approved contact per company, up to four companies.'});
+   return respond(res,200,await revealSeniorContacts(rows[0],input.selections,lushaKey));
   }
   const key=process.env.COMPANIES_HOUSE_API_KEY;
   if(!key)return respond(res,503,{error:'Add COMPANIES_HOUSE_API_KEY to Vercel Production environment to run company checks.'});
@@ -217,6 +235,7 @@ export default async function handler(req:Request,res:ServerResponse){
    registryFlagged:items.filter(x=>x.registryCheck.risk==='review'||x.registryCheck.risk==='unverified').length,
    disclaimer:'A public search snippet is an unverified clue; these scores never confirm FX volumes, currencies, decision authority or revenue. No AI.'});
  }catch(error){
+  if(error instanceof LushaError)return respond(res,error.status,{error:error.message});
   if(error instanceof BudgetError)return respond(res,error.status,{error:error.message});
   const message=error instanceof Error?error.message:'Research failed.';
   respond(res,502,{error:/abort|timeout/i.test(message)?'Registry service timed out; no changes saved.':'Research service unavailable; no companies saved.'});

@@ -1,3 +1,7 @@
+# Strict contact sourcing update — 27 November 2026
+
+Lead Research now defaults to HMRC goods discovery. Specialist manufacturer codes 27900/28290 are included with the existing checks; matched HMRC research fit scores 65 (70 for regular recorded months) so qualified companies do not remain stranded at registry-only scores. Optional Lusha sourcing accepts only approved senior roles, checks current company/profile/phone data and retains manual ownership clearance. It requires a server-side LUSHA_API_KEY and explicit bounded actions; it is not a 24/7 worker. See [connection, quota and quality rules](STRICT_LUSHA_SOURCING.md).
+
 # SalesOS — rules-based FX Lead Finder (no AI model)
 
 ## Current production design

@@ -78,3 +78,6 @@ export function validCompanyContext(c:CompanyContext){
   !!c.gleif&&['matched','unknown','error'].includes(c.gleif.status)&&publicSource(c.gleif.sourceUrl)&&typeof c.gleif.summary==='string'&&c.gleif.summary.length<=600&&
   (!c.gleif.parents||c.gleif.parents.length<=2&&c.gleif.parents.every(p=>['direct','ultimate'].includes(p.kind)&&/^[A-Z0-9]{20}$/.test(p.lei)&&typeof p.name==='string'&&p.name.length<=220&&/^[A-Z]{2}$/.test(p.country)&&publicSource(p.sourceUrl)));
 }
+
+// A research-priority score only; never FX volume, currency or buyer readiness.
+export function hmrcFitPriority(c:Parameters<typeof hmrcQualified>[0],now=Date.now()){return hmrcQualified(c,now)?(tradeActivity(c,now)?.months||0)>=3?70:65:0}

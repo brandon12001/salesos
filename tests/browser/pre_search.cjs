@@ -13,7 +13,7 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  delete rows[4].registryCheck.companyType; // Old saved records need a free refresh first.
  core.createLead(s,{company:rows[5].company,companyNumber:rows[5].companyNumber,leadPool:'reserve',crmClearance:'hold',crmOwner:'Fictional owner'});
  s.meta.leadFactory={version:1,candidates:rows,cursors:{recruitment:1},lastRunAt:now};
- await restore(a,s);const before=await state(a);await nav(a,'Lead Research');
+ await restore(a,s);const before=await state(a);await nav(a,'Lead Research');await a.getByLabel('Research sector').selectOption('recruitment');
  const projection=await a.evaluate(async publicKey=>{
   const key=Object.keys(localStorage).find(k=>k.startsWith('sb-')&&k.endsWith('-auth-token'));
   const session=JSON.parse(localStorage.getItem(key));
@@ -29,7 +29,7 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  await a.getByText(/Generic placement alone is too broad/).waitFor();await a.getByText(/Under two years old:/).waitFor();
  await a.getByText(/Already tracked in SalesOS; no search credits will be spent/).waitFor();
  let requests=0;
- await a.route('**/api/lead-research',async route=>{if(route.request().postDataJSON()?.mode==='budget-status')return route.fallback();
+ await a.route('**/api/lead-research',async route=>{if(['budget-status','lusha-status'].includes(route.request().postDataJSON()?.mode))return route.fallback();
   requests++;const body=route.request().postDataJSON();assert.equal(body.mode,'web-enrich');
   assert.deepEqual(body.candidates.map(c=>c.companyNumber),[rows[0].companyNumber],'only selected-sector eligible company submitted');
   // Official recheck finds it newly overdue: no search performed; keep it for review.

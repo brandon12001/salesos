@@ -27,7 +27,8 @@
       "feat/opportunity-attention": false,
       "feat/daily-email-merge": false,
       "feat/ready-email-copy": false,
-      "fix/callback-retry-context": false
+      "fix/callback-retry-context": false,
+      "feat/strict-lusha-intake": false
     }
   },
   "functions": {

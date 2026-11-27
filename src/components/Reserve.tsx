@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useState,type ReactNode} from 'react';
 import type {Lead,State} from '../types';
 import {core} from '../lib/core';
 import {reserveAvailability} from '../lib/reserveAvailability';
@@ -14,7 +14,7 @@ const settingsFrom=(s:State):ReserveSettings=>({
   reserveActiveCap:s.settings.reserveActiveCap??150,
   reserveIntelligentRefill:s.settings.reserveIntelligentRefill??0
 });
-export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue,onResearch}:{state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void;onResearch:()=>void}){
+export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,onDupeQueue,onResearch,seniorContacts}:{seniorContacts?:ReactNode;state:State;onActivate:(ids:string[])=>void;onSettings:(changes:ReserveSettings)=>void;onImport:()=>void;onReviewCRM:(id:string,clearance:'cleared'|'hold',note:string,lastActivityAt:string)=>boolean;onDupeQueue:()=>void;onResearch:()=>void}){
   const focus=industryFocusConfig(state);
   const [phoneOnly,setPhoneOnly]=useState(state.settings.coldCallMode===1);
   const [industryFilter,setIndustryFilter]=useState(()=>focus.enabled?focus.category:'all');
@@ -53,6 +53,7 @@ export function LeadReserve({state,onActivate,onSettings,onImport,onReviewCRM,on
       <div className="button-row"><button className="btn primary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,5).map(l=>l.id))}>Activate top 5</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>onActivate(eligible.slice(0,10).map(l=>l.id))}>Activate top 10</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>{if(window.confirm(`Activate up to 25 eligible ${industryFilter==='all'?'prospects':industryLabel(state,industryFilter)+' prospects'}?`))onActivate(eligible.slice(0,25).map(l=>l.id))}}>Activate top 25</button><button className="btn secondary" disabled={!eligible.length} onClick={()=>{if(window.confirm(`Activate up to 50 eligible ${industryFilter==='all'?'prospects':industryLabel(state,industryFilter)+' prospects'}?`))onActivate(eligible.slice(0,50).map(l=>l.id))}}>Activate top 50</button><button className="btn quiet" onClick={onImport}>Upload refreshed research</button></div>
       <small>{supply.ready+supply.upcoming} tasks due in the configured {supply.days}-working-day supply window. No lead activates merely because it was imported unless you explicitly enable auto-replenishment below.</small>
     </section>
+    {seniorContacts}
     <section className="panel stack">
       <div className="section-between"><h2>Controlled automatic replenishment</h2><Badge tone={state.settings.reserveAutoActivate?'green':'muted'}>{state.settings.reserveAutoActivate?'Enabled':'Disabled by default'}</Badge></div>
       <label className="check-row"><input type="checkbox" checked={!!settings.reserveAutoActivate} onChange={e=>update('reserveAutoActivate',e.target.checked?1:0)}/> Activate top eligible prospects when upcoming work drops below the floor</label>
