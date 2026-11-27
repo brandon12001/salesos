@@ -39,7 +39,7 @@ export async function revealSeniorContacts(w:ContactWorkspace,selections:Array<{
  // Revalidate current role/company through the provider before any phone charge.
  const verify=await search(key,targets,picks.map(p=>p!.id));if(!Array.isArray(verify.results))throw new LushaError('Lusha could not verify the selected profiles. No phone reveal sent.');
  const checked=picks.map((p,i)=>{const raw=verify.results!.find(r=>r.id===p!.id),current=raw&&matches(raw,targets[i],w);return current&&current.domain===p!.domain&&current.name===p!.name&&current.title===p!.title&&current.phoneCredits<=p!.phoneCredits?current:null});
- if(checked.some(p=>!p))throw new LushaError('A selected role, company, price or profile changed. No phone reveal sent; search again.',409);
+ if(checked.some(p=>!p))throw new LushaError('A selected role, company, price or profile changed. No phone reveal sent. Use Skip these contact previews, then search again.',409);
  const result=await api('/contacts/enrich',key,{ids:checked.map(p=>p!.id),reveal:['phones'],waterfallEnabled:false});if(result.job)throw new LushaError('Lusha returned a background job despite Lusha-only mode. Do not repeat this reveal; check the existing job in Lusha.');if(!Array.isArray(result.results))throw new LushaError('Lusha returned an incomplete reveal. Do not retry automatically.');
  const rows=targets.map((t,i)=>{
   const p=checked[i]!,raw=result.results!.find(r=>r.id===p.id);let contact:SeniorContact|undefined;

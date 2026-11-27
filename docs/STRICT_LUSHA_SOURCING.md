@@ -22,7 +22,7 @@ There is **no unattended/24-hour loop**, automatic retry, provider webhook, CRM 
 
 ## Quality and persistence
 
-The server checks exact title, UK location, exact normalised company identity and known domain before revealing, and repeats checks on the enriched result. The client validates again before its atomic workspace save. Changed roles/company/price, DNC/missing-DNC, switchboards, non-Lusha data, malformed/non-UK numbers and provider profile/phone dates older than 180 days are excluded. A retrieval today never makes an old provider record fresh.
+The server checks exact title, UK location, exact normalised company identity and known domain before revealing, and repeats checks on the enriched result. The client validates again before its atomic workspace save. Changed roles/company/price, DNC/missing-DNC, switchboards, non-Lusha data, malformed/non-UK numbers and provider profile/phone dates older than 180 days are excluded. A retrieval today never makes an old provider record fresh. A rejected/empty reveal consumes its preview so the same unsuitable profile cannot immediately trigger another quota charge.
 
 Matched contacts retain original mobile/direct types and alternative mobiles, remain unverified until a real call, and do not confirm FX responsibility. Source IDs, retrieval/provider dates and notes are retained. Canonical stamps tolerate JSONB key ordering but reject genuine competing company/contact/permission changes. A stale save never overwrites the winner; already retrieved valid profiles remain downloadable as CSV. The CSV uses the saved legal company name, avoiding duplicate companies from provider brand aliases. JSON backup/restore preserves optional contact-research metadata.
 

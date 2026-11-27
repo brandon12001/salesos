@@ -12,6 +12,8 @@ export function applyContactResearch(s:State,updates:ContactUpdate[],mode:'searc
   if(u.company!==t.company)throw Error('Company identity changed. No records changed.');
   if(mode==='search'){
    if(!u.searchedAt||!Number.isFinite(Date.parse(u.searchedAt))||Date.parse(u.searchedAt)>+now+300000||+now-Date.parse(u.searchedAt)>86400000||!Array.isArray(u.previews)||u.previews.length>5||new Set(u.previews.map(p=>p.id)).size!==u.previews.length||u.previews.some(p=>!validSeniorPreview(p)||companyIdentity(p.company)!==companyIdentity(t.company)||t.domain&&p.domain!==t.domain||existingContact(w,t,p.name,p.linkedin)))throw Error('Invalid or mismatched senior contact preview. No records changed.');
+  }else if(!u.contact){
+   if(typeof u.reason!=='string'||!u.reason.trim()||u.reason.length>220)throw Error('Invalid empty reveal result. No records changed.');
   }else if(u.contact){
    const c=u.contact,p=t.research?.previews.find(p=>p.id===c.id);
    if(!p||!validSeniorContact(c)||+now-Date.parse(c.checkedAt)>86400000||Date.parse(c.checkedAt)>+now+300000||p.title!==c.title||p.name!==c.name||p.domain!==c.domain||companyIdentity(c.company)!==companyIdentity(t.company)||existingContact(w,t,c.name,c.linkedin)||c.phones.some(p=>blockedPhone(w,p.number)))throw Error('A retrieved contact no longer passes role, company or suppression checks. No records changed.');
@@ -21,8 +23,9 @@ export function applyContactResearch(s:State,updates:ContactUpdate[],mode:'searc
  for(let i=0;i<updates.length;i++){
   const u=updates[i],t=targets[i]!,lead=t.kind==='reserve'?s.leads.find(l=>l.id===t.id):null,candidate=t.kind==='research'?w.factory!.candidates.find(c=>c.id===t.id):null,target=lead||candidate!;
   if(mode==='search')target.contactResearch={version:1,searchedAt:u.searchedAt!,previews:u.previews!};
+  else if(!u.contact){target.contactResearch={version:1,searchedAt:now.toISOString(),previews:[],lastOutcome:'no-callable-profile'}}
   else if(u.contact){
-   target.contactResearch={version:1,searchedAt:t.research!.searchedAt,previews:[],contact:u.contact};
+   target.contactResearch={version:1,searchedAt:t.research!.searchedAt,previews:[],lastOutcome:'revealed',contact:u.contact};
    if(lead){
     const c=core.addContact(s,lead,seniorContactData(u.contact));if(!c||c.duplicate)throw Error('Contact already exists; no history was overwritten.');lead.primaryContactId=c.id;
     if(!companyDomain(lead.companyDomain))lead.companyDomain=u.contact.domain;
