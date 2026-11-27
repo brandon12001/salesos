@@ -1,3 +1,4 @@
+import {core} from '../core';
 import type {Contact,Lead,Method,State,Task} from '../../types';
 import {dateAge,intelligenceData,isDue,localDate,protectedTask} from './evidence';
 
@@ -44,6 +45,7 @@ export function taskRestriction(s:State,t:Task,now:Date,includeFuture=false,resp
  if(t.contactId){const c=l.contacts.find(c=>c.id===t.contactId);if(!c||suppressed(s,l,c))return 'Contact is missing or suppressed.';
   if(t.type!=='research'&&!contactAllowed(s,l,c))return 'Contact is inactive or is not responsible.';
  }
+ if(!protectedTask(t)&&t.type==='call'&&(t.origin==='callback_retry'||t.dedupeKey?.startsWith('retry:')||t.sourceActivityIds?.length)&&core.callbackSource(s,t)&&s.tasks.some(x=>x.leadId===l.id&&x.id!==t.id&&x.status==='pending'&&protectedTask(x)))return 'A recorded promise already defines the next contact; the suggested callback retry waits.';
  const outreach=['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type);
  if(outreach&&!channel(s,l,t.type,t.contactId,t.methodId))return 'The required contact channel is unavailable or invalid.';
  const timing=intelligenceData(s).timing[l.id];

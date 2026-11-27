@@ -82,7 +82,7 @@ export function saveOpportunity(s:State,id:string,input:OpportunityInput,expecte
    Object.assign(owned,{type:input.kind,title:input.nextStep.trim(),description:input.nextStep.trim(),objective:input.nextStep.trim(),contactId:route?.contact.id||input.contactId||null,methodId:route?.method.id||null});
   }else core.addTask(s,l,input.kind,input.nextStep.trim(),input.date,{origin:'opportunity',dueTime:input.time,contactId:route?.contact.id||input.contactId||null,methodId:route?.method.id||null,description:input.nextStep.trim(),objective:input.nextStep.trim(),dedupeKey:'opportunity-next:'+id});
  }
- if(positive){l.sequenceState='paused';core.cancelTasks(s,l,(t:Task)=>!protectedTask(t)&&['sequence','followup'].includes(t.origin),'Positive response recorded; progress the opportunity');}
+ if(positive){l.sequenceState='paused';core.cancelTasks(s,l,(t:Task)=>!protectedTask(t)&&(['sequence','followup','callback_retry'].includes(t.origin)||!!core.callbackSource(s,t)),'Positive response recorded; progress the opportunity');}
  const old=plans(s);s.meta={...s.meta,opportunities:{...old,records:{...old.records,[id]:{nextStep:input.nextStep.trim(),barrier:input.barrier.trim(),updatedAt:now.toISOString()}}}};
  if(input.nextStep.trim())l.nextMilestone=input.nextStep.trim();l.barrier=input.barrier.trim();
  core.log(s,l,'Opportunity',positive?'Positive response recorded':'Next step updated',positive?input.evidence:input.nextStep,0,{contactId:input.contactId||null});

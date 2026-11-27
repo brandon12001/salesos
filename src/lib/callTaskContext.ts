@@ -1,5 +1,17 @@
 import type {Lead,State,Task} from '../types';
 import {contactFor,phoneMethodFor} from './helpers';
+import {core} from './core';
+
+// Existing generic retry tasks are recognised read-only through their original
+// callback lineage. Dates, history, Buyer Readiness and stage are never changed.
+export function callbackRetryContext(state:State,lead:Lead,task:Task){
+ if(task.type!=='call'||task.status!=='pending'||(!task.dedupeKey?.startsWith('retry:')&&!task.sourceActivityIds?.length))return null;
+ const source=typeof core.callbackSource==='function'?core.callbackSource(state,task) as Task|null:null;
+ if(!source||source.id===task.id||source.leadId!==lead.id)return null;
+ const contact=contactFor(lead,task);if(!contact||!task.contactId||source.contactId&&source.contactId!==contact.id)return null;
+ const repair=repairCallContext(state,lead,task),context=source.description?.trim()||'',when=source.dueAt+(source.dueTime?' '+source.dueTime:'');
+ return {title:'Retry requested callback',rule:'callback-retry',reason:`A callback with ${contact.name} was recorded for ${when}, but the call did not reach the requested conversation.${context?' Recorded context: '+context.slice(0,280):''} The next retry date is suggested; no new appointment has been agreed.${repair?' '+repair.reason:''}`,objective:`Reconnect with ${contact.name} about the recorded callback${context?': '+context.slice(0,180):''}. ${repair?'Confirm who answers on this alternative number. ':''}Confirm the next step if reached.`,success:'Record the actual outcome and agree the next action if the contact is reached',callbackTaskId:source.id,originalDate:source.dueAt,originalTime:source.dueTime,originalContext:context};
+}
 
 // Display-only context for number repair. Never changes selection, scheduling or stored history.
 export function repairCallContext(state:State,lead:Lead,task:Task){

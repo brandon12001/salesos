@@ -1,5 +1,6 @@
 import type {Lead,State,Task} from '../types';
 import {core} from './core';
+import {callbackRetryContext} from './callTaskContext';
 import {parseCSV} from './importer';
 import {companyDomainKey,matchExistingCompany} from './companyEnrichment';
 
@@ -21,7 +22,7 @@ export function callPreparation(s:State,l:Lead):CallPreparation|null{
  return item&&columns.every(([,key])=>typeof item[key]==='string')?item:null;
 }
 export function coldPreparation(s:State,l:Lead,t:Task){
- return t.type==='call'&&!t.isCommitment&&l.stage==='Prospecting'&&(l.readiness||1)<=2&&['sequence','followup','intelligence'].includes(t.origin)?callPreparation(s,l):null;
+ return t.type==='call'&&!t.isCommitment&&l.stage==='Prospecting'&&(l.readiness||1)<=2&&['sequence','followup','intelligence'].includes(t.origin)&&!callbackRetryContext(s,l,t)?callPreparation(s,l):null;
 }
 const stamp=(s:State,l:Lead)=>JSON.stringify([l.id,l.company,l.companyNumber,l.companyDomain,registry(s).companies[l.id]??null]);
 const comparable=(item:CallPreparation|null)=>item?JSON.stringify(columns.map(([,key])=>item[key])):'';

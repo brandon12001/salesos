@@ -1,4 +1,5 @@
 import {coldPreparation} from '../callPreparation';
+import {callbackRetryContext} from '../callTaskContext';
 import {commercialPurpose} from '../workQueues';
 // Pure decision functions: no clock reads, storage, network, IDs or mutations.
 import type {Lead,State,Task} from '../../types';
@@ -16,6 +17,7 @@ function effort(t:Task){return t.type==='meeting'?30:t.type==='deal'?12:t.type==
 function purpose(s:State,l:Lead,t:Task,now:Date){
  const e=evidenceFor(s,l),attempts=attemptsSinceEngagement(s,l,now).length;
  if(protectedTask(t))return {rule:'promise',title:t.title,objective:t.objective||'Deliver the agreed action before proposing another step',success:t.successCriteria||'The promise is delivered and the buyer confirms the next step',reason:'This agreed action is due; its schedule takes precedence over every speculative opportunity.'};
+ const callback=callbackRetryContext(s,l,t);if(callback)return callback;
  if(t.origin==='repair'||t.type==='research')return {rule:'contact-repair',title:t.title,objective:'Identify the relevant finance decision-maker and verify a permitted channel',success:'A usable channel and the correct responsibility are established',reason:'Contact information needs repair before further outreach.'};
  if(['manual','progression','commitment','post_call'].includes(t.origin)&&(t.objective||t.description))return {rule:'recorded-next-step',title:t.title,objective:t.objective||t.description,success:t.successCriteria||'Deliver the recorded step and confirm the next buyer milestone',reason:'A specific next step is already recorded; it takes precedence over a generic approach.'};
  const work=commercialPurpose(s,l,t,now);if(work&&(l.readiness||0)<=2)return work;
@@ -62,7 +64,7 @@ export function evaluate(s:State,now:Date):Decision{
   if(reason){blocked.push({leadId:l.id,reason});continue}
   const due=pending.filter(t=>isDue(t,now));
   for(const t of due){
-   if(pending.some(protectedTask)&&!protectedTask(t)&&['sequence','followup'].includes(t.origin)){blocked.push({leadId:l.id,reason:'A recorded promise already defines the next contact; generic outreach waits.'});continue;}
+   if(pending.some(protectedTask)&&!protectedTask(t)&&['sequence','followup','callback_retry'].includes(t.origin)){blocked.push({leadId:l.id,reason:'A recorded promise already defines the next contact; generic outreach waits.'});continue;}
    const r=taskRestriction(s,t,now);if(!r)recommendations.push(recommend(s,l,t,now));else blocked.push({leadId:l.id,reason:r});
   }
   const broken=due.find(t=>['call','callback','email','linkedin_connect','linkedin_message'].includes(t.type)&&!channel(s,l,t.type,t.contactId,t.methodId));
@@ -73,7 +75,7 @@ export function evaluate(s:State,now:Date):Decision{
   // Pending schedules/promises are authoritative. No speculative extra work around a future task.
   if(l.status!=='Active')continue;
   if(pending.some(protectedTask))continue;
-  const outreach=due.find(t=>['sequence','followup'].includes(t.origin)&&!taskRestriction(s,t,now));
+  const outreach=due.find(t=>['sequence','followup'].includes(t.origin)&&!callbackRetryContext(s,l,t)&&!taskRestriction(s,t,now));
   if(outreach&&attemptsSinceEngagement(s,l,now).length>=3){
    const alternative=outreach.type==='email'?'call':'email';
    if(!pending.some(t=>t.type===alternative)&&channel(s,l,alternative)){
