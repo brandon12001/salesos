@@ -1,0 +1,38 @@
+# Daily email batch and Word mail merge
+
+The user confirmed desktop Word/classic Outlook and requested a Word document plus recipient file prepared from due email tasks. This is manual file export and explicit sent confirmation, not an Outlook API integration, automatic send or macro. All sending stays under the user's control.
+
+## Daily workflow
+
+Open **Email batch** from navigation. Preview up to 50 eligible routine emails, adjust the common subject/sign-off and individual messages, choose recipients, and explicitly approve preparation. Preparation saves an immutable batch snapshot and enables grouping in Focus. Wait for **Saved to cloud**, then download/extract the ZIP containing **Email.docx**, **Recipients.xlsx** and short instructions. In desktop Word, Select Recipients → Use an Existing List → Recipients.xlsx (Recipients sheet), Preview Results, then Finish & Merge → Send Email Messages (To: Email). Verify the shared subject and sending account. Word may ask for the data source/subject; opening a downloaded document does not automatically connect local files or send anything. The document predefines ten body merge fields and email settings. No VBA, Office automation script, tracking pixel, remote resource or executable is included. The ordinary Outlook signature is not assumed; the prepared text contains the sign-off.
+
+After sending, select only the rows actually sent, explicitly attest and confirm. Partial sends are supported. Skipping explicitly unsent rows changes the batch only; their original tasks stay pending. No second routine batch is prepared that day; remaining routine work waits for the next daily batch. A previous open batch must be resolved before preparing a new one. Confirmed rows disappear from later downloads. A closed pack cannot be downloaded again. Do not resend because cloud acknowledgement is pending: resolve the save/conflict with its recovery backup first.
+
+Daily grouping is opt-in and can be switched off. While on, Focus shows one derived summary in place of eligible routine email suggestions in each engine, at the first replaced email's position. Original source tasks are retained in Task Queue; underlying queue/statistics count them. Existing promised/timed actions keep priority and their exact schedules. Cold Call Mode still shows only calls plus protected commitments; the batch is available through navigation.
+
+## Scope and copy
+
+Only saved, due, untimed, non-promised sequence/follow-up email tasks for Active Prospecting companies at readiness 1/2 or unassessed, with current manual ownership clearance and a named permitted email contact, can enter the routine batch. Existing KPI, timing, suppression/contact/ownership rules are rechecked. Buyer-interest/qualified classifications, post-call, repair, opportunity, later-stage and protected emails stay individual. One email per address in a batch; recorded emails already sent that day are excluded. Duplicate routine source suggestions are grouped/deferred rather than completed or deleted. Readiness and stage never advance because a batch is prepared or sent.
+
+Default copy is short, names the person/company, uses a conditional business-sector relevance sentence and one interest question. It does not invent foreign-currency activity, amounts, savings, buying intent or prior conversations. Messages are editable; no live AI or paid API is added. Word's normal mail merge uses a common subject. Each XLSX cell is explicitly text (inlineStr), including values beginning with formula characters. XML/control characters are safely escaped. Ten paragraphs/3,000 characters per message and 50 recipients bound package size.
+
+## State, safety and accounting
+
+Optional `meta.emailMerge` version 1 stores preferences and daily snapshots (task/recipient IDs, actual address/text, source stamp, pending/sent/skipped status). Once every row is handled, duplicate message/stamp text is removed from the closed batch to keep cloud/browser storage small; actual sent text remains on normal activities. Compact closed snapshots older than 30 days are pruned on later preparation. Open snapshots are retained. Unsupported/corrupt metadata fails closed for changes. `settings.emailMergeMode` is opt-in. JSON backups/cloud outbox retain these fields. No schema migration or dependency is needed.
+
+Prepare/export create no outreach activity, completion or XP. Sent confirmation rechecks the whole selected set before changing it inside the existing atomic workspace commit. Every actual confirmed email completes its matching original task through the existing cadence, earns only existing email XP, and records To/Subject/body plus optional `emailRecipient`, `emailBatchId`, `emailSubject` on that actual activity. It creates no extra completed daily task. Skip does not cancel or complete source work. No automatic reserve replenishment runs for batch edits/completion. Same-batch stamps reject stale view changes, and the existing account-scoped cloud revision/outbox conflict recovery protects competing sessions. Recipient/task changes or newly suppressed records block re-export and sent confirmation; review/skip them separately. Physical emails cannot be recalled or delivery-verified by SalesOS. A saved/confirmed send is a human attestation, not server delivery evidence.
+
+## Verification and release
+
+Use fictional local Auth/Postgres/REST/mail only. Unit contracts include all eligibility gates, caps/grouping, promises/warm exclusions, duplicates, stale snapshots, no prepare/export accounting, exact partial sends, skipped work, cadence/readiness/stage/XP independence, JSON compatibility, valid ZIP CRC/XML and spreadsheet-formula injection safety. Browser checks exercise all Focus engines, protected priority, actual ZIP download, local cloud persistence/reload, partial sent/skip, suppression rollback, mobile and competing preparation recovery. Independent document/spreadsheet parsers validate the generated formats; final desktop Word/classic Outlook preview/sending remains a manual user check. No real employer prospect or provider request is used for tests.
+
+Run install/build/all suites and full production-bundle browser plus final-head CI. Standing auto-deployment authorisation applies after a fresh private production workspace/budget backup, exact source/merge-tree verification, intended Vercel project/team/production READY/canonical alias and SELECT-only data preservation. No migration. Preserve the 1,000-request Brave allowance configured on 27 November (stop 1 December UTC, no renewal assumption); this feature spends no requests.
+
+Sources informing the defaults and manual workflow:
+
+- [Microsoft: bulk email with Word mail merge](https://support.microsoft.com/en-us/word/use-mail-merge-in-word-to-send-bulk-email-messages)
+- [Microsoft: spreadsheet data source](https://support.microsoft.com/en-us/word/mail-merge-using-an-excel-spreadsheet)
+- [Gong: interest-based cold email CTA](https://www.gong.io/blog/this-surprising-cold-email-cta-will-help-you-book-a-lot-more-meetings)
+- [Hunter: state of cold email study](https://hunter.io/the-state-of-cold-email-2025)
+
+These studies guide a starting draft; they do not establish a guaranteed reply rate. Microsoft 365 is not a high-volume bulk-mail platform; this is a bounded reviewed daily export through the user's existing permitted workflow.

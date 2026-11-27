@@ -24,7 +24,8 @@
       "feat/research-budget-ranking": false,
       "fix/focus-outreach-only": false,
       "feat/open-opportunities": false,
-      "feat/opportunity-attention": false
+      "feat/opportunity-attention": false,
+      "feat/daily-email-merge": false
     }
   },
   "functions": {

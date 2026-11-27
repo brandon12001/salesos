@@ -1,3 +1,13 @@
+# Current update — 27 November 2026: daily Word email batch
+
+PR #32 is released at `99406695c68e6ad553474f1c83384a5f4a0a8cd5`, Vercel READY `dpl_J5D4c4uzTPu5iP5UUYfuexvgKpgj`, canonical https://salesos-up-next7.vercel.app/. Work is isolated on `feat/daily-email-merge` in `/workspace/salesos-email-merge` after the user confirmed desktop Word/classic Outlook and requested both a mail-merge document and recipient file.
+
+The Email batch page previews editable short drafts and exports real DOCX/XLSX files together. Opt-in Focus grouping replaces eligible routine email suggestions with one daily summary in all engines. Promised/warm/timed emails stay individual. Export never logs outreach; explicit selected-row sent confirmation completes matching original tasks and preserves cadence/XP rules. Partial sends, unsent skips, source stamps, suppressed-recipient rejection and existing cloud conflict recovery protect state. No API send, Office automation, macro, new dependency, paid AI or schema. See [workflow and limits](DAILY_EMAIL_MERGE.md).
+
+Run install/build/all 27 suites plus full isolated browser/final-head CI. Fresh private recoverable workspace and budget backup precedes standing-authorised release; verify intended repo/team/project, exact tested/merged tree, production READY/alias and SELECT-only preservation. All production prospects/history/settings and the separate Brave allowance (1,000 requests, stop 1 December UTC, no renewal assumption) must remain intact. Live protected sign-in and final native Word/Outlook send are manual checks. Preserve older worktrees/PR #12.
+
+---
+
 # Current update — 26 November 2026: neglected-opportunity review
 
 PR #31 is released at `02929927d2e1d231b6b51c1aa88c0180864676fc`, Vercel READY `dpl_T4idQJQzHTjPwcAgxYEfssLpBhf1`, canonical https://salesos-up-next7.vercel.app/. The user approved neglected-opportunity detection. Work is isolated on `feat/opportunity-attention` in `/workspace/salesos-opportunity-attention`.
