@@ -1,4 +1,4 @@
-import {useMemo,useState,type ReactNode} from 'react';
+import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import type {State} from '../types';
 import {researchApi as api} from '../lib/researchApi';
 import {SearchBudget} from './SearchBudget';
@@ -11,7 +11,7 @@ import {Badge,Empty,Icon} from './UI';
 type Props={
  seniorContacts?:ReactNode;
  state:State;
- onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number,cursorKey?:ResearchSector|'hmrc-goods')=>string|void;
+ onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number,cursorKey?:ResearchSector|'hmrc-goods',expectedCursor?:number)=>string|void|Promise<string|void>;
  onRegistryChecks:(rows:RegistryUpdate[])=>string|void;
  onWebResearch:(rows:WebResearchUpdate[])=>string|void;
  onCompanyContext:(rows:ContextUpdate[])=>string|void;
@@ -28,6 +28,8 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('goods');
  const [budget,setBudget]=useState<Budget|null>(null),[budgetRefresh,setBudgetRefresh]=useState(0);
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
+ const [bulkPages,setBulkPages]=useState(25),[bulkActive,setBulkActive]=useState(false);const scanLock=useRef(false),stopScan=useRef(false),mounted=useRef(true);
+ useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;stopScan.current=true}},[]);
  const [filter,setFilter]=useState<Filter>('ready'),[search,setSearch]=useState('');
  const [verified,setVerified]=useState(false),[ownerId,setOwnerId]=useState(''),[owner,setOwner]=useState(''),[activity,setActivity]=useState('');
  const [selected,setSelected]=useState<Record<string,boolean>>({});
@@ -60,17 +62,30 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  const picked=cleared.filter(c=>selected[c.id]);
  function failed(message:string|void){if(message){setError(message);return true}setError('');return false}
  async function copy(value:string){try{await navigator.clipboard.writeText(value);setStatus('Copied '+value)}catch{setStatus('Clipboard blocked; select company name manually.')} }
- async function run(){
-  if(running)return;setRunning(true);setError('');setStatus('');
+ async function run(pages=1){
+  if(running||scanLock.current)return;
+  scanLock.current=true;stopScan.current=false;setRunning(true);setBulkActive(pages>1);setError('');setStatus('');
+  const cursorKey=profile==='goods'?'hmrc-goods':profile;
+  let cursor=registry.cursors[cursorKey]||0,done=0,scanned=0,qualified=0,unmatched=0,known=0,heldCount=0,retained=0,exhausted=false;
+  const summary=()=>profile==='goods'?'HMRC-first scan: '+scanned+' traders · '+qualified+' trade-evidenced companies · '+unmatched+' unmatched · '+known+' already tracked · '+retained+' matched records returned · 0 Brave requests. Manual ownership checks still required.':'Reviewed '+scanned+' registered companies · '+heldCount+' held before web search · '+known+' already tracked · 0 Brave requests. Run free context checks before optional web research.';
   try{
-   const cursorKey=profile==='goods'?'hmrc-goods':profile;
-   const result=await api({mode:profile==='goods'?'hmrc-discover':'registry-discover',profile,cursor:registry.cursors[cursorKey]||0});
-   if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor))throw Error('Invalid company research response.');
-   if(failed(onDiscover(result.items as Discovery[],profile,result.nextCursor,cursorKey)))return;
-   setFilter('ready');
-   if(profile==='goods')setStatus('HMRC-first scan: '+result.resultsScanned+' traders · '+(result.tradeQualified||0)+' trade-evidenced companies · '+(result.unmatched||0)+' unmatched · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Manual ownership checks still required.'+(result.sourceExhausted?' End of this source scan.':''));
-   else setStatus('Reviewed '+result.resultsScanned+' registered companies · '+(result.preSearchHeld||0)+' held before web search · '+(result.knownSkipped||0)+' already tracked · 0 Brave requests. Run free context checks before optional web research.');
-  }catch(e){setError((e as Error).message)}finally{setRunning(false)}
+   for(let page=0;page<pages;page++){
+    if(stopScan.current||!mounted.current||cursor>=10000)break;
+    if(pages>1)setStatus(summary()+' Page '+(page+1)+' of '+pages+' in progress…');
+    const result=await api({mode:profile==='goods'?'hmrc-discover':'registry-discover',profile,cursor});
+    if(!mounted.current)break;
+    if(!Array.isArray(result.items)||!Number.isInteger(result.nextCursor)||result.nextCursor!==cursor+1)throw Error('Invalid company research response. Cursor not advanced.');
+    const saved=await onDiscover(result.items as Discovery[],profile,result.nextCursor,cursorKey,cursor);
+    if(!mounted.current)break;
+    if(saved)throw Error(saved);
+    cursor=result.nextCursor;done++;scanned+=Number(result.resultsScanned)||0;qualified+=Number(result.tradeQualified)||0;unmatched+=Number(result.unmatched)||0;known+=Number(result.knownSkipped)||0;heldCount+=Number(result.preSearchHeld)||0;retained+=result.items.length;
+    exhausted=!!result.sourceExhausted;
+    setFilter('ready');setStatus(summary()+(pages>1?' Completed '+done+' of '+pages+' pages.':'')+(exhausted?' End of this source scan.':''));
+    if(exhausted||stopScan.current)break;
+   }
+   if(mounted.current&&stopScan.current)setStatus(summary()+' Stopped after '+done+' completed pages. Resume from the next saved cursor.');
+  }catch(e){if(mounted.current){setError((e as Error).message+(done?' Earlier '+done+' completed pages were saved; resume from the saved cursor.':''));if(done)setStatus(summary()+' Stopped after '+done+' completed pages.');}}
+  finally{scanLock.current=false;if(mounted.current){setRunning(false);setBulkActive(false)}}
  }
  async function rescreen(){
   if(running||!unverified.length)return;setRunning(true);setError('');setStatus('');
@@ -128,11 +143,13 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    <p className="hint">Goods discovery starts with HMRC machinery/electrical trade records, then verifies company identity and registry fit. A recent matched trade record qualifies research fit for manual ownership checking without Brave. Recruitment keeps its existing web-evidence route. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
    <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520) and specialist equipment manufacturers (27900, 28290). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
    <SearchBudget onChange={setBudget} refresh={budgetRefresh} disabled={running}/>
-   <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
+   <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" disabled={running} value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
     <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':profile==='goods'?'Find HMRC traders (no Brave)':'Find companies (no Brave)'}</button>
+    {profile==='goods'&&<><label className="field">Bulk scan size<select aria-label="Bulk scan size" disabled={running} value={bulkPages} onChange={e=>setBulkPages(Number(e.target.value))}><option value={10}>Up to 40 traders</option><option value={25}>Up to 100 traders</option></select></label><button className="btn primary" disabled={running} onClick={()=>void run(bulkPages)}>Scan up to {bulkPages*4} HMRC traders</button>{bulkActive&&<button className="btn secondary" onClick={()=>{stopScan.current=true;setStatus(v=>v+' Stop requested — finish current page.')}}>Stop after current page</button>}</>}
     <button className="btn secondary" disabled={running||!unverified.length} onClick={()=>void rescreen()}>Verify saved registry ({unverified.length} next)</button>
     <button className="btn secondary" disabled={running||!contextQueue.length} onClick={()=>void freeContext()}>Free trade & ownership checks ({contextQueue.length} next)</button>
     <button className="btn primary" disabled={running||!webQueue.length||!budget?.configured||budget.expired||budget.remaining<2} onClick={()=>void webResearch()}>{running?'Research in progress…':'Research saved companies on web ('+webQueue.length+' next)'}</button></div>
+   {profile==='goods'&&<p className="hint">Bulk discovery scans sequential four-trader pages, saving each completed page before the next. It can take several minutes; keep this view open. Stop at any time, resume from the last saved cursor. Provider limits or errors stop the scan; no automatic retry, Brave searches or Lusha charges. Traders scanned are not the number of leads qualified.</p>}
    <p className="hint">Selected sector: {eligibleWeb.length} saved companies pass the free filters; {screenHeld.length} held. Each manual research action takes up to four eligible companies and uses at most eight Brave requests. The server refreshes official facts and checks your saved workspace before searching. Existing companies, held duplicates and already researched candidates are skipped. Verify saved registry first for older discoveries. Searches use your Brave allowance; no background research is enabled. The shared cloud budget blocks paid searches when paused, expired or exhausted.</p>
    <div className="button-row"><button className="btn secondary small" onClick={()=>setFilter('screen-held')}>Review pre-search holds ({screenHeld.length})</button></div>
    {registry.lastRunAt&&<small>Last scan: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
