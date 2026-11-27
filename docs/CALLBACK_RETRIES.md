@@ -8,7 +8,7 @@ Due real promises and meetings remain first. A suggested callback retry waits be
 
 ## Reserve supply
 
-Batch and individual activation now use the same saved minimum score, ownership, research, contact and suppression checks. Previously, a row showed Activate at a score that the transaction would reject. The reserve now displays its blocking reasons and the count/highest score of otherwise eligible leads below the saved threshold. **Review minimum score** focuses the existing rule; changing it requires an explicit Save activation rules. This never changes research scores or grants ownership.
+Batch, individual and the optional KPI call-supply activation now use the same saved minimum score, ownership, research, contact and suppression checks. Previously, a row showed Activate at a score that the transaction would reject. The reserve now displays its blocking reasons and the count/highest score of otherwise eligible leads below the saved threshold. **Review minimum score** focuses the existing rule; changing it requires an explicit Save activation rules. This never changes research scores or grants ownership.
 
 With Cold Call Mode on, the reserve initially selects **With a usable phone number only**. This filters both row and batch activation; email-only records can be included by turning the filter off. Automatic replenishment remains off unless explicitly enabled. Its active-prospect cap does not prohibit deliberate manual activation. Existing research, opt-outs, CRM holds, reclamation approvals and historical activity remain unchanged.
 
