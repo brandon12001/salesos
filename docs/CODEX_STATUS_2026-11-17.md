@@ -1,3 +1,15 @@
+# Current update — 27 November 2026: strict company/contact sourcing
+
+PR #35 is released at `b5ee198e3b9b6c2da804b13235ef22f1f89ce0bc`, Vercel READY `dpl_GbBPQwRoMZbnCT6hP7WRW2S1EeNB`, canonical https://salesos-up-next7.vercel.app/. The user now requests good companies and Lusha contacts restricted to MD, CEO, CFO, FD and Head of Finance. Work is isolated on `feat/strict-lusha-intake` in `/workspace/salesos-lusha-intake`.
+
+The connected Lusha plugin works, but Production has no LUSHA_API_KEY as last checked. The user has a pending secure setup instruction to add that variable directly in Vercel; never ask them to paste it in chat. New server sourcing is owner-bound, company-first and capped at four companies, with exact-role previews, current-profile revalidation and phone-only Lusha enrichment (no waterfall). Provider data over 180 days, DNC, invalid numbers, existing contacts and held/suppressed companies cannot enter new intake. Canonical JSONB-safe stamps, optional metadata and CSV recovery preserve history/compatibility. Research/reserve retain manual clearance and activation. No unattended loop is claimed.
+
+Live free discovery found equipment manufacturers with real HMRC trade rejected by the prior wholesale-only SIC list, and a registry-score trap below the reserve threshold. Only 27900/28290 are added; legally matched current trade raises research fit to 65/70 after all registry checks. This never confirms FX currency/volume, turnover or buyer interest. Existing 50 unchecked/unresearched candidates are preserved. Details: [strict sourcing](STRICT_LUSHA_SOURCING.md).
+
+Run install/build/all 29 suites, focused/full fictional browser and final-head CI. Apply standing release authorisation with a fresh private workspace/search-budget backup, exact tested/merged tree, Vercel READY/canonical alias and SELECT-only preservation. No migration or new dependency. Keep real sourcing outputs private, distinct from test fixtures, and do not alter active prospects/history while testing. Live protected sign-in remains manual.
+
+---
+
 # Current update — 27 November 2026: callback continuity and reserve supply
 
 PR #34 is released at `ba582dbda8734933ecf26d1df253cac4588b6a80`, Vercel READY `dpl_FdBRpE7vfijZozbARFw8DXMsKJX8`, canonical https://salesos-up-next7.vercel.app/. The user reported missed requested callbacks reverting to cold outreach, asked for adjacent progression gaps to be closed, then reported inability to activate reserve prospects. Work is isolated on `fix/callback-retry-context` in `/workspace/salesos-callback-retry`.

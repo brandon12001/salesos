@@ -1,7 +1,10 @@
+import {validSeniorContact,companyIdentity} from './seniorRoles';
+import {seniorContactData} from './contactResearch';
+import type {ContactResearch} from './seniorRoles';
 import type {State,Lead} from '../types';
 import {core} from './core';
 import {preSearchScreen} from './researchScreen';
-import {turnoverTarget,turnoverFit,validTurnover,validCompanyContext,hmrcQualified,researchRank,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
+import {turnoverTarget,turnoverFit,validTurnover,validCompanyContext,hmrcQualified,hmrcFitPriority,researchRank,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from './companyContext';
 
 export type ResearchSector='recruitment'|'goods';
 export type RegistryCheck={checkedAt:string;risk:'ok'|'review'|'excluded'|'unverified';flags:string[];companyStatus:string;statusDetail:string;accountsType:string;accountsOverdue:boolean;confirmationOverdue:boolean;sicCodes?:string[];incorporated?:string;companyType?:string;postalCode?:string};
@@ -18,14 +21,14 @@ export function qualityTier(c:Discovery):QualityTier{
 }
 export function candidatePriority(c:Discovery){
  if(c.registryCheck?.risk==='excluded')return 0;
- if(qualityTier(c)==='ready')return Math.min(85,c.priority);
+ if(qualityTier(c)==='ready')return Math.min(85,Math.max(c.priority,hmrcFitPriority(c)));
  return Math.min(35,c.priority);
 }
 export function researchPriority(c:Discovery,target:TurnoverTarget){
  return researchRank(c,target,candidatePriority(c));
 }
 export type ClearanceStatus='unchecked'|'cleared'|'held'|'moved'|'dismissed';
-export type Candidate=Discovery&{id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string;turnover?:TurnoverEvidence;companyContext?:CompanyContext};
+export type Candidate=Discovery&{contactResearch?:ContactResearch;id:string;status:ClearanceStatus;checkedAt?:string;crmOwner?:string;crmNote?:string;crmLastActivityAt?:string;linkedLeadId?:string;turnover?:TurnoverEvidence;companyContext?:CompanyContext};
 type Registry={version:1;candidates:Candidate[];cursors:Record<string,number>;lastRunAt:string;turnoverTarget?:TurnoverTarget};
 export type ContextUpdate={id:string;expectedCheckedAt:string;registryCheck:RegistryCheck;companyContext:CompanyContext};
 const MAX=600;
@@ -134,18 +137,20 @@ export function markAvailable(s:State,id:string){
  save(s,r);
 }
 function reserveData(c:Candidate,clearance:'cleared'|'hold',extra:Record<string,unknown>={}){
+ const found=c.contactResearch?.contact,contact=found&&validSeniorContact(found)&&companyIdentity(found.company)===companyIdentity(c.company)?found:null;
+ const manufacturer=c.sicCodes.some(s=>s==='27900'||s==='28290');
  const context=c.companyContext;
  const contextNote=context?' Public context checked '+context.checkedAt.slice(0,10)+': HMRC — '+context.hmrc.summary+' GLEIF — '+context.gleif.summary+' '+(context.gleif.parents||[]).map(p=>p.kind+' accounting parent: '+p.name+' ('+p.country+').').join(' '):'';
  const sizeNote=c.turnover?' Recorded '+c.turnover.scope+' annual turnover: GBP '+c.turnover.amount+'; year ended '+c.turnover.periodEnd+'. Source: '+c.turnover.sourceUrl+'.':'';
- return {company:c.company,companyNumber:c.companyNumber,sector:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
+ return {...(contact?{...seniorContactData(contact),contacts:[seniorContactData(contact)],companyDomain:contact.domain,contactResearch:c.contactResearch}:{}),company:c.company,companyNumber:c.companyNumber,sector:c.sector==='recruitment'?'Recruitment':manufacturer?'Industrial Equipment & Manufacturing':'Machinery & Equipment Distribution',
  businessDescription:'Registered business classified under SIC '+c.sicCodes.join(', ')+'. Cross-border payments unverified.',
- standardisedIndustry:c.sector==='recruitment'?'Recruitment':'Machinery & Equipment Distribution',
+ standardisedIndustry:c.sector==='recruitment'?'Recruitment':manufacturer?'Industrial Equipment & Manufacturing':'Machinery & Equipment Distribution',
  leadPool:'reserve',reservedAt:new Date().toISOString(),opportunityScore:candidatePriority(c),
  researchDate:c.foundAt.slice(0,10),researchRationale:c.reason+' No foreign currency volumes, overseas payment flows or treasury autonomy confirmed.'+contextNote+sizeNote,
  researchSources:[c.sourceUrl,...(c.evidence||[]).map(x=>x.sourceUrl),...(context?[context.hmrc.sourceUrl,context.gleif.sourceUrl,...(context.gleif.parents||[]).map(p=>p.sourceUrl)]:[]),...(c.turnover?[c.turnover.sourceUrl]:[])].join('\n'),researchConfidence:c.researchConfidence==='Medium'?'Medium — independent search snippets; FX unverified':'Low — screening only; FX unverified',researchHypothesis:c.fxHypothesis||'Potential FX requirement not independently verified; qualify before prioritising outreach.',
  crmClearance:clearance,crmCheckedAt:c.checkedAt||core.today(),crmNote:c.crmNote||'Manual Salesforce duplicate check recorded',readiness:1,
  readinessEvidence:'Unaware default for newly discovered company, not a verified buyer statement',
- nextMilestone:core.NEXT_MILESTONES[0],notes:'Lead Factory · sourced from Companies House. No contact or FX volume invented.',...extra};
+ nextMilestone:core.NEXT_MILESTONES[0],notes:'Lead Factory · sourced from Companies House. '+(contact?'Senior contact sourced from Lusha on '+contact.checkedAt.slice(0,10)+'. FX responsibility still unconfirmed.':'No contact or FX volume invented.'),...extra};
 }
 function alreadyInLeads(s:State,c:Candidate){
  return s.leads.find(l=>reg(l.companyNumber)===reg(c.companyNumber)||nameKey(l.company)===nameKey(c.company));

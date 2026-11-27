@@ -12,6 +12,7 @@ module.exports=async({a,saved,state,restore,nav,core})=>{
  sql(`insert into salesos_research_private.search_budget(owner_id) values('${owner}');`);
  let paid=0,failBudget=false,holdStatus=false,releaseStatus;
  await a.route('**/api/lead-research',async route=>{
+  if(route.request().postDataJSON()?.mode==='lusha-status')return route.fallback();
   const b=route.request().postDataJSON();
   if(b.mode?.startsWith('budget-')){
    if(b.mode==='budget-status'&&holdStatus)await new Promise(resolve=>{releaseStatus=resolve});

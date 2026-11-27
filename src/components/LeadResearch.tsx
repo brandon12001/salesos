@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useMemo,useState,type ReactNode} from 'react';
 import type {State} from '../types';
 import {researchApi as api} from '../lib/researchApi';
 import {SearchBudget} from './SearchBudget';
@@ -9,6 +9,7 @@ import {ResearchTarget,TurnoverEditor} from './ResearchTarget';
 import {leadFactory,researchProfiles,qualityTier,clearanceReady,candidatePriority,researchPriority,type Candidate,type Discovery,type ResearchSector,type RegistryUpdate,type WebResearchUpdate,type ContextUpdate} from '../lib/leadFactory';
 import {Badge,Empty,Icon} from './UI';
 type Props={
+ seniorContacts?:ReactNode;
  state:State;
  onDiscover:(rows:Discovery[],profile:ResearchSector,nextCursor:number,cursorKey?:ResearchSector|'hmrc-goods')=>string|void;
  onRegistryChecks:(rows:RegistryUpdate[])=>string|void;
@@ -23,8 +24,8 @@ type Props={
  onDupes:()=>void;onReserve:()=>void;
 };
 type Filter='ready'|'research'|'screen-held'|'flagged'|'cleared'|'all';
-export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onCompanyContext,onTarget,onTurnover,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve}:Props){
- const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('recruitment');
+export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,onCompanyContext,onTarget,onTurnover,onAvailable,onHold,onMove,onDismiss,onDupes,onReserve,seniorContacts}:Props){
+ const registry=leadFactory(state),[profile,setProfile]=useState<ResearchSector>('goods');
  const [budget,setBudget]=useState<Budget|null>(null),[budgetRefresh,setBudgetRefresh]=useState(0);
  const [running,setRunning]=useState(false),[status,setStatus]=useState(''),[error,setError]=useState('');
  const [filter,setFilter]=useState<Filter>('ready'),[search,setSearch]=useState('');
@@ -112,7 +113,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
  }
  const tierLabel=(c:Candidate)=>qualityTier(c)==='ready'?(hmrcQualified(c)?'HMRC trade evidenced':'International signal found'):qualityTier(c)==='excluded'?'Excluded by registry':qualityTier(c)==='flagged'?'Registry concerns':'Needs FX evidence';
  const tierColor=(c:Candidate):'green'|'amber'|'muted'=>qualityTier(c)==='ready'?'green':qualityTier(c)==='excluded'?'amber':'muted';
- return <div className="page-content">
+ return <div className="page-content lead-research-page">
   <div className="page-heading"><div><span className="eyebrow">RULES-BASED · NO AI</span><h1>Lead Research & Clearance</h1><p>Only businesses with acceptable registry records and independent cross-border evidence reach your Salesforce-checking list. All existing discoveries are retained for research.</p></div>
    <div className="button-row"><button className="btn secondary" onClick={onDupes}><Icon name="archive"/> Duplicate Queue</button><button className="btn secondary" onClick={onReserve}><Icon name="target"/> Lead Reserve</button></div></div>
   <div className="metrics-grid">
@@ -125,7 +126,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    <div className="section-between"><h2>Find and screen UK companies</h2><Badge tone="blue">Companies House</Badge></div>
    <ResearchTarget key={target.min+':'+target.max} value={target} onSave={value=>!failed(onTarget(value))}/>
    <p className="hint">Goods discovery starts with HMRC machinery/electrical trade records, then verifies company identity and registry fit. A recent matched trade record qualifies research fit for manual ownership checking without Brave. Recruitment keeps its existing web-evidence route. Turnover is unknown until sourced figures are recorded; these APIs do not supply automatic revenue estimates.</p>
-   <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
+   <p className="hint">Before spending a Brave request: active private limited company, at least two years old, a completed non-dormant accounts filing, acceptable filing health and a targeted SIC. Recruitment targets temporary staffing / HR provision (78200, 78300); goods targets equipment wholesalers (46690, 46620, 46610, 46630, 46520) and specialist equipment manufacturers (27900, 28290). Generic placement, holding/head-office and unclear profiles stay on hold. These are fit filters, not proof of FX needs, turnover or headcount.</p>
    <SearchBudget onChange={setBudget} refresh={budgetRefresh} disabled={running}/>
    <div className="button-row"><label className="field" style={{minWidth:250}}>Sector<select aria-label="Research sector" value={profile} onChange={e=>setProfile(e.target.value as ResearchSector)}>{researchProfiles.map(x=><option key={x.id} value={x.id}>{x.label}</option>)}</select></label>
     <button className="btn primary" disabled={running} onClick={()=>void run()}>{running?'Checking records…':profile==='goods'?'Find HMRC traders (no Brave)':'Find companies (no Brave)'}</button>
@@ -136,6 +137,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    <div className="button-row"><button className="btn secondary small" onClick={()=>setFilter('screen-held')}>Review pre-search holds ({screenHeld.length})</button></div>
    {registry.lastRunAt&&<small>Last scan: {new Date(registry.lastRunAt).toLocaleString('en-GB')}</small>}
   </section>
+  {seniorContacts}
   <section className="panel stack">
    <div className="section-between"><h2>Prospect research queues</h2><Badge>{visible.length} shown</Badge></div>
    <div className="filters"><div className="search-wrap"><Icon name="search"/><input aria-label="Search research candidates" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search company or registration number"/></div>
@@ -146,6 +148,7 @@ export function LeadResearch({state,onDiscover,onRegistryChecks,onWebResearch,on
    {visible.length?<div className="stack">{visible.map(c=><div key={c.id} className="panel inset stack">
     <div className="section-between"><div><strong>{c.company}</strong><p className="hint">{c.companyNumber} · {c.sector==='recruitment'?'Recruitment':'Machinery distribution'} · Incorporated {c.incorporated||'unknown'}</p></div>
      <div className="button-row"><Badge tone={tierColor(c)}>{tierLabel(c)}</Badge><Badge tone="muted">{candidatePriority(c)}/100 screening</Badge></div></div>
+    {c.contactResearch?.contact&&<p className="hint"><strong>Senior contact found:</strong> {c.contactResearch.contact.name} · {c.contactResearch.contact.title} · Lusha-sourced number. Transfers with the company after manual ownership clearance.</p>}
     {c.registryCheck?.flags?.length?<p className="hint">{c.registryCheck.flags.join(' · ')}</p>:<p className="hint">{c.registryCheck?.risk==='ok'?'Company profile and filing status checked. No FX requirement confirmed.':'Detailed Companies House profile not checked yet.'}</p>}
     {!c.webCheckedAt&&c.status==='unchecked'&&<p className="hint"><strong>{webScreen(c).eligible?'Passes research filters:':'No Brave search yet — on hold:'}</strong> {webScreen(c).reasons.join(' ')}</p>}
     {c.status==='unchecked'&&<TurnoverEditor key={c.turnover?.recordedAt||'empty'} value={c.turnover} onSave={value=>!failed(onTurnover(c.id,value))}/>}

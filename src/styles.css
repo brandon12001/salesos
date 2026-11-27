@@ -230,3 +230,13 @@
  .focus-heading-right .badge { white-space: normal; text-align: center; overflow-wrap: anywhere; }
 }
 .sidebar nav{min-height:0;overflow-y:auto;overscroll-behavior:contain}.sidebar-heading,.sidebar-footer{flex-shrink:0}
+
+/* Long research actions must remain usable on a narrow work screen. */
+@media(max-width:700px){
+ .lead-research-page .btn,.senior-contacts .btn{white-space:normal;max-width:100%;overflow-wrap:anywhere}
+ .lead-research-page .field{min-width:0!important;max-width:100%}
+ .lead-research-page .panel,.lead-research-page details,.senior-contacts{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .lead-research-page select{max-width:100%}
+ .lead-research-page summary{white-space:normal;overflow-wrap:anywhere}
+ .senior-contacts .section-between{flex-wrap:wrap;gap:12px}
+}

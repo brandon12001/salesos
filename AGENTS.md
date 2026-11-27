@@ -61,3 +61,7 @@ The user has explicitly chosen to score prospects in ChatGPT and upload an enric
 ## Product management rule
 
 Do NOT implement many new features at once. First: verified build and correct current workflows; second: trustworthy cloud storage/migration when authorised; third: tighten any missing requirements from the spec. Preserve minimal/no-admin No Answer path; show detailed FX discovery only when a decision-maker engages. Functionality must remain usable across an entire calling day.
+
+## Approved strict Lusha API sourcing — 27 November 2026
+
+The user explicitly requested good company discovery and Lusha contacts restricted to MD/CEO/CFO/Finance Director/Head of Finance. This supersedes the older research-outside-SalesOS decision for this bounded integration. Use only the existing account entitlement; no upgrades, new paid service or third-party waterfall. Keep LUSHA_API_KEY server-only. Recheck exact approved titles, UK company identity, current provider data, DNC, suppression and invalid numbers before saving. Preserve existing contacts/history and manual CRM clearance/activation. No unattended loop is enabled. See [strict sourcing rules](docs/STRICT_LUSHA_SOURCING.md).
