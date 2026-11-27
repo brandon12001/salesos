@@ -1,3 +1,13 @@
+# Current update — 27 November 2026: ready-to-send routine copy
+
+PR #33 is released at `be20cd5df562ad8680f34514abf15d5de5e9d14e`, Vercel READY `dpl_xM9un8sBf4mxk37BetkK4uwmx6d9`, canonical https://salesos-up-next7.vercel.app/. The user wants to trust routine drafts without daily editing. Work is isolated on `feat/ready-email-copy` in `/workspace/salesos-ready-email`.
+
+The default email batch path now uses versioned checked templates with safe contact/company personalisation, conditional sector relevance and one interest CTA. No unverified transaction, savings, volume or prior-conversation claims. Ambiguous fields use neutral wording. Standard preparation regenerates copy internally, so optional custom edits do not leak; custom review/editor are collapsed and optional. Previously prepared/exported bodies remain untouched. Word/XLSX sending and explicit actual-send confirmation remain manual. See [workflow and limits](DAILY_EMAIL_MERGE.md).
+
+No API, paid AI, dependency or migration. Run install/build/all 27 suites and full fictional local browser plus final-head CI before standing-authorised automatic release. Preserve real prospects/history/settings and the separate search-budget ledger. Fresh private workspace/budget backup, exact tested/merged tree, intended repo/project/team, production READY/canonical alias and SELECT-only preservation remain required. Native Word/Outlook send and protected live sign-in remain user-manual. Preserve other worktrees/PR #12.
+
+---
+
 # Current update — 27 November 2026: daily Word email batch
 
 PR #32 is released at `99406695c68e6ad553474f1c83384a5f4a0a8cd5`, Vercel READY `dpl_J5D4c4uzTPu5iP5UUYfuexvgKpgj`, canonical https://salesos-up-next7.vercel.app/. Work is isolated on `feat/daily-email-merge` in `/workspace/salesos-email-merge` after the user confirmed desktop Word/classic Outlook and requested both a mail-merge document and recipient file.

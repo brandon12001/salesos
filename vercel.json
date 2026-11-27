@@ -25,7 +25,8 @@
       "fix/focus-outreach-only": false,
       "feat/open-opportunities": false,
       "feat/opportunity-attention": false,
-      "feat/daily-email-merge": false
+      "feat/daily-email-merge": false,
+      "feat/ready-email-copy": false
     }
   },
   "functions": {

@@ -7,8 +7,11 @@ import {assertPendingAction} from './activityWorkflow';
 import {restrictedRoutineEmail} from './kpiFirst';
 
 export const EMAIL_BATCH_LIMIT=50;
+export const CHECKED_COPY_VERSION='2026-11-27.2';
+export const CHECKED_SUBJECT='International payments';
+export type CopyMode='checked'|'custom';
 export type MergeRow={taskId:string;leadId:string;contactId:string;methodId:string;email:string;name:string;company:string;body:string;stamp:string;status:'pending'|'sent'|'skipped';activityId?:string};
-export type EmailBatch={id:string;date:string;subject:string;sender:string;rows:MergeRow[];createdAt:string;exportedAt:string;closedAt:string};
+export type EmailBatch={id:string;date:string;subject:string;sender:string;rows:MergeRow[];createdAt:string;exportedAt:string;closedAt:string;copyMode?:CopyMode;copyVersion?:string};
 type MergeData={version:1;sender:string;subject:string;batches:EmailBatch[]};
 const empty=():MergeData=>({version:1,sender:'Brandon',subject:'International payments',batches:[]});
 // Postgres JSONB and imported backups can reorder object keys. Persisted source
@@ -31,10 +34,24 @@ export function routineEmailRows(s:State,now:Date,includeDuplicates=false){
   return [{taskId:t.id,leadId:l.id,contactId:route.contact.id,methodId:route.method.id,email:route.method.value.trim(),name:route.contact.name,company:l.company,body:'',stamp,status:'pending' as const}];
  });
 }
+const placeholder=(text:string)=>/^(unknown|not (recorded|provided|available|known|verified)|n\/?a|none|null|undefined|tbc|tbd|contact|first ?name|last ?name|company ?name)$/i.test(text.trim());
+function givenName(value:string,explicit=false){
+ if(!value||value.length>100||/[\r\n\d@<>{}«»]/.test(value)||placeholder(value))return '';
+ const parts=value.trim().split(/\s+/);while(parts.length&&/^(mr|mrs|ms|miss|mx|dr|prof|sir|dame)\.?$/i.test(parts[0]))parts.shift();
+ const result=explicit?parts.join(' '):parts[0]||'';
+ return result.length>=2&&result.length<=40&&/^[\p{L}\p{M}][\p{L}\p{M}'’ -]*$/u.test(result)&&!placeholder(result)&&!['cfo','ceo','finance','accounts','team','not','no','na','tba'].includes(result.toLowerCase())?result:'';
+}
+export function checkedGreeting(name:string,firstName=''){
+ const explicit=givenName(firstName,true),comma=name.split(','),inferred=givenName(comma.length===2?comma[1]:name);
+ return explicit||inferred?`Hi ${explicit||inferred},`:'Hello,';
+}
+function sectorKind(value:string){return /recruit|staff|payroll/i.test(value)?'recruitment':/machin|equipment|goods|wholesale|manufactur/i.test(value)?'goods':''}
 export function defaultMergeBody(s:State,row:MergeRow,sender:string){
- const l=s.leads.find(l=>l.id===row.leadId),sector=(l?.industryCategory+' '+l?.sector).toLowerCase(),first=s.leads.find(l=>l.id===row.leadId)?.contacts.find(c=>c.id===row.contactId)?.firstName?.trim()||row.name.trim().split(/\s+/)[0];
- const relevance=/recruit|staff|payroll/.test(sector)?'If you invoice overseas clients or pay contractors in other currencies, I would be happy to discuss how you handle those payments.':/machin|equipment|goods|wholesale|manufactur/.test(sector)?'If you pay overseas suppliers in other currencies, I would be happy to discuss how you handle those payments.':'If you make or receive payments in other currencies, I would be happy to discuss how you handle them.';
- return `Hi ${first},\n\nI’m getting in touch about international payments at ${row.company}.\n\n${relevance}\n\nWould comparing options before your next foreign-currency payment be useful?\n\nBest regards, ${sender.trim()}`;
+ const l=s.leads.find(l=>l.id===row.leadId),contact=l?.contacts.find(c=>c.id===row.contactId),category=sectorKind(l?.industryCategory||''),sector=sectorKind(l?.sector||''),kind=category&&sector&&category!==sector?'':category||sector;
+ const company=row.company.trim().replace(/\s+/g,' '),safeCompany=company.length<=120&&!/[\r\n<>{}«»@]|:\/\//.test(row.company)&&!placeholder(company)&&company;
+ const opening=safeCompany?`I’m getting in touch about international payments at ${company}.`:'I’m getting in touch about international payments.';
+ const relevance=kind==='recruitment'?'If you invoice overseas clients or pay contractors in other currencies, I can help you compare options for those payments.':kind==='goods'?'If you pay overseas suppliers in other currencies, I can help you compare options for those payments.':'If you make or receive payments in other currencies, I can help you compare options for those payments.';
+ return `${checkedGreeting(row.name,contact?.firstName)}\n\n${opening}\n\n${relevance}\n\nWould comparing FX options be useful?\n\nBest regards, ${sender.trim()}`;
 }
 export function emailMergePlan(s:State,now:Date){
  const rows=routineEmailRows(s,now),batch=activeEmailBatch(s,now),pending=batch?.rows.filter(r=>r.status==='pending')||[];
@@ -51,11 +68,13 @@ function validateCopy(subject:string,sender:string,rows:Array<Pick<MergeRow,'bod
  if(!subject.trim()||subject.length>150||/[\r\n]|\{\{|\}\}/.test(subject)||!sender.trim()||sender.length>100||/[\r\n]/.test(sender))throw Error('Use a shared subject (up to 150 characters) and your sign-off name.');
  if(rows.some(r=>!r.body.trim()||r.body.length>3000||/\{\{|\}\}/.test(r.body)||r.body.split(/\n\s*\n/).length>10))throw Error('Review each message: up to 3,000 characters and ten paragraphs, with no unfilled template placeholders.');
 }
-export function prepareEmailBatch(s:State,subject:string,sender:string,chosen:Array<{taskId:string;body:string}>,expected:string,now:Date){
+export function prepareEmailBatch(s:State,subject:string,sender:string,chosen:Array<{taskId:string;body:string}>,expected:string,now:Date,mode:CopyMode='custom'){
  supported(s);const plan=emailMergePlan(s,now);if(plan.stamp!==expected)throw Error('Email tasks changed. Refresh the preview before preparing.');if(plan.batch)throw Error('Resume today’s existing batch; do not prepare duplicate recipients.');
- if(!chosen.length||chosen.length>EMAIL_BATCH_LIMIT||new Set(chosen.map(r=>r.taskId)).size!==chosen.length)throw Error('Choose 1–50 distinct email tasks.');validateCopy(subject,sender,chosen);
- const rows=chosen.map(input=>{const row=plan.rows.find(r=>r.taskId===input.taskId);if(!row)throw Error('A recipient is no longer eligible. Refresh the preview.');return {...row,body:input.body.trim()}});
- const batch:EmailBatch={id:core.uid(),date:localDate(now),subject:subject.trim(),sender:sender.trim(),rows,createdAt:now.toISOString(),exportedAt:'',closedAt:''},data=emailMergeData(s);
+ if(!['checked','custom'].includes(mode)||!chosen.length||chosen.length>EMAIL_BATCH_LIMIT||new Set(chosen.map(r=>r.taskId)).size!==chosen.length)throw Error('Choose 1–50 distinct email tasks.');
+ if(mode==='checked'&&(!/^[\p{L}\p{M}][\p{L}\p{M}'’. -]{1,79}$/u.test(sender.trim())||placeholder(sender)))throw Error('Set your sign-off name once under Custom wording before preparing the standard pack.');
+ const rows=chosen.map(input=>{const row=plan.rows.find(r=>r.taskId===input.taskId);if(!row)throw Error('A recipient is no longer eligible. Refresh the preview.');return {...row,body:mode==='checked'?defaultMergeBody(s,row,sender):input.body.trim()}});
+ const finalSubject=mode==='checked'?CHECKED_SUBJECT:subject.trim();validateCopy(finalSubject,sender,rows);
+ const batch:EmailBatch={id:core.uid(),date:localDate(now),subject:finalSubject,sender:sender.trim(),rows,createdAt:now.toISOString(),exportedAt:'',closedAt:'',copyMode:mode,...(mode==='checked'?{copyVersion:CHECKED_COPY_VERSION}:{})},data=emailMergeData(s);
  s.meta={...s.meta,emailMerge:{...data,sender:batch.sender,subject:batch.subject,batches:[...data.batches.filter(b=>!b.closedAt||b.date>=core.addDays(localDate(now),-30)),batch]}};s.settings.emailMergeMode=1;return batch;
 }
 function savedBatch(s:State,id:string,expected:string){supported(s);const b=emailMergeData(s).batches.find(b=>b.id===id);if(!b||batchStamp(b)!==expected)throw Error('Batch changed in another view. Refresh before continuing.');if(b.closedAt)throw Error('This batch is closed. It cannot be sent again.');return b}
