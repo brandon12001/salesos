@@ -52,7 +52,7 @@ The user confirmed Salesforce **Leads**, and explicitly approved opening the exi
 
 ## Approved manual Word mail merge — 27 November 2026
 
-The user confirmed existing desktop Word/classic Outlook and requested a prepared mail-merge document plus recipient file for daily email tasks. File export and explicit selected-row sent confirmation are authorised. This does not authorise Outlook/Graph APIs, mailbox access, automatic sending, macros/VBA, new paid AI or software installation on the work laptop. Preserve individual promised/timed/warm follow-ups; downloading or preparing is never outreach. See `docs/DAILY_EMAIL_MERGE.md`.
+The user confirmed existing desktop Word/classic Outlook and requested a prepared mail-merge document plus recipient file for daily email tasks. File export and explicit selected-row sent confirmation are authorised. This does not authorise Outlook/Graph APIs, mailbox access, automatic sending, macros/VBA, new paid AI or software installation on the work laptop. Preserve individual promised/timed/warm follow-ups; downloading or preparing is never outreach. See `docs/DAILY_EMAIL_MERGE.md`. The user subsequently clarified that routine drafts must be ready to send without daily rewriting: default to versioned, checked factual templates with safe personalisation; keep custom wording optional and never rewrite a previously prepared/exported pack.
 
 ## Current lead intake decision — research outside SalesOS
 
