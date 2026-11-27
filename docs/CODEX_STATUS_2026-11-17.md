@@ -1,3 +1,13 @@
+# Current update — 27 November 2026: tool-generated lead-finder audit
+
+PR #36 is released at `e12476bef7c3ed40650987882bd1a5695453395b`. LUSHA_API_KEY was explicitly approved, stored server-only in Vercel Production and applied in READY deployment `dpl_7FVLEeA1jpvYR2a47ztX5RkRUXTW`; canonical https://salesos-up-next7.vercel.app/. Account-usage authentication and current pricing passed without contact searches. Older missing-key notes below are historical.
+
+The user now requests ten prospects produced by the actual finder, followed by a quality audit. The audit invokes the existing SalesOS discovery, qualification and strict contact functions against live providers with a private copy of the current workspace for duplicate/suppression checks; no manually selected companies or fabricated clearance. Its first run exposed unpaced HMRC requests and a transient 503 abort. Work is isolated on `fix/hmrc-provider-reliability` in `/workspace/salesos-finder-audit`. See [provider reliability](HMRC_PROVIDER_RELIABILITY.md). No sector/title/freshness widening, migration, new infrastructure or actual outreach. Real sourcing is distinct from fictional tests; private outputs must not enter Git.
+
+Run install/build/all 30 suites, final-head CI and isolated browser before the standing-authorised release. Back up the current workspace/private budget, verify exact tested merge tree and intended project/team, production READY/canonical alias and SELECT-only preservation. Do not claim ten call-ready leads merely because ten companies have trade evidence: turnover, owner clearance, contact data and UK FX authority must be reported separately.
+
+---
+
 # Current update — 27 November 2026: strict company/contact sourcing
 
 PR #35 is released at `b5ee198e3b9b6c2da804b13235ef22f1f89ce0bc`, Vercel READY `dpl_GbBPQwRoMZbnCT6hP7WRW2S1EeNB`, canonical https://salesos-up-next7.vercel.app/. The user now requests good companies and Lusha contacts restricted to MD, CEO, CFO, FD and Head of Finance. Work is isolated on `feat/strict-lusha-intake` in `/workspace/salesos-lusha-intake`.

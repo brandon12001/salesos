@@ -8,7 +8,10 @@ const fixture=require('./hmrc_fixture.cjs'),now=new Date(),month=now.getUTCFullY
 const c={company:'Fictional HMRC Equipment Limited',companyNumber:'17000001',sector:'goods',sicCodes:['46620'],incorporated:'2016-01-01'};
 const profile={company_name:c.company,company_number:c.companyNumber,type:'ltd',company_status:'active',date_of_creation:c.incorporated,sic_codes:c.sicCodes,registered_office_address:{postal_code:'SW1A 1AA'},accounts:{last_accounts:{type:'small'}}};
 process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake-public';process.env.COMPANIES_HOUSE_API_KEY='fake-ch';process.env.BRAVE_SEARCH_API_KEY='fake-brave';
-let saved=[],leads=[],requests=[],profilePatch={},postalMismatch=false,ambiguous=false,outage=false,brave=0;
+let saved=[],leads=[],requests=[],profilePatch={},postalMismatch=false,ambiguous=false,outage=false,limited=false,brave=0;
+// HTTP fixtures test provider contracts; the separate fake-clock suite tests real pacing.
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.enter=async()=>{};
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.coolDown=()=>{};
 const original=global.fetch;
 global.fetch=async(url,options={})=>{
  const u=new URL(url);requests.push({url:u,options});
@@ -18,6 +21,7 @@ global.fetch=async(url,options={})=>{
  if(u.hostname==='api.uktradeinfo.com'){
   assert.equal(options.headers.Authorization,undefined);assert.equal(options.redirect,'error');
   if(outage)throw Error('Fictional provider unavailable');
+  if(limited)return {ok:false,status:429};
   if(u.searchParams.get('$apply')?.includes('MonthId,TradeTypeId'))return {ok:true,json:async()=>({value:[{TraderId:123,MonthId:month,TradeTypeId:2}]})};
   if(u.searchParams.has('$apply')){assert.match(u.searchParams.get('$apply'),/groupby\(\(TraderId\)\)/);assert.equal(u.searchParams.get('$top'),'4');return {ok:true,json:async()=>({value:[{TraderId:123}]})}}
   if(u.pathname==='/Trader(123)')return {ok:true,json:async()=>({TraderId:123,CompanyName:c.company,PostCode:'SW1A 1AA'})};
@@ -47,6 +51,8 @@ async function invoke(body){const r={statusCode:200,setHeader(){},end(s){this.bo
  postalMismatch=true;r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:0});assert.equal(r.body.items.length,0);assert.equal(r.body.unmatched,1);postalMismatch=false;
  ambiguous=true;r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:0});assert.equal(r.body.items.length,0);ambiguous=false;
  profilePatch={company_status:'dissolved'};r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:0});assert.equal(r.body.tradeQualified,0);assert.equal(f.qualityTier(r.body.items[0]),'excluded');profilePatch={};
+ profilePatch={sic_codes:['62012']};requests=[];r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:0});assert.equal(r.statusCode,200);assert.equal(r.body.tradeQualified,0);assert.equal(requests.filter(x=>x.url.hostname==='api.uktradeinfo.com'&&x.url.pathname==='/Trade').length,1,'out-of-sector profiles do not fetch detailed trade/activity');assert.equal(r.body.items[0].companyContext.hmrc.status,'unknown');profilePatch={};
+ limited=true;r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:2});assert.equal(r.statusCode,429);assert.equal(r.body.nextCursor,undefined);assert.match(r.body.error,/Wait at least a minute/);limited=false;
  outage=true;r=await invoke({mode:'hmrc-discover',profile:'goods',cursor:2});assert.equal(r.statusCode,502);assert.equal(r.body.nextCursor,undefined,'provider failure never advances a scan');outage=false;
  saved=[{...c,status:'unchecked'}];r=await invoke({mode:'web-enrich',candidates:[c]});assert.equal(r.statusCode,200);assert.equal(r.body.webSearches,0,'missing HMRC proof spends zero Brave requests');
  saved=[{...c,status:'unchecked',companyContext:fixture(c.company)}];r=await invoke({mode:'web-enrich',candidates:[c]});assert.equal(r.statusCode,200);assert.equal(r.body.webSearches,2,'optional deeper research permitted after HMRC fit');

@@ -1,14 +1,30 @@
 import {researchNameKey} from '../src/lib/researchScreen.js';
 import type {CompanyContext,HMRCContext,GLEIFContext} from '../src/lib/companyContext.js';
 import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified,tradeActivity} from '../src/lib/companyContext.js';
+import {hmrcGate,HMRCProviderError} from './hmrcProvider.js';
 type Company={company:string;companyNumber:string;sector:'recruitment'|'goods';postalCode?:string};
 const HMRC='https://api.uktradeinfo.com',GLEIF='https://api.gleif.org/api/v1';
 const hmrcSource='https://www.uktradeinfo.com/search/traders/';
 const gleifSource='https://www.gleif.org/en/lei-data/gleif-api';
 export async function freeGet(url:string){
  // URLs are assembled from fixed provider origins, never from provider links.
- const r=await fetch(url,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(4500)});
- if(!r.ok)throw Error('Provider unavailable');return r.json();
+ const hmrc=new URL(url).origin===HMRC;
+ for(let attempt=0;attempt<(hmrc?2:1);attempt++){
+  if(hmrc)await hmrcGate.enter();
+  let r:Response;
+  try{r=await fetch(url,{headers:{Accept:'application/json'},redirect:'error',signal:AbortSignal.timeout(4500)})}
+  catch(error){
+   if(hmrc&&attempt===0&&error instanceof Error&&['TypeError','AbortError','TimeoutError'].includes(error.name))continue;
+   throw error;
+  }
+  if(hmrc&&(r.status===403||r.status===429)){
+   hmrcGate.coolDown();
+   throw new HMRCProviderError('HMRC rejected this request ('+r.status+'). Wait at least a minute before retrying; no automatic retry or scan cursor advance.',429);
+  }
+  if(hmrc&&attempt===0&&[502,503,504].includes(r.status))continue;
+  if(!r.ok)throw Error('Provider unavailable');return r.json();
+ }
+ throw Error('Provider unavailable');
 }
 const get=freeGet;
 export function hmrcTradeQuery(id:number,now:Date){
@@ -26,7 +42,7 @@ export async function hmrcActivity(id:number,now:Date):Promise<HMRCContext['acti
   const rows=result.value;
   if(rows.some((x:any)=>x.TraderId!==id||!Number.isInteger(x.MonthId)||x.MonthId<from||x.MonthId>to||x.MonthId%100<1||x.MonthId%100>12||![1,2].includes(x.TradeTypeId))||new Set(rows.map((x:any)=>x.MonthId+':'+x.TradeTypeId)).size!==rows.length)return undefined;
   return {from,to,months:[...new Set<number>(rows.map((x:any)=>x.MonthId))].sort().reverse(),checkedAt:now.toISOString(),sourceUrl:HMRC+'/Trade?'+query};
- }catch{return undefined} // Incomplete coverage must never become a frequency score.
+ }catch(error){if(error instanceof HMRCProviderError)throw error;return undefined} // Incomplete coverage must never become a frequency score.
 }
 export function hmrcTradeContext(trader:{TraderId:number;CompanyName:string;PostCode:string},rows:any[],now:Date):HMRCContext{
  const id=trader.TraderId,{from,to}=hmrcWindow(now);
@@ -54,7 +70,7 @@ async function hmrc(c:Company,now:Date):Promise<HMRCContext>{
   const [result,activity]=await Promise.all([get(HMRC+'/Trade?'+query),hmrcActivity(id,now)]);
   if(!Array.isArray(result.value))throw Error('Invalid trade response');
   return {...hmrcTradeContext(matches[0],result.value,now),activity};
- }catch{return {status:'error',sourceUrl:hmrcSource,summary:'HMRC lookup unavailable; no negative conclusion drawn. Retry after the provider recovers.'}}
+ }catch(error){if(error instanceof HMRCProviderError)throw error;return {status:'error',sourceUrl:hmrcSource,summary:'HMRC lookup unavailable; no negative conclusion drawn. Retry after the provider recovers.'}}
 }
 async function gleif(c:Company):Promise<GLEIFContext>{
  const authority=/^\d{8}$/.test(c.companyNumber)?'RA000585':/^NI\d{6}$/.test(c.companyNumber)?'RA000586':/^SC\d{6}$/.test(c.companyNumber)?'RA000587':'';

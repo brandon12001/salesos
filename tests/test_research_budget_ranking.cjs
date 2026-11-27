@@ -18,6 +18,9 @@ const retained=lib.retainContextOnFailure(c.companyContext,{...c.companyContext,
 let mode='okay',brave=0,reservations=0,remaining=2;
 process.env.VITE_SUPABASE_URL='https://fixture.supabase.co';process.env.VITE_SUPABASE_PUBLISHABLE_KEY='fake';process.env.COMPANIES_HOUSE_API_KEY='fake';process.env.BRAVE_SEARCH_API_KEY='fake';
 const candidate={company:'Fictional Staffing Budget Ltd',companyNumber:'18000001',sector:'recruitment',sicCodes:['78200'],incorporated:'2016-01-01',status:'unchecked'};
+// HTTP fixtures test provider contracts; the separate fake-clock suite tests real pacing.
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.enter=async()=>{};
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.coolDown=()=>{};
 const original=global.fetch;
 global.fetch=async(url,options={})=>{
  const u=new URL(url);
