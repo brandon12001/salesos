@@ -28,7 +28,8 @@
       "feat/daily-email-merge": false,
       "feat/ready-email-copy": false,
       "fix/callback-retry-context": false,
-      "feat/strict-lusha-intake": false
+      "feat/strict-lusha-intake": false,
+      "fix/hmrc-provider-reliability": false
     }
   },
   "functions": {

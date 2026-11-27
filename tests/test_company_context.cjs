@@ -4,6 +4,9 @@ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'salesos-company-context-'));
 const p=cp.spawnSync(process.execPath,['node_modules/typescript/bin/tsc','--target','es2022','--module','commonjs','--strict','--skipLibCheck','--outDir',dir,'--rootDir','.','api/lead-research.ts','src/lib/leadFactory.ts'],{encoding:'utf8'});if(p.status)throw Error(p.stdout||p.stderr);
 const f=require(path.join(dir,'src/lib/leadFactory.js')),lib=require(path.join(dir,'src/lib/companyContext.js'));
 const {freeCompanyContext}=require(path.join(dir,'server/freeCompanyContext.js')),handler=require(path.join(dir,'api/lead-research.js')).default;
+// HTTP fixtures test provider contracts; the separate fake-clock suite tests real pacing.
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.enter=async()=>{};
+require(path.join(dir,'server/hmrcProvider.js')).hmrcGate.coolDown=()=>{};
 const now=new Date().toISOString(),period=String(Number(now.slice(0,4))-1)+'-12-31';
 const turnover={amount:3e6,currency:'GBP',periodMonths:12,scope:'entity',periodEnd:period,recordedAt:now,sourceUrl:'https://fictional.example/annual-accounts'};
 assert.deepEqual(lib.turnoverTarget(),{min:3e6,max:30e6});

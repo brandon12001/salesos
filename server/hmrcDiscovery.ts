@@ -2,6 +2,7 @@ import {assessRegistry,screenedPriority,type CompanyProfile} from '../api/regist
 import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js';
 import {hmrcNameKey,hmrcPostcode,hmrcWindow,hmrcQualified,type CompanyContext} from '../src/lib/companyContext.js';
 import {freeGet,hmrcTradeQuery,hmrcTradeContext,hmrcActivity} from './freeCompanyContext.js';
+import {HMRCProviderError} from './hmrcProvider.js';
 type Known={company:string;companyNumber?:string};
 type CHGet=(path:string,auth:string,timeout?:number)=>Promise<Response>;
 const HMRC='https://api.uktradeinfo.com',SIZE=4;
@@ -15,7 +16,7 @@ export async function discoverHMRC(cursor:number,now:Date,chAuth:string,chGet:CH
  const page=await freeGet(HMRC+'/Trade?'+query);
  if(!Array.isArray(page.value))throw Error('Invalid HMRC discovery response');
  const ids=[...new Set<number>(page.value.slice(0,SIZE).map((r:any)=>r.TraderId).filter((id:any)=>Number.isSafeInteger(id)&&id>0))];
- let unmatched=0,knownSkipped=0,sourceErrors=0;
+ let unmatched=0,knownSkipped=0,sourceErrors=0,providerFailure:HMRCProviderError|undefined;
  const rows=await Promise.all(ids.map(async id=>{
   try{
    const trader=await freeGet(HMRC+`/Trader(${id})?$select=TraderId,CompanyName,PostCode`);
@@ -29,20 +30,27 @@ export async function discoverHMRC(cursor:number,now:Date,chAuth:string,chGet:CH
    if(matches.length!==1){unmatched++;return null}
    const companyNumber=matches[0].company_number,company=matches[0].title;
    if(known.some(k=>sameResearchCompany(k,{company,companyNumber}))){knownSkipped++;return null}
-   const [official,trade,activity]=await Promise.all([chGet('/company/'+encodeURIComponent(companyNumber),chAuth),freeGet(HMRC+'/Trade?'+hmrcTradeQuery(id,now)),hmrcActivity(id,now)]);
+   const official=await chGet('/company/'+encodeURIComponent(companyNumber),chAuth);
    if(!official.ok)throw Error('Registry profile unavailable');
    const p=await official.json() as CompanyProfile;
-   if(hmrcNameKey(p.company_name)!==hmrcNameKey(trader.CompanyName)||hmrcPostcode(p.registered_office_address?.postal_code)!==hmrcPostcode(trader.PostCode)||p.company_number!==companyNumber||!Array.isArray(trade.value)){unmatched++;return null}
+   if(hmrcNameKey(p.company_name)!==hmrcNameKey(trader.CompanyName)||hmrcPostcode(p.registered_office_address?.postal_code)!==hmrcPostcode(trader.PostCode)||p.company_number!==companyNumber){unmatched++;return null}
    const registryCheck=assessRegistry(company,companyNumber,p,now.toISOString());
-   const companyContext:CompanyContext={checkedAt:now.toISOString(),hmrc:{...hmrcTradeContext(trader,trade.value,now),activity},gleif:{status:'unknown',deferred:true,sourceUrl:'https://www.gleif.org/en/lei-data/gleif-api',summary:'Ownership context not checked in this HMRC-first scan. Manual Salesforce clearance is still required.'}};
+   let hmrc:CompanyContext['hmrc']={status:'unknown',traderId:id,checkedAt:now.toISOString(),sourceUrl:HMRC+'/Trader('+id+')',summary:'Trader discovered in machinery/electrical goods. Detailed trade checks deferred because registry or sector filters require review.'};
+   if(preSearchScreen('goods',registryCheck,now.toISOString()).eligible){
+    const [trade,activity]=await Promise.all([freeGet(HMRC+'/Trade?'+hmrcTradeQuery(id,now)),hmrcActivity(id,now)]);
+    if(!Array.isArray(trade.value))throw Error('Invalid HMRC trade response');
+    hmrc={...hmrcTradeContext(trader,trade.value,now),activity};
+   }
+   const companyContext:CompanyContext={checkedAt:now.toISOString(),hmrc,gleif:{status:'unknown',deferred:true,sourceUrl:'https://www.gleif.org/en/lei-data/gleif-api',summary:'Ownership context not checked in this HMRC-first scan. Manual Salesforce clearance is still required.'}};
    const result={company,companyNumber,sector:'goods' as const,sicCodes:registryCheck.sicCodes||[],incorporated:registryCheck.incorporated||'',
     sourceUrl:'https://find-and-update.company-information.service.gov.uk/company/'+companyNumber,foundAt:now.toISOString(),registryCheck,companyContext,
     priority:screenedPriority('goods',registryCheck.sicCodes?.[0]||'',registryCheck.incorporated||'',registryCheck),researchMethod:'registry-only' as const,researchConfidence:'Low' as const,
-    reason:'Discovered from HMRC machinery/electrical goods traders, then matched to Companies House by legal name and postcode. Recorded trade qualifies company research fit only; FX currencies, volume and UK decision authority are unverified.'};
+    reason:'Discovered from HMRC machinery/electrical goods traders, then matched to Companies House by legal name and postcode. '+(hmrc.status==='observed'?'Matched recorded trade qualifies company research fit only.':'Detailed trade checks deferred by registry or sector filters.')+' FX currencies, volume and UK decision authority are unverified.'};
    return result;
-  }catch{sourceErrors++;return null}
+  }catch(error){sourceErrors++;if(error instanceof HMRCProviderError)providerFailure=error;return null}
  }));
  // Provider failure does not advance past potentially missed companies.
+ if(providerFailure)throw providerFailure;
  if(sourceErrors)throw Error('HMRC or registry checks were unavailable. No batch saved and no Brave requests spent; retry this page later.');
  const items=rows.filter((x):x is NonNullable<typeof x>=>!!x).filter((c,i,all)=>all.findIndex(x=>x.companyNumber===c.companyNumber)===i);
  return {items,profile:'goods',discoverySource:'hmrc',resultsScanned:ids.length,nextCursor:cursor+1,runAt:now.toISOString(),sourceExhausted:ids.length<SIZE,unmatched,knownSkipped,

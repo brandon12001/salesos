@@ -7,6 +7,7 @@ import {preSearchScreen,sameResearchCompany} from '../src/lib/researchScreen.js'
 import {turnoverFit,turnoverTarget,needsCompanyContext,retainContextOnFailure,hmrcQualified,researchRank,type TurnoverTarget,type TurnoverEvidence,type CompanyContext} from '../src/lib/companyContext.js';
 import {freeCompanyContext} from '../server/freeCompanyContext.js';
 import {discoverHMRC} from '../server/hmrcDiscovery.js';
+import {HMRCProviderError} from '../server/hmrcProvider.js';
 import type {IncomingMessage,ServerResponse} from 'node:http';
 
 type Request=IncomingMessage&{body?:unknown};
@@ -235,6 +236,7 @@ export default async function handler(req:Request,res:ServerResponse){
    registryFlagged:items.filter(x=>x.registryCheck.risk==='review'||x.registryCheck.risk==='unverified').length,
    disclaimer:'A public search snippet is an unverified clue; these scores never confirm FX volumes, currencies, decision authority or revenue. No AI.'});
  }catch(error){
+  if(error instanceof HMRCProviderError){if(error.status===429)res.setHeader('Retry-After','60');return respond(res,error.status,{error:error.message})}
   if(error instanceof LushaError)return respond(res,error.status,{error:error.message});
   if(error instanceof BudgetError)return respond(res,error.status,{error:error.message});
   const message=error instanceof Error?error.message:'Research failed.';
