@@ -114,10 +114,21 @@ function Workspace({user}:{user?:User}){
   try{response=commit(s=>{
     const before=structuredClone(s),t=modal.recommendation?prepareAction(s,modal.recommendation,new Date()):core.getTask(s,modal.task.id);if(!t)return {error:'Task was already completed.'};if(restrictedRoutineEmail(s,t,new Date()))return {error:'Reach 100 KPI minutes before sending routine emails.'};assertPendingAction(s,t,new Date());
     let result;
-    if(['call','callback'].includes(t.type))result=core.logCall(s,t,{outcome:f.outcome==='positive_response'?'connected':f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:f.date,callbackTime:f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
+    const call=['call','callback'].includes(t.type),conversation=['connected','positive_response','callback','meeting_booked'].includes(f.outcome),emailAction=call&&['connected','positive_response'].includes(f.outcome)&&f.nextAction==='email';
+    if(call)result=core.logCall(s,t,{outcome:f.outcome==='positive_response'?'connected':f.outcome,notes:f.notes,reason:f.reason,readiness:f.readiness?Number(f.readiness):undefined,evidence:f.evidence||undefined,barrier:f.barrier,nextMilestone:f.nextMilestone,decisionMakerConfirmed:f.decisionMaker,callbackDate:emailAction?'':f.date,callbackTime:emailAction?'':f.time,referredName:f.referral,optoutScope:f.scope,minutes:f.minutes});
     else if(t.type==='research')result=core.resolveContact(s,t,{mode:f.repairMode,contactId:t.contactId,kind:'mobile',value:f.repairPhone,name:f.repairName,title:f.repairTitle,email:f.repairEmail,nextDate:f.date,notes:f.notes});
     else result=core.completeTask(s,t,{notes:f.notes,newStage:f.newStage,nextDate:f.date,nextTime:f.time});
     if(!result.error&&['call','callback'].includes(t.type)&&['positive_response','meeting_booked'].includes(f.outcome))captureCallOpportunity(s,t,f.outcome==='positive_response'?f.opportunityEvidence:f.notes||'Buyer agreed to a meeting on '+f.date,f.opportunityNextStep||'',new Date());
+    if(!result.error&&call&&conversation){
+      const lead=core.getLead(s,t.leadId),activity=activityForTask(s,t);
+      if(lead&&(f.fxProvider.trim()||f.fxProducts.length)){
+        if(f.fxProvider.trim())lead.fx.provider=f.fxProvider.trim();
+        lead.fx.products=[...new Set([...lead.fx.products,...f.fxProducts])];
+        if(f.notes.trim())lead.fx.notes=[lead.fx.notes,f.notes.trim()].filter(Boolean).join('\n');
+        lead.fx.updatedAt=new Date().toISOString();
+      }
+      if(emailAction){if(!activity)throw Error('Call activity is missing.');createFollowUpEmail(s,activity.id,{date:f.date,objective:f.opportunityNextStep.trim()||'Follow up the conversation and agree the next relevant step',context:f.notes,agreed:f.emailAgreed},new Date());}
+    }
     if(!result.error&&modal.recommendation)recordDecision(s,before,modal.recommendation,t,new Date());if(!result.error&&['call','callback'].includes(t.type))replenishCallSupply(s,new Date());return {...result,task:structuredClone(t),activityId:activityForTask(s,t)?.id};
   },{feedback:true});}catch(e){return (e as Error).message}
   if(response?.error)return response.error;completeView(modal.task,response,disposition==='stay');setModal(null);message('');
