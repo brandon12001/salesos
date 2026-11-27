@@ -129,7 +129,7 @@ export default async function handler(req:Request,res:ServerResponse){
   if(['lusha-status','lusha-search','lusha-reveal'].includes(input.mode||'')){
    // Reuse the administrator-provisioned owner check, without reserving or
    // changing a single Brave request. Other signed-in accounts cannot use this key.
-   await budget('status');
+   try{await budget('status')}catch{throw new LushaError('Lusha authorisation could not be verified for the provisioned SalesOS account. No Lusha quota used.',503)}
    const lushaKey=process.env.LUSHA_API_KEY||'';
    if(input.mode==='lusha-status')return respond(res,200,await lushaStatus(lushaKey));
    if(!lushaKey)return respond(res,503,{error:'Add LUSHA_API_KEY in Vercel Production to connect the existing Lusha account.'});
